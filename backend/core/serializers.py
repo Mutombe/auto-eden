@@ -1,4 +1,3 @@
-# vehicles/serializers.py
 from rest_framework import serializers
 from .models import Vehicle, VehicleImage, Bid, Profile, User
 
@@ -58,11 +57,11 @@ class VehicleImageSerializer(serializers.ModelSerializer):
 
 class VehicleSerializer(serializers.ModelSerializer):
     images = VehicleImageSerializer(many=True, required=False)
-    
+    is_visible = serializers.BooleanField(read_only=True)
     class Meta:
         model = Vehicle
         fields = '__all__'
-        read_only_fields = ['owner', 'status']
+        read_only_fields = ['owner', 'status', 'is_visible']
 
 class BidSerializer(serializers.ModelSerializer):
     class Meta:
