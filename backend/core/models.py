@@ -38,10 +38,12 @@ class Vehicle(models.Model):
     vin = models.CharField(max_length=17, unique=True)
     mileage = models.PositiveIntegerField()
     images = models.ManyToManyField('VehicleImage')
+    is_visible = models.BooleanField(default=True)
     status = models.CharField(max_length=20, choices=VEHICLE_STATUS, default='pending')
     listing_type = models.CharField(max_length=20, choices=LISTING_TYPE)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For marketplace
     proposed_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For instant sale
+    rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
@@ -59,6 +61,7 @@ class Bid(models.Model):
     
     vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
     bidder = models.ForeignKey(User, on_delete=models.CASCADE)
+    message = models.TextField(default="No message provided", blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     status = models.CharField(max_length=20, choices=BID_STATUS, default='pending')
     created_at = models.DateTimeField(auto_now_add=True)

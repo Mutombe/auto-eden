@@ -10,6 +10,7 @@ from .permissions import IsOwnerOrAdmin
 from rest_framework.parsers import MultiPartParser, FormParser
 from rest_framework.response import Response
 from rest_framework import status
+from rest_framework.decorators import action
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -83,6 +84,51 @@ class VehicleViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
 
+    @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAdminUser])
+    def verify(self, request, pk=None):
+        vehicle = self.get_object()
+        serializer = VehicleVerificationSerializer(vehicle, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
+    def pending_verification(self, request):
+        queryset = Vehicle.objects.filter(status='pending')
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'])
+    def my_vehicles(self, request):
+        queryset = Vehicle.objects.filter(owner=request.user)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+    @action(detail=True, methods=['patch'])
+    def toggle_visibility(self, request, pk=None):
+        vehicle = self.get_object()
+        vehicle.is_visible = not vehicle.is_visible
+        vehicle.save()
+        serializer = self.get_serializer(vehicle)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['get'], url_path='instant-sales')
+    def instant_sales(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=['post'], url_path='create-instant-sale')
+    def create_instant_sale(self, request):
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        serializer.save(
+            owner=request.user,
+            listing_type='instant_sale',
+            status='pending'
+        )
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 class BidViewSet(viewsets.ModelViewSet):
     serializer_class = BidSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -93,3 +139,53 @@ class BidViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         serializer.save(bidder=self.request.user)
 
+    @action(detail=False, methods=['get'], url_path='my-bids')
+    def my_bids(self, request):
+        queryset = self.filter_queryset(self.get_queryset())
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
+class MarketplaceView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        vehicles = Vehicle.objects.filter(
+            status='physically_verified',
+            is_visible=True,
+            listing_type='marketplace'
+        )
+        
+        # Add filtering logic
+        min_price = request.query_params.get('minPrice')
+        if min_price:
+            vehicles = vehicles.filter(price__gte=min_price)
+        
+        # Add similar filters for maxPrice, make, year
+        
+        # Add sorting
+        sort_by = request.query_params.get('sortBy')
+        if sort_by == 'priceLowHigh':
+            vehicles = vehicles.order_by('price')
+        elif sort_by == 'priceHighLow':
+            vehicles = vehicles.order_by('-price')
+        else:
+            vehicles = vehicles.order_by('-created_at')
+            
+        serializer = VehicleSerializer(vehicles, many=True)
+        return Response(serializer.data)
+class InstantSaleViewSet(viewsets.ModelViewSet):
+    serializer_class = VehicleSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return Vehicle.objects.filter(
+            owner=self.request.user,
+            listing_type='instant_sale'
+        )
+
+    def perform_create(self, serializer):
+        serializer.save(
+            owner=self.request.user,
+            listing_type='instant_sale',
+            status='pending'
+        )
