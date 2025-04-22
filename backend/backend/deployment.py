@@ -81,13 +81,14 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'bnzjaefpljfwkculw8dl',
-        'USER': 'uldg1qqg4izramkjs53e',
-        'PASSWORD': 'QsGbjZe9aI6wDpAVi2WlqYp23LtHxS',
-        'HOST': 'bnzjaefpljfwkculw8dl-postgresql.services.clever-cloud.com',
+        'NAME': 'bdrldt8pm2zpmedpthty',
+        'USER': 'uqp8motrebrjmomwi5rj',
+        'PASSWORD': 'b194d9Ya0xA7oeF6GA2HYXXFqiZ98i',
+        'HOST': 'bdrldt8pm2zpmedpthty-postgresql.services.clever-cloud.com',
         'PORT': '50013',
     }
 }
+
 
 # SECURITY MIDDLEWARE SETTINGS
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
