@@ -152,6 +152,7 @@ export const AuthModals = ({ openType, onClose }) => {
 
           <div className="space-y-4">
             {view === "register" && (
+              <>
               <TextField
                 fullWidth
                 label="Email"
@@ -174,6 +175,7 @@ export const AuthModals = ({ openType, onClose }) => {
                   },
                 }}
               />
+              <Divider className="!my-3"></Divider></>
             )}
 
             <TextField
@@ -197,6 +199,7 @@ export const AuthModals = ({ openType, onClose }) => {
                 },
               }}
             />
+            <Divider className="!my-3"></Divider>
             <TextField
               fullWidth
               label="Password"
