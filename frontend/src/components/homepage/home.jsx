@@ -29,9 +29,9 @@ export default function HomePage() {
   ];
 
   const listings = [
-    { id: 1, make: "Toyota", model: "Camry", year: 2020, price: 23500, image: "/api/placeholder/400/240", rating: 4.9, reviews: 24 },
-    { id: 2, make: "Honda", model: "Civic", year: 2021, price: 22500, image: "/api/placeholder/400/240", rating: 4.7, reviews: 18 },
-    { id: 3, make: "Ford", model: "Mustang", year: 2022, price: 41500, image: "/api/placeholder/400/240", rating: 4.8, reviews: 32 },
+    { id: 1, make: "Toyota", model: "Camry", year: 2020, price: 23500, image: "/note.jpg", rating: 4.9, reviews: 24 },
+    { id: 2, make: "Honda", model: "Civic", year: 2021, price: 22500, image: "/note.jpg", rating: 4.7, reviews: 18 },
+    { id: 3, make: "Ford", model: "Mustang", year: 2022, price: 41500, image: "/hondafit.png", rating: 4.8, reviews: 32 },
   ];
 
   return (
@@ -88,7 +88,7 @@ export default function HomePage() {
                 className="relative h-64 md:h-96 rounded-lg overflow-hidden shadow-2xl"
               >
                 <img 
-                  src="/api/placeholder/600/400" 
+                  src="/hondafit.png" 
                   alt="Luxury car" 
                   className="w-full h-full object-cover"
                 />
