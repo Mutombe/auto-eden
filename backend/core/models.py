@@ -17,6 +17,8 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+    
+
 
 class Vehicle(models.Model):
     VEHICLE_STATUS = (
@@ -35,14 +37,24 @@ class Vehicle(models.Model):
     make = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
     year = models.PositiveIntegerField()
-    vin = models.CharField(max_length=17, unique=True)
-    mileage = models.PositiveIntegerField()
-    images = models.ManyToManyField('VehicleImage')
+    vin = models.CharField(
+        max_length=17, 
+        unique=True,
+        help_text="Vehicle Identification Number"
+    )
+    mileage = models.PositiveIntegerField(
+        help_text="Current vehicle mileage in kilometers"
+    )
+    proposed_price = models.DecimalField(
+        max_digits=10, 
+        decimal_places=2,
+        verbose_name="Asking Price",
+        help_text="Price you expect for instant sale"
+    ) # For instant sale
     is_visible = models.BooleanField(default=True)
     status = models.CharField(max_length=20, choices=VEHICLE_STATUS, default='pending')
     listing_type = models.CharField(max_length=20, choices=LISTING_TYPE)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For marketplace
-    proposed_price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For instant sale
     rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -50,7 +62,16 @@ class Vehicle(models.Model):
         return self.make
 
 class VehicleImage(models.Model):
+    vehicle = models.ForeignKey(
+        Vehicle, 
+        on_delete=models.CASCADE,
+        related_name='images',
+        null=True
+    )
     image = models.ImageField(upload_to='vehicle_images/')
+
+    def __str__(self):
+        return f"Image for {self.vehicle}"
 
 class Bid(models.Model):
     BID_STATUS = (

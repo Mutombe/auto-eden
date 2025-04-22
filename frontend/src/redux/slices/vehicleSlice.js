@@ -1,4 +1,3 @@
-// features/vehicles/vehicleSlice.js
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../utils/api";
 
@@ -39,11 +38,27 @@ export const fetchInstantSaleVehicles = createAsyncThunk(
   }
 );
 
-export const createVehicle = createAsyncThunk(
+export const createVehicle1 = createAsyncThunk(
   "vehicles/create",
   async (vehicleData, { rejectWithValue }) => {
     try {
       const { data } = await api.post("/core/vehicles/", vehicleData);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response.data);
+    }
+  }
+);
+
+export const createVehicle = createAsyncThunk(
+  "vehicles/create",
+  async (formData, { rejectWithValue }) => {
+    try {
+      const { data } = await api.post("/core/vehicles/", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);

@@ -7,7 +7,7 @@ from .serializers import VehicleSerializer, BidSerializer, ProfileSerializer, Us
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .permissions import IsOwnerOrAdmin
-from rest_framework.parsers import MultiPartParser, FormParser
+from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.decorators import action
@@ -75,6 +75,7 @@ class ProfileView(APIView):
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    parser_classes = [MultiPartParser, JSONParser]
 
     def get_queryset(self):
         if self.request.user.is_staff:
@@ -118,17 +119,24 @@ class VehicleViewSet(viewsets.ModelViewSet):
         queryset = self.filter_queryset(self.get_queryset())
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
-
+    
     @action(detail=False, methods=['post'], url_path='create-instant-sale')
     def create_instant_sale(self, request):
-        serializer = self.get_serializer(data=request.data)
+        serializer = self.get_serializer(
+            data=request.data,
+            context={'view': self, 'request': request}
+        )
         serializer.is_valid(raise_exception=True)
+        
+        # Manually set required fields
         serializer.save(
             owner=request.user,
             listing_type='instant_sale',
             status='pending'
         )
+        
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
 class BidViewSet(viewsets.ModelViewSet):
     serializer_class = BidSerializer
     permission_classes = [permissions.IsAuthenticated]

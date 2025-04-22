@@ -37,11 +37,11 @@ export const AuthModals = ({ openType, onClose }) => {
   const dispatch = useDispatch();
   const { status, error } = useSelector((state) => state.auth);
   const [view, setView] = useState(openType);
-    const [snackbar, setSnackbar] = useState({
-      open: false,
-      message: "",
-      severity: "info",
-    });
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "info",
+  });
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -87,7 +87,7 @@ export const AuthModals = ({ openType, onClose }) => {
         .then(() => {
           setSnackbar({
             open: true,
-            message: "Registration successful. Please verify your email !",
+            message: "Registration successful. Please verify your email!",
             severity: "success",
           });
           onClose();
@@ -120,9 +120,10 @@ export const AuthModals = ({ openType, onClose }) => {
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
           className="p-6 space-y-6"
+          style={{ backgroundColor: "#f9fafb" }}
         >
           <div className="text-center">
-            <div className="animate-bounce mx-auto w-fit p-3 bg-gradient-to-r from-blue-600 to-teal-600 rounded-2xl mb-4">
+            <div className="animate-bounce mx-auto w-fit p-3 bg-gradient-to-r from-red-600 to-red-800 rounded-2xl mb-4">
               <Car className="text-white w-8 h-8" />
             </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
@@ -162,6 +163,16 @@ export const AuthModals = ({ openType, onClose }) => {
                 InputProps={{
                   startAdornment: <AtSign className="text-gray-400 mr-2" />,
                 }}
+                sx={{
+                  '& .MuiOutlinedInput-root': {
+                    '&.Mui-focused fieldset': {
+                      borderColor: '#dc2626',
+                    },
+                  },
+                  '& .MuiFormLabel-root.Mui-focused': {
+                    color: '#dc2626',
+                  },
+                }}
               />
             )}
 
@@ -175,6 +186,16 @@ export const AuthModals = ({ openType, onClose }) => {
               InputProps={{
                 startAdornment: <User className="text-gray-400 mr-2" />,
               }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#dc2626',
+                  },
+                },
+                '& .MuiFormLabel-root.Mui-focused': {
+                  color: '#dc2626',
+                },
+              }}
             />
             <TextField
               fullWidth
@@ -187,6 +208,16 @@ export const AuthModals = ({ openType, onClose }) => {
               InputProps={{
                 startAdornment: <Lock className="text-gray-400 mr-2" />,
               }}
+              sx={{
+                '& .MuiOutlinedInput-root': {
+                  '&.Mui-focused fieldset': {
+                    borderColor: '#dc2626',
+                  },
+                },
+                '& .MuiFormLabel-root.Mui-focused': {
+                  color: '#dc2626',
+                },
+              }}
             />
           </div>
 
@@ -196,7 +227,13 @@ export const AuthModals = ({ openType, onClose }) => {
             size="large"
             onClick={handleSubmit}
             disabled={status === "loading"}
-            className="!rounded-xl !py-3 !text-base !font-semibold !shadow-lg"
+            className="!rounded-lg !py-3 !text-base !font-semibold !shadow-lg"
+            sx={{
+              backgroundColor: "#dc2626",
+              '&:hover': {
+                backgroundColor: "#b91c1c",
+              },
+            }}
           >
             {status === "loading" ? (
               <span className="animate-pulse">Processing...</span>
@@ -213,7 +250,15 @@ export const AuthModals = ({ openType, onClose }) => {
             fullWidth
             variant="outlined"
             onClick={() => setView(view === "login" ? "register" : "login")}
-            className="!rounded-xl !py-2.5 !text-gray-700"
+            className="!rounded-lg !py-2.5"
+            sx={{
+              color: "#1f2937",
+              borderColor: "#d1d5db",
+              '&:hover': {
+                borderColor: "#dc2626",
+                backgroundColor: "rgba(220, 38, 38, 0.04)",
+              },
+            }}
           >
             {view === "login"
               ? "Create New Account"
@@ -233,6 +278,13 @@ export const AuthModals = ({ openType, onClose }) => {
           iconMapping={{
             error: <AlertCircle className="w-5 h-5" />,
           }}
+          sx={{
+            backgroundColor: snackbar.severity === 'success' ? '#f0fdf4' : undefined,
+            color: snackbar.severity === 'success' ? '#16a34a' : undefined,
+            '& .MuiAlert-icon': {
+              color: snackbar.severity === 'success' ? '#16a34a' : undefined,
+            },
+          }}
         >
           {snackbar.message}
         </Alert>
@@ -241,36 +293,65 @@ export const AuthModals = ({ openType, onClose }) => {
   );
 };
 
-
 export const Navbar = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const [authModal, setAuthModal] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [scrolled, setScrolled] = useState(false);
+
+  // Handle scroll effect for navbar
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 10) {
+        setScrolled(true);
+      } else {
+        setScrolled(false);
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
-    <nav className="bg-white shadow-sm">
+    <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+      scrolled ? "bg-white shadow-md" : "bg-transparent"
+    }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
+        <div className="flex justify-between h-20">
           {/* Left Section */}
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <Car className="h-8 w-8 text-blue-600" />
-              <span className="ml-2 text-2xl font-bold text-gray-900">
+              <div className="bg-red-600 p-2 rounded-lg">
+                <Car className="h-6 w-6 text-white" />
+              </div>
+              <span className={`ml-2 text-2xl font-bold ${scrolled ? "text-black" : "text-white"}`}>
                 Auto Eden
               </span>
             </Link>
             
             {/* Desktop Navigation */}
             <div className="hidden md:flex md:items-center md:ml-10 space-x-8">
-              <Link to="/marketplace" className="text-gray-700 hover:text-blue-600">
+              <Link to="/marketplace" className={`hover:text-red-600 font-medium transition-colors ${
+                scrolled ? "text-gray-800" : "text-white"
+              }`}>
                 Marketplace
               </Link>
-              <Link to="/sell" className="text-gray-700 hover:text-blue-600">
+              <Link to="/sell" className={`hover:text-red-600 font-medium transition-colors ${
+                scrolled ? "text-gray-800" : "text-white"
+              }`}>
                 Sell Your Car
               </Link>
+              <Link to="/about" className={`hover:text-red-600 font-medium transition-colors ${
+                scrolled ? "text-gray-800" : "text-white"
+              }`}>
+                About Us
+              </Link>
               {isAuthenticated && (
-                <Link to="/dashboard" className="text-gray-700 hover:text-blue-600">
+                <Link to="/dashboard" className={`hover:text-red-600 font-medium transition-colors ${
+                  scrolled ? "text-gray-800" : "text-white"
+                }`}>
                   My Dashboard
                 </Link>
               )}
@@ -279,24 +360,55 @@ export const Navbar = () => {
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
-            <IconButton className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
-              <Menu className="text-gray-600" />
+            <IconButton 
+              className="md:hidden" 
+              onClick={() => setMobileMenuOpen(true)}
+              sx={{
+                color: scrolled ? "#1f2937" : "#ffffff"
+              }}
+            >
+              <Menu />
             </IconButton>
 
-            <div className="hidden md:flex items-center gap-4">
-              <Search className="text-gray-600 cursor-pointer" />
+            <div className="hidden md:flex items-center gap-3">
+              <IconButton 
+                sx={{
+                  color: scrolled ? "#1f2937" : "#ffffff",
+                  '&:hover': {
+                    backgroundColor: 'rgba(220, 38, 38, 0.1)',
+                  }
+                }}
+              >
+                <Search />
+              </IconButton>
+              
               {isAuthenticated ? (
                 <>
-                  <div className="flex items-center gap-2">
-                  <Link to="/profile" className="text-gray-700 hover:text-blue-600">
-                    <Avatar className="!h-9 !w-9">
-                      {user?.username?.[0]?.toUpperCase()}
+                  <div className="flex items-center gap-3">
+                    <Link to="/profile">
+                      <Avatar 
+                        className="!h-10 !w-10 border-2 border-red-600"
+                        sx={{
+                          backgroundColor: '#111827',
+                          color: '#ffffff'
+                        }}
+                      >
+                        {user?.username?.[0]?.toUpperCase()}
                       </Avatar>
                     </Link>
                     <Button
                       variant="outlined"
                       startIcon={<LogOut className="w-5 h-5" />}
                       onClick={() => dispatch(logout())}
+                      sx={{
+                        color: scrolled ? "#dc2626" : "#ffffff",
+                        borderColor: scrolled ? "#dc2626" : "#ffffff",
+                        '&:hover': {
+                          borderColor: "#b91c1c",
+                          backgroundColor: scrolled ? "rgba(220, 38, 38, 0.04)" : "rgba(255, 255, 255, 0.1)",
+                        }
+                      }}
+                      className="!rounded-lg !font-medium"
                     >
                       Logout
                     </Button>
@@ -308,6 +420,15 @@ export const Navbar = () => {
                     variant="outlined"
                     startIcon={<LogIn className="w-5 h-5" />}
                     onClick={() => setAuthModal("login")}
+                    sx={{
+                      color: scrolled ? "#dc2626" : "#ffffff",
+                      borderColor: scrolled ? "#dc2626" : "#ffffff",
+                      '&:hover': {
+                        borderColor: "#b91c1c",
+                        backgroundColor: scrolled ? "rgba(220, 38, 38, 0.04)" : "rgba(255, 255, 255, 0.1)",
+                      }
+                    }}
+                    className="!rounded-lg !font-medium"
                   >
                     Sign In
                   </Button>
@@ -315,6 +436,13 @@ export const Navbar = () => {
                     variant="contained"
                     startIcon={<UserPlus className="w-5 h-5" />}
                     onClick={() => setAuthModal("register")}
+                    sx={{
+                      backgroundColor: "#dc2626",
+                      '&:hover': {
+                        backgroundColor: "#b91c1c",
+                      }
+                    }}
+                    className="!rounded-lg !font-medium"
                   >
                     Register
                   </Button>
@@ -332,13 +460,15 @@ export const Navbar = () => {
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
-            className="md:hidden absolute inset-x-0 top-0 z-50 bg-white shadow-lg"
+            className="md:hidden fixed inset-x-0 top-0 z-50 bg-white shadow-lg"
           >
             <div className="px-4 pt-5 pb-6">
               <div className="flex items-center justify-between mb-6">
                 <div className="flex items-center">
-                  <Car className="h-8 w-8 text-blue-600" />
-                  <span className="ml-2 text-xl font-bold">Auto Eden</span>
+                  <div className="bg-red-600 p-2 rounded-lg">
+                    <Car className="h-6 w-6 text-white" />
+                  </div>
+                  <span className="ml-2 text-xl font-bold text-gray-900">Auto Eden</span>
                 </div>
                 <IconButton onClick={() => setMobileMenuOpen(false)}>
                   <X className="text-gray-600" />
@@ -346,43 +476,126 @@ export const Navbar = () => {
               </div>
               
               <div className="space-y-4">
-                <Link to="/marketplace" className="block text-gray-700 p-2">
+                <Link 
+                  to="/marketplace" 
+                  className="block text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   Marketplace
                 </Link>
-                <Link to="/sell" className="block text-gray-700 p-2">
+                <Link 
+                  to="/sell" 
+                  className="block text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
                   Sell Your Car
                 </Link>
+                <Link 
+                  to="/about" 
+                  className="block text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                  onClick={() => setMobileMenuOpen(false)}
+                >
+                  About Us
+                </Link>
                 {isAuthenticated && (
-                  <Link to="/dashboard" className="block text-gray-700 p-2">
+                  <Link 
+                    to="/dashboard" 
+                    className="block text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
                     My Dashboard
                   </Link>
                 )}
-                {!isAuthenticated && (
-                  <>
-                    <Button
-                      fullWidth
-                      variant="outlined"
-                      startIcon={<LogIn />}
-                      onClick={() => {
-                        setAuthModal("login");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      Sign In
-                    </Button>
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      startIcon={<UserPlus />}
-                      onClick={() => {
-                        setAuthModal("register");
-                        setMobileMenuOpen(false);
-                      }}
-                    >
-                      Register
-                    </Button>
-                  </>
-                )}
+                
+                <div className="pt-2 mt-2 border-t border-gray-200">
+                  {isAuthenticated ? (
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center p-2 gap-3">
+                        <Avatar 
+                          className="!h-10 !w-10 border-2 border-red-600"
+                          sx={{
+                            backgroundColor: '#111827',
+                            color: '#ffffff'
+                          }}
+                        >
+                          {user?.username?.[0]?.toUpperCase()}
+                        </Avatar>
+                        <div>
+                          <div className="font-medium text-gray-900">{user?.username}</div>
+                          <Link 
+                            to="/profile" 
+                            className="text-sm text-red-600"
+                            onClick={() => setMobileMenuOpen(false)}
+                          >
+                            View Profile
+                          </Link>
+                        </div>
+                      </div>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<LogOut />}
+                        onClick={() => {
+                          dispatch(logout());
+                          setMobileMenuOpen(false);
+                        }}
+                        sx={{
+                          color: "#dc2626",
+                          borderColor: "#dc2626",
+                          '&:hover': {
+                            borderColor: "#b91c1c",
+                            backgroundColor: "rgba(220, 38, 38, 0.04)",
+                          }
+                        }}
+                        className="!rounded-lg !mt-2 !font-medium"
+                      >
+                        Logout
+                      </Button>
+                    </div>
+                  ) : (
+                    <>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        startIcon={<LogIn />}
+                        onClick={() => {
+                          setAuthModal("login");
+                          setMobileMenuOpen(false);
+                        }}
+                        sx={{
+                          color: "#dc2626",
+                          borderColor: "#dc2626",
+                          '&:hover': {
+                            borderColor: "#b91c1c",
+                            backgroundColor: "rgba(220, 38, 38, 0.04)",
+                          },
+                          marginBottom: "12px"
+                        }}
+                        className="!rounded-lg !font-medium"
+                      >
+                        Sign In
+                      </Button>
+                      <Button
+                        fullWidth
+                        variant="contained"
+                        startIcon={<UserPlus />}
+                        onClick={() => {
+                          setAuthModal("register");
+                          setMobileMenuOpen(false);
+                        }}
+                        sx={{
+                          backgroundColor: "#dc2626",
+                          '&:hover': {
+                            backgroundColor: "#b91c1c",
+                          }
+                        }}
+                        className="!rounded-lg !font-medium"
+                      >
+                        Register
+                      </Button>
+                    </>
+                  )}
+                </div>
               </div>
             </div>
           </motion.div>
