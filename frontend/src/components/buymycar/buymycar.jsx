@@ -12,7 +12,8 @@ export default function BuyMyCarPage() {
   const navigate = useNavigate();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { userVehicles, status, error } = useSelector((state) => state.vehicles);
-  const [showForm, setShowForm] = useState(false);
+    const [showForm, setShowForm] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
   const [formData, setFormData] = useState({
     make: '',
     model: '',
@@ -26,13 +27,30 @@ export default function BuyMyCarPage() {
       dispatch(fetchInstantSaleVehicles());
     }
   }, [dispatch, isAuthenticated]);
-
+    
   const handleSubmit = () => {
-    dispatch(createVehicle({ ...formData, listingType: 'instant_sale' }))
+    const formData = new FormData();
+    
+    // Append vehicle data
+    formData.append('make', formData.make);
+    formData.append('model', formData.model);
+    formData.append('year', formData.year);
+    formData.append('mileage', formData.mileage);
+    formData.append('vin', formData.vin);
+    formData.append('proposed_price', formData.price);
+    formData.append('listing_type', 'instant_sale');
+  
+    // Append images
+    selectedImages.forEach((image) => {
+      formData.append('image_files', image);
+    });
+  
+    dispatch(createVehicle(formData))
       .unwrap()
       .then(() => {
         setShowForm(false);
-        setFormData({ make: '', model: '', year: '', mileage: '', price: '' });
+        setFormData(initialFormState);
+        setSelectedImages([]);
       });
   };
 
@@ -177,7 +195,13 @@ export default function BuyMyCarPage() {
             value={formData.year}
             onChange={(e) => setFormData({ ...formData, year: e.target.value })}
           />
-          
+         <TextField
+  fullWidth
+  label="VIN Number"
+  value={formData.vin}
+  onChange={(e) => setFormData({ ...formData, vin: e.target.value })}
+  required
+/> 
           <TextField
             fullWidth
             label="Mileage"
@@ -193,7 +217,26 @@ export default function BuyMyCarPage() {
             value={formData.price}
             onChange={(e) => setFormData({ ...formData, price: e.target.value })}
           />
-
+<div className="space-y-4">
+  <input
+    type="file"
+    multiple
+    accept="image/*"
+    onChange={(e) => setSelectedImages(Array.from(e.target.files))}
+    className="block w-full text-sm text-gray-500
+      file:mr-4 file:py-2 file:px-4
+      file:rounded-full file:border-0
+      file:text-sm file:font-semibold
+      file:bg-blue-50 file:text-blue-700
+      hover:file:bg-blue-100"
+  />
+  {selectedImages.length > 0 && (
+    <p className="text-sm text-gray-600">
+      {selectedImages.length} images selected
+    </p>
+  )}
+</div>
+                  
           <Button
             variant="contained"
             fullWidth

@@ -4,11 +4,10 @@ import HomePage from './components/homepage/home';
 import { Navbar } from './components/navbar/navbar';
 import DashboardPage from './components/dashboard/userDashboard';
 import MarketplacePage from './components/marketplace/marketplace';
+import AboutPage from './components/about/about';
 import BuyMyCarPage from './components/buymycar/buymycar';
 import ProfilePage from './components/profile/profile';
-//import Marketplace from './pages/Marketplace';
-//import Sell from './pages/Sell';
-//import Dashboard from './pages/Dashboard';
+
 
 function App() {
   return (
@@ -19,6 +18,7 @@ function App() {
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/marketplace" element={<MarketplacePage />} />
         <Route path='/sell' element={< BuyMyCarPage />} />
+        <Route path='/about' element={< AboutPage />} />
         <Route path='/profile' element={< ProfilePage/>} />
       </Routes>
     </BrowserRouter>
