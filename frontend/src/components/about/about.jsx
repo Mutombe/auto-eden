@@ -45,21 +45,21 @@ export default function AboutPage() {
 
   const teamMembers = [
     {
-      name: "Alexandra Rivera",
+      name: "Alexandra Mutimutema",
       position: "Chief Executive Officer",
-      image: "/api/placeholder/400/400",
+      image: "/user1.jpg",
       description: "With over 15 years of experience in automotive retail and technology, Alexandra leads Auto Eden's strategic vision and operations.",
     },
     {
-      name: "Marcus Chen",
+      name: "Marcus Mutimutema",
       position: "Chief Technology Officer",
-      image: "/api/placeholder/400/400",
+      image: "/user1.jpg",
       description: "A pioneer in automotive tech, Marcus oversees our digital platform and innovative verification systems.",
     },
     {
-      name: "Samantha Washington",
+      name: "Samantha Mutimutema",
       position: "Customer Experience Director",
-      image: "/api/placeholder/400/400",
+      image: "/user1.jpg",
       description: "Dedicated to creating seamless experiences, Samantha ensures client satisfaction at every touchpoint.",
     },
   ];
@@ -88,10 +88,10 @@ export default function AboutPage() {
   ];
 
   return (
-    <div className="bg-white pt-20">
+    <div className="bg-white">
       {/* Hero Section */}
       <div className="relative bg-gradient-to-r from-black to-red-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
           <motion.div 
             className="text-center max-w-3xl mx-auto"
             initial={{ opacity: 0, y: 20 }}
@@ -143,12 +143,12 @@ export default function AboutPage() {
             >
               <div className="relative rounded-xl overflow-hidden shadow-xl">
                 <img 
-                  src="/api/placeholder/600/500" 
+                  src="/about.jpg" 
                   alt="Auto Eden headquarters" 
                   className="w-full h-auto"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                  <p className="text-white font-medium">Our headquarters in downtown metropolis</p>
+                  <p className="text-white font-medium">Our headquarters in Chisipiti</p>
                 </div>
               </div>
             </motion.div>
@@ -268,7 +268,7 @@ export default function AboutPage() {
                   <img 
                     src={member.image} 
                     alt={member.name} 
-                    className="w-full h-64 object-cover"
+                    className="w-full h-70 object-cover"
                   />
                 </div>
                 <div className="p-6">
