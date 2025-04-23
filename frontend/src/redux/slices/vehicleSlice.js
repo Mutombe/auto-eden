@@ -13,6 +13,45 @@ export const fetchVehicles = createAsyncThunk(
   }
 );
 
+export const fetchPendingReview = createAsyncThunk(
+  'vehicles/fetchPendingReview',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get('/api/vehicles/pending_review/',);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response.data);
+    }
+  }
+);
+
+export const fetchAllVehicles = createAsyncThunk(
+  'vehicles/fetchAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await axios.get('/api/vehicles/',);
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response.data);
+    }
+  }
+);
+
+export const reviewVehicle = createAsyncThunk(
+  'vehicles/review',
+  async ({ id, data }, { rejectWithValue }) => {
+    try {
+      const response = await axios.patch(
+        `/api/vehicles/${id}/review/`,
+        data,
+      );
+      return response.data;
+    } catch (err) {
+      return rejectWithValue(err.response.data);
+    }
+  }
+);
+
 export const fetchMarketplace = createAsyncThunk(
   'vehicles/fetchMarketplace',
   async (filters, { rejectWithValue }) => {
@@ -38,11 +77,15 @@ export const fetchInstantSaleVehicles = createAsyncThunk(
   }
 );
 
-export const createVehicle1 = createAsyncThunk(
+export const createVehicle = createAsyncThunk(
   "vehicles/create",
-  async (vehicleData, { rejectWithValue }) => {
+  async (formData, { rejectWithValue }) => {
     try {
-      const { data } = await api.post("/core/vehicles/", vehicleData);
+      const { data } = await api.post("/core/vehicles/", formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -50,7 +93,7 @@ export const createVehicle1 = createAsyncThunk(
   }
 );
 
-export const createVehicle = createAsyncThunk(
+export const createVehicle1 = createAsyncThunk(
   "vehicles/create",
   async (formData, { rejectWithValue }) => {
     try {

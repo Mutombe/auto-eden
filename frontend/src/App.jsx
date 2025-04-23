@@ -7,6 +7,7 @@ import MarketplacePage from './components/marketplace/marketplace';
 import AboutPage from './components/about/about';
 import BuyMyCarPage from './components/buymycar/buymycar';
 import ProfilePage from './components/profile/profile';
+import AdminDashboard from './components/dashboard/adminDashboard';
 
 
 function App() {
@@ -20,6 +21,7 @@ function App() {
         <Route path='/sell' element={< BuyMyCarPage />} />
         <Route path='/about' element={< AboutPage />} />
         <Route path='/profile' element={< ProfilePage/>} />
+        <Route path='/admin' element={< AdminDashboard/>} />
       </Routes>
     </BrowserRouter>
   );

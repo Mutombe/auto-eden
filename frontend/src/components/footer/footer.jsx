@@ -5,14 +5,16 @@ import { useSelector, useDispatch } from 'react-redux';
 import { fetchUserVehicles, deleteVehicle, createVehicle, updateVehicle, toggleVisibility } from '../../redux/slices/vehicleSlice';
 import { fetchUserBids } from '../../redux/slices/bidSlice';
 import { 
-  Tab, Tabs, Button, TextField, 
+  Tab, Tabs, Button, TextField, Dialog, DialogContent, DialogTitle,
   IconButton, Select, MenuItem, Chip, CircularProgress,
   Typography, Box, Grid, Paper, useMediaQuery, useTheme
 } from '@mui/material';
 import { Car, Plus, Edit, Trash, Eye, EyeOff, AlertCircle, Upload } from 'lucide-react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { motion } from 'framer-motion';
-import VehicleDialog from './vehiclemodal';
+
+// Import Footer component
+import Footer from '../components/Footer';
 
 // Create theme with brand colors
 const customTheme = createTheme({
@@ -99,7 +101,7 @@ const DashboardHero = ({ onAddVehicle }) => {
       }}
     >
       <Box 
-        className="max-w-7xl mx-auto pt-10" 
+        className="max-w-7xl mx-auto" 
         sx={{ 
           px: { xs: 2, sm: 4 },
         }}
@@ -118,7 +120,7 @@ const DashboardHero = ({ onAddVehicle }) => {
               fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
             }}
           >
-            Vehicle Dashboard
+            Instant Sale Dashboard
           </Typography>
           
           <Typography 
@@ -171,6 +173,13 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editVehicle, setEditVehicle] = useState(null);
+  const [formData, setFormData] = useState({
+    make: '',
+    model: '',
+    year: new Date().getFullYear(),
+    price: '',
+    listingType: 'marketplace'
+  });
 
   // For responsive design
   const theme = useTheme();
@@ -181,7 +190,7 @@ export default function DashboardPage() {
     dispatch(fetchUserBids());
   }, [dispatch]);
 
-  const handleSubmit = (formData) => {
+  const handleSubmit = () => {
     if (editVehicle) {
       dispatch(updateVehicle({ id: editVehicle.id, data: formData }));
     } else {
@@ -189,16 +198,17 @@ export default function DashboardPage() {
     }
     setShowAddModal(false);
     setEditVehicle(null);
+    resetForm();
   };
 
-  const handleDialogClose = () => {
-    setShowAddModal(false);
-    setEditVehicle(null);
-  };
-
-  const handleEditClick = (vehicle) => {
-    setEditVehicle(vehicle);
-    setShowAddModal(true);
+  const resetForm = () => {
+    setFormData({
+      make: '',
+      model: '',
+      year: new Date().getFullYear(),
+      price: '',
+      listingType: 'marketplace'
+    });
   };
 
   const canEditDelete = (vehicle) => 
@@ -211,6 +221,28 @@ export default function DashboardPage() {
       case 'pending': return 'warning';
       default: return 'default';
     }
+  };
+
+  const handleEditClick = (vehicle) => {
+    setEditVehicle(vehicle);
+    setFormData({
+      make: vehicle.make,
+      model: vehicle.model,
+      year: vehicle.year,
+      price: vehicle.price,
+      listingType: vehicle.listingType
+    });
+    setShowAddModal(true);
+  };
+
+  const handleAddVehicle = () => {
+    setShowAddModal(true);
+  };
+
+  const handleDialogClose = () => {
+    setShowAddModal(false);
+    setEditVehicle(null);
+    resetForm();
   };
 
   const EmptyState = ({ type }) => (
@@ -247,11 +279,11 @@ export default function DashboardPage() {
       <Box sx={{ 
         backgroundColor: 'background.default', 
         minHeight: '100vh',
-        paddingBottom: '20px',
-        marginBottom: '20px'
+        display: 'flex',
+        flexDirection: 'column'
       }}>
         {/* Hero Section */}
-        <DashboardHero onAddVehicle={() => setShowAddModal(true)} />
+        <DashboardHero onAddVehicle={handleAddVehicle} />
         
         {/* Dashboard Content */}
         <Box 
@@ -265,8 +297,8 @@ export default function DashboardPage() {
             mt: { xs: -3, sm: -4 }, // Overlap with hero
             position: 'relative',
             zIndex: 10,
-            paddingTop: '10px',
-            marginTop: '10px'
+            width: { xs: 'auto', md: '100%' },
+            flex: '1 0 auto' // This allows the content to grow but not shrink
           }}
         >
           <Tabs 
@@ -454,16 +486,95 @@ export default function DashboardPage() {
             </Box>
           )}
         </Box>
+        
+        {/* Footer */}
+        <Footer />
       </Box>
 
-      {/* Vehicle Dialog Component */}
-      <VehicleDialog
-        open={showAddModal}
+      <Dialog 
+        open={showAddModal} 
         onClose={handleDialogClose}
-        onSubmit={handleSubmit}
-        editVehicle={editVehicle}
-        isSubmitting={status === 'loading'}
-      />
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          <Typography variant="h5" fontWeight="bold">
+            {editVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box component="form" sx={{ mt: 2, display: 'flex', flexDirection: 'column', gap: 3 }}>
+            <TextField
+              fullWidth
+              label="Make"
+              value={formData.make}
+              onChange={(e) => setFormData({ ...formData, make: e.target.value })}
+              required
+              variant="outlined"
+            />
+            
+            <TextField
+              fullWidth
+              label="Model"
+              value={formData.model}
+              onChange={(e) => setFormData({ ...formData, model: e.target.value })}
+              required
+              variant="outlined"
+            />
+            
+            <TextField
+              fullWidth
+              label="Year"
+              type="number"
+              value={formData.year}
+              onChange={(e) => setFormData({ ...formData, year: e.target.value })}
+              required
+              variant="outlined"
+              InputProps={{ inputProps: { min: 1900, max: new Date().getFullYear() + 1 } }}
+            />
+            
+            <TextField
+              fullWidth
+              label="Price ($)"
+              type="number"
+              value={formData.price}
+              onChange={(e) => setFormData({ ...formData, price: e.target.value })}
+              required
+              variant="outlined"
+              InputProps={{ inputProps: { min: 0 } }}
+            />
+            
+            <Select
+              fullWidth
+              value={formData.listingType}
+              onChange={(e) => setFormData({ ...formData, listingType: e.target.value })}
+              variant="outlined"
+              displayEmpty
+            >
+              <MenuItem value="marketplace">Marketplace Listing</MenuItem>
+              <MenuItem value="instant_sale">Instant Sale</MenuItem>
+            </Select>
+
+            <Box display="flex" gap={2} mt={2}>
+              <Button 
+                variant="outlined" 
+                fullWidth
+                onClick={handleDialogClose}
+              >
+                Cancel
+              </Button>
+              <Button 
+                variant="contained" 
+                fullWidth
+                onClick={handleSubmit}
+                disabled={status === 'loading' || !formData.make || !formData.model || !formData.year || !formData.price}
+              >
+                {editVehicle ? 'Update Vehicle' : 'Add Vehicle'}
+              </Button>
+            </Box>
+          </Box>
+        </DialogContent>
+      </Dialog>
     </ThemeProvider>
   );
 }
