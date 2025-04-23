@@ -17,6 +17,29 @@ class Profile(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Profile"
+
+class Notification(models.Model):
+    NOTIFICATION_TYPES = (
+        ('approval', 'Vehicle Approval'),
+        ('rejection', 'Vehicle Rejection'),
+        ('registration', 'New Registration'),
+        ('instant_sale', 'Instant Sale Upload'),
+        ('bid', 'New Bid'),
+        ('admin_alert', 'Admin Alert'),
+    )
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    notification_type = models.CharField(max_length=20, choices=NOTIFICATION_TYPES)
+    message = models.TextField()
+    related_object_id = models.PositiveIntegerField(null=True, blank=True)
+    is_read = models.BooleanField(default=False)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ['-created_at']
+
+    def __str__(self):
+        return f"{self.get_notification_type_display()} - {self.user.username}"
     
 
 
