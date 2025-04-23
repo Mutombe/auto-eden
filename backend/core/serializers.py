@@ -130,6 +130,21 @@ class VehicleSerializer(serializers.ModelSerializer):
             
         return vehicle
 
+class VehicleReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = ['status', 'rejection_reason']
+        extra_kwargs = {
+            'rejection_reason': {'required': False}
+        }
+
+    def validate(self, data):
+        if data.get('status') == 'rejected' and not data.get('rejection_reason'):
+            raise serializers.ValidationError(
+                "Rejection reason is required when rejecting a vehicle"
+            )
+        return data
+
 class BidSerializer(serializers.ModelSerializer):
     class Meta:
         model = Bid

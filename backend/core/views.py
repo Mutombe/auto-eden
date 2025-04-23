@@ -3,7 +3,7 @@ from rest_framework import viewsets, permissions
 from .models import Vehicle, Bid, Profile
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from .serializers import VehicleSerializer, BidSerializer, ProfileSerializer, UserSerializer
+from .serializers import VehicleReviewSerializer, VehicleSerializer, BidSerializer, ProfileSerializer, UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .permissions import IsOwnerOrAdmin
@@ -72,6 +72,7 @@ class ProfileView(APIView):
         
         serializer = ProfileSerializer(profile)
         return Response(serializer.data)
+    
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
@@ -120,6 +121,38 @@ class VehicleViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
     
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
+    def pending_review(self, request):
+        queryset = self.filter_queryset(
+            self.get_queryset().filter(status='pending')
+        )
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAdminUser])
+    def review(self, request, pk=None):
+        vehicle = self.get_object()
+        serializer = VehicleReviewSerializer(vehicle, data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            
+            if serializer.validated_data.get('status') == 'rejected':
+                # Send rejection notification
+                send_vehicle_rejected_email.delay(
+                    vehicle.owner.email,
+                    vehicle.id,
+                    serializer.validated_data.get('rejection_reason', '')
+                )
+            elif serializer.validated_data.get('status') == 'physically_verified':
+                # Send approval notification
+                send_vehicle_approved_email.delay(
+                    vehicle.owner.email,
+                    vehicle.id
+                )
+            
+            return Response(serializer.data)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
     @action(detail=False, methods=['post'], url_path='create-instant-sale')
     def create_instant_sale(self, request):
         serializer = self.get_serializer(

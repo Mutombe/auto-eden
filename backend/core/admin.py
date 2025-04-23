@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Vehicle, Bid, Profile, VehicleImage
+from .models import User, Vehicle, Bid, Profile, VehicleImage, Notification
 
 class AdminProfileOverview(admin.ModelAdmin):
     list_display = (
@@ -9,6 +9,13 @@ class AdminProfileOverview(admin.ModelAdmin):
     )
     search_fields = ("user",)
 
+class AdminNotificationOverview(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "notification_type",
+    )
+    search_fields = ("user",)
 
 class AdminVehicleOverview(admin.ModelAdmin):
     list_display = (
@@ -41,3 +48,4 @@ admin.site.register(Vehicle, AdminVehicleOverview)
 admin.site.register(Bid, AdminBidOverview)
 admin.site.register(VehicleImage, AdminImageOverview)
 admin.site.register(Profile, AdminProfileOverview)
+admin.site.register(Notification, AdminNotificationOverview)
