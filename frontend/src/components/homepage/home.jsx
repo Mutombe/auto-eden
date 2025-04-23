@@ -37,7 +37,7 @@ export default function HomePage() {
   return (
     <div className="bg-gray-50">
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-black to-red-800 text-white py-16 md:py-24">
+      <div className="relative bg-gradient-to-r from-black to-red-800 text-white py-16 md:py-24 py-40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row md:items-center">
             <div className="md:w-1/2 mb-10 md:mb-0">
