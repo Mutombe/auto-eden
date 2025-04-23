@@ -49,7 +49,9 @@ class Vehicle(models.Model):
         max_digits=10, 
         decimal_places=2,
         verbose_name="Asking Price",
-        help_text="Price you expect for instant sale"
+        help_text="Price you expect for instant sale",
+        blank=True,
+        null=True
     ) # For instant sale
     is_visible = models.BooleanField(default=True)
     status = models.CharField(max_length=20, choices=VEHICLE_STATUS, default='pending')

@@ -15,6 +15,7 @@ class UserSerializer(serializers.ModelSerializer):
             password=validated_data['password']
         )
         return user
+    
 class ProfileSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source="user.username", required=False)
     email = serializers.EmailField(source="user.email", read_only=True)
@@ -56,7 +57,7 @@ class VehicleImageSerializer(serializers.ModelSerializer):
         fields = ['image']
         read_only_fields = ['vehicle']
 
-class VehicleSerializer(serializers.ModelSerializer):
+class VehicleSerializerrs(serializers.ModelSerializer):
     images = VehicleImageSerializer(many=True, read_only=True)
     image_files = serializers.ListField(
         child=serializers.FileField(max_length=100000, allow_empty_file=False),
@@ -78,6 +79,46 @@ class VehicleSerializer(serializers.ModelSerializer):
         if self.context['view'].action == 'create_instant_sale':
             if 'proposed_price' not in data:
                 raise serializers.ValidationError("Price is required for instant sale")
+        return data
+
+    def create(self, validated_data):
+        image_files = validated_data.pop('image_files')
+        vehicle = super().create(validated_data)
+        
+        for image_file in image_files:
+            VehicleImage.objects.create(vehicle=vehicle, image=image_file)
+            
+        return vehicle
+    
+class VehicleSerializer(serializers.ModelSerializer):
+    images = VehicleImageSerializer(many=True, read_only=True)
+    image_files = serializers.ListField(
+        child=serializers.FileField(max_length=100000, allow_empty_file=False),
+        write_only=True,
+        required=True
+    )
+    
+    class Meta:
+        model = Vehicle
+        fields = '__all__'
+        read_only_fields = ['owner', 'status', 'is_visible']
+        extra_kwargs = {
+            'vin': {'required': True},
+            'mileage': {'required': True},
+            'listing_type': {'required': False},
+            'price': {'required': False},  # Not required for instant sale
+            'proposed_price': {'required': False} 
+        }
+
+    def validate(self, data):
+        if data.get('listing_type') == 'marketplace' and not data.get('price'):
+            raise serializers.ValidationError(
+                {"price": "Price is required for marketplace listings"}
+            )
+        if data.get('listing_type') == 'instant_sale' and not data.get('proposed_price'):
+            raise serializers.ValidationError(
+                {"proposed_price": "Price is required for instant sale"}
+            )
         return data
 
     def create(self, validated_data):
