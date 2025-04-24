@@ -5,8 +5,8 @@ from .settings import BASE_DIR
 # SECURITY SETTINGS
 ALLOWED_HOSTS = [
     os.environ.get('RENDER_EXTERNAL_HOSTNAME'),
-    'taskoba-backend.onrender.com',
-    'errandx.onrender.com',
+    'auto-eden-backend.onrender.com',
+    'auto-eden.onrender.com',
 ]
 
 DEBUG = False
@@ -14,8 +14,8 @@ SECRET_KEY = SECRET_KEY
 
 # CORS SETTINGS
 CORS_ALLOWED_ORIGINS = [
-    'https://errandx.onrender.com',
-    'https://www.errandx.onrender.com'
+    'https://auto-eden.onrender.com',
+    'https://www.auto-eden.onrender.com'
     'http://localhost:5173',
 ]
 
@@ -50,8 +50,8 @@ CORS_EXPOSE_HEADERS = [
 ]
 
 CSRF_TRUSTED_ORIGINS = [
-    'https://errandx.onrender.com',
-    'https://taskoba-backend.onrender.com'
+    'https://auto-eden.onrender.com',
+    'https://auto-eden-backend.onrender.com'
 ]
 
 # MIDDLEWARE CONFIGURATION
