@@ -344,6 +344,7 @@ export const Navbar = () => {
   const [authModal, setAuthModal] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const isAdmin = user?.is_superuser;
 
   // Handle scroll effect for navbar
   useEffect(() => {
@@ -395,6 +396,13 @@ export const Navbar = () => {
                   My Dashboard
                 </Link>
               )}
+              {isAdmin && (
+                <Link to="/admin" className={`hover:text-red-600 font-medium transition-colors ${
+                  scrolled ? "text-gray-800" : "text-gray-900"
+                }`}>
+                  Admin Dashboard
+                </Link>
+              )}
             </div>
           </div>
 
@@ -412,7 +420,7 @@ export const Navbar = () => {
             </IconButton>
 
             <div className="hidden md:flex items-center gap-3">
-              <IconButton 
+              {/*<IconButton 
                 sx={{
                   color: scrolled ? "#1f2937" : "#ffffff",
                   '&:hover': {
@@ -421,7 +429,7 @@ export const Navbar = () => {
                 }}
               >
                 <Search />
-              </IconButton>
+              </IconButton>*/}
               
               {isAuthenticated ? (
                 <>
@@ -442,8 +450,8 @@ export const Navbar = () => {
                       startIcon={<LogOut className="w-5 h-5" />}
                       onClick={() => dispatch(logout())}
                       sx={{
-                        color: scrolled ? "#dc2626" : "#ffffff",
-                        borderColor: scrolled ? "#dc2626" : "#ffffff",
+                        color: scrolled ? "#dc2626" : "#dc2626",
+                        borderColor: scrolled ? "#dc2626" : "#dc2626",
                         '&:hover': {
                           borderColor: "#b91c1c",
                           backgroundColor: scrolled ? "rgba(220, 38, 38, 0.04)" : "rgba(255, 255, 255, 0.1)",
