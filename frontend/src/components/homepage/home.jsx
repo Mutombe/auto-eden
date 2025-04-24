@@ -3,8 +3,10 @@ import React from "react";
 import { motion } from "framer-motion";
 import { Car, ShieldCheck, DollarSign, ArrowRight, Star, Clock, Shield } from "lucide-react";
 import { Button } from "@mui/material";
+import { useNavigate } from "react-router-dom";
 
 export default function HomePage() {
+  const navigate = useNavigate();
   const features = [
     {
       icon: <ShieldCheck className="w-8 h-8 text-red-600" />,
@@ -65,12 +67,14 @@ export default function HomePage() {
                 <Button
                   variant="contained"
                   size="large"
+                  onClick={() => navigate("/marketplace")}
                   className="!bg-red-600 !text-white !hover:bg-red-700 !rounded-lg !px-6 !py-3 !font-medium"
                   endIcon={<ArrowRight />}
                 >
                   Browse Marketplace
                 </Button>
                 <Button
+                  onClick={() => navigate("/sell")}
                   variant="outlined"
                   size="large"
                   className="!text-white !border-white !rounded-lg !px-6 !py-3 !hover:bg-white/10 !font-medium"
@@ -180,8 +184,10 @@ export default function HomePage() {
             className="flex justify-between items-center mb-10"
           >
             <h2 className="text-3xl font-bold text-gray-900">Featured Listings</h2>
+        
             <Button
               variant="text"
+              onClick={() => navigate("/marketplace")}
               className="!text-red-600 !font-medium"
               endIcon={<ArrowRight className="w-5 h-5" />}
             >
@@ -231,6 +237,7 @@ export default function HomePage() {
                   
                   <Button
                     fullWidth
+                    onClick={() => navigate(`/marketplace`)}
                     variant="contained"
                     className="!bg-red-600 !text-white !hover:bg-red-700 !rounded-lg !py-2.5 !font-medium"
                     startIcon={<Car className="w-5 h-5" />}
@@ -269,6 +276,7 @@ export default function HomePage() {
           >
             <Button
               variant="contained"
+              onClick={() => navigate("/marketplace")}
               size="large"
               className="!bg-red-600 !text-white !hover:bg-red-700 !rounded-lg !px-8 !py-3 !font-medium"
             >
@@ -277,6 +285,7 @@ export default function HomePage() {
             <Button
               variant="outlined"
               size="large"
+              onClick={() => navigate("/about")}
               className="!text-white !border-white !rounded-lg !px-8 !py-3 !hover:bg-white/10 !font-medium"
             >
               Learn More
