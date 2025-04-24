@@ -49,14 +49,11 @@ MIDDLEWARE = [
 CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'https://auto-eden.onrender.com',
-    'https://auto-eden-backend.onrender.com'
     'http://127.0.0.1:5173'
 ]
 
 CORS_TRUSTED_ORIGINS = [
     'https://auto-eden.onrender.com/',
-    'https://www.auto-eden.onrender.com/',
-    'https://auto-eden-backend.onrender.com/',
     'http://localhost:5173',
 ]
 
