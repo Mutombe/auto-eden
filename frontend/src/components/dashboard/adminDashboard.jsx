@@ -48,7 +48,7 @@ const DashboardHero = ({ onAddVehicle }) => {
               fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
             }}
           >
-            Welcome to AutoEden Admin Dashboard
+            Auto Eden Admin Dashboard
           </Typography>
           
           <Typography 
