@@ -1,3 +1,4 @@
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { deleteVehicle,   fetchPendingReview, 
@@ -9,7 +10,7 @@ import {
 } from 'lucide-react';
 import { 
   Tabs, Tab, Chip, Button, 
-  Dialog, TextField, Alert, Badge 
+  Dialog, TextField, Alert, Badge, Select, MenuItem
 } from '@mui/material';
 import { DataGrid } from '@mui/x-data-grid';
 

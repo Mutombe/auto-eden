@@ -26,10 +26,10 @@ export const fetchPendingReview = createAsyncThunk(
 );
 
 export const fetchAllVehicles = createAsyncThunk(
-  'vehicles/fetchAll',
+  'vehicles/fetchAllVehicles',
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get('/api/vehicles/',);
+      const { data } = await api.get('/api/vehicles/',);
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -41,7 +41,7 @@ export const reviewVehicle = createAsyncThunk(
   'vehicles/review',
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await axios.patch(
+      const response = await api.patch(
         `/api/vehicles/${id}/review/`,
         data,
       );
@@ -178,6 +178,8 @@ const vehicleSlice = createSlice({
   initialState: {
     items: [],
     userVehicles: [],
+    allVehicles: [],
+    pendingVehicles: [],
     loading: false,
     error: null,
   },
@@ -197,6 +199,15 @@ const vehicleSlice = createSlice({
       })
       .addCase(fetchMarketplace.fulfilled, (state, action) => {
         state.items = action.payload;
+      })
+      .addCase(fetchInstantSaleVehicles.fulfilled, (state, action) => {
+        state.instantSaleVehicles = action.payload; 
+      })
+      .addCase(fetchPendingReview.fulfilled, (state, action) => {
+        state.pendingVehicles = action.payload;
+      })
+      .addCase(fetchAllVehicles.fulfilled, (state, action) => {
+        state.allVehicles = action.payload;
       })
       .addCase(createVehicle.pending, (state) => {
         state.loading = true;
