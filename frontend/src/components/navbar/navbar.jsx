@@ -33,6 +33,28 @@ import {
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 
+export function AuthHeader({ view }) {
+  return (
+    <div className="text-center">
+      <div className="mx-auto w-16 h-16 mb-4">
+        <img 
+          src="/logo.png" 
+          alt="Auto Eden Logo" 
+          className="rounded-2xl w-full h-full"
+        />
+      </div>
+      <h2 className="text-2xl font-bold text-gray-900 mb-2">
+        {view === "login" ? "Welcome Back!" : "Join Zim-Rec"}
+      </h2>
+      <p className="text-gray-600">
+        {view === "login"
+          ? "Sign in to continue to your account"
+          : "Create your free REC trading account"}
+      </p>
+    </div>
+  );
+}
+
 export const AuthModals = ({ openType, onClose }) => {
   const dispatch = useDispatch();
   const { status, error } = useSelector((state) => state.auth);
@@ -123,9 +145,13 @@ export const AuthModals = ({ openType, onClose }) => {
           style={{ backgroundColor: "#f9fafb" }}
         >
           <div className="text-center">
-            <div className="animate-bounce mx-auto w-fit p-3 bg-gradient-to-r from-red-600 to-red-800 rounded-2xl mb-4">
-              <Car className="text-white w-8 h-8" />
-            </div>
+          <div className="mx-auto w-30 h-16 mb-4">
+        <img 
+          src="/logo.png" 
+          alt="Auto Eden Logo" 
+          className="rounded-2xl w-full h-full"
+        />
+      </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               {view === "login" ? "Welcome Back!" : "Join Auto Eden"}
             </h2>
@@ -296,6 +322,22 @@ export const AuthModals = ({ openType, onClose }) => {
   );
 };
 
+export function Logo() {
+  return (
+    <div className="flex items-center">
+      <Link to="/" className="flex-shrink-0 flex items-center">
+        <div className="w-15 h-15 mr-2 mt-8">
+          <img 
+            src="/logo.png" 
+            alt="Auto Eden Logo" 
+            className="rounded-sm"
+          />
+        </div>
+      </Link>
+    </div>
+  );
+}
+
 export const Navbar = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
@@ -326,12 +368,7 @@ export const Navbar = () => {
           {/* Left Section */}
           <div className="flex items-center">
             <Link to="/" className="flex-shrink-0 flex items-center">
-              <div className="bg-red-600 p-2 rounded-lg">
-                <Car className="h-6 w-6 text-white" />
-              </div>
-              <span className={`ml-2 text-2xl font-bold ${scrolled ? "text-black" : "text-white"}`}>
-                Auto Eden
-              </span>
+              <Logo />
             </Link>
             
             {/* Desktop Navigation */}
