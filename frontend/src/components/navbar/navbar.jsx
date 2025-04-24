@@ -361,7 +361,7 @@ export const Navbar = () => {
 
   return (
     <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-      scrolled ? "bg-white shadow-md" : "bg-transparent"
+      scrolled ? "bg-white shadow-md" : "bg-gray-100"
     }`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20">
@@ -374,23 +374,23 @@ export const Navbar = () => {
             {/* Desktop Navigation */}
             <div className="hidden md:flex md:items-center md:ml-10 space-x-8">
               <Link to="/marketplace" className={`hover:text-red-600 font-medium transition-colors ${
-                scrolled ? "text-gray-800" : "text-white"
+                scrolled ? "text-gray-800" : "text-gray-900"
               }`}>
                 Marketplace
               </Link>
               <Link to="/sell" className={`hover:text-red-600 font-medium transition-colors ${
-                scrolled ? "text-gray-800" : "text-white"
+                scrolled ? "text-gray-800" : "text-gray-900"
               }`}>
                 Sell Your Car
               </Link>
               <Link to="/about" className={`hover:text-red-600 font-medium transition-colors ${
-                scrolled ? "text-gray-800" : "text-white"
+                scrolled ? "text-gray-800" : "text-gray-900"
               }`}>
                 About Us
               </Link>
               {isAuthenticated && (
                 <Link to="/dashboard" className={`hover:text-red-600 font-medium transition-colors ${
-                  scrolled ? "text-gray-800" : "text-white"
+                  scrolled ? "text-gray-800" : "text-gray-900"
                 }`}>
                   My Dashboard
                 </Link>
@@ -400,11 +400,12 @@ export const Navbar = () => {
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
-            <IconButton 
-              className="md:hidden" 
+          <IconButton 
+              className="md:hidden !flex" // Changed to !flex to ensure it shows on mobile
               onClick={() => setMobileMenuOpen(true)}
               sx={{
-                color: scrolled ? "#1f2937" : "#ffffff"
+                color: scrolled ? "#1f2937" : "#1f2937",
+                display: { xs: 'flex', md: 'none' } // MUI way to handle responsive display
               }}
             >
               <Menu />
@@ -461,8 +462,8 @@ export const Navbar = () => {
                     startIcon={<LogIn className="w-5 h-5" />}
                     onClick={() => setAuthModal("login")}
                     sx={{
-                      color: scrolled ? "#dc2626" : "#ffffff",
-                      borderColor: scrolled ? "#dc2626" : "#ffffff",
+                      color: scrolled ? "#dc2626" : "#dc2626",
+                      borderColor: scrolled ? "#dc2626" : "#dc2626",
                       '&:hover': {
                         borderColor: "#b91c1c",
                         backgroundColor: scrolled ? "rgba(220, 38, 38, 0.04)" : "rgba(255, 255, 255, 0.1)",
@@ -495,21 +496,20 @@ export const Navbar = () => {
 
       {/* Mobile Menu */}
       <AnimatePresence>
-        {mobileMenuOpen && (
+      {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className="md:hidden fixed inset-x-0 top-0 z-50 bg-white shadow-lg"
+            style={{ display: { xs: 'block', md: 'none' } }} // Ensure it's hidden on desktop
           >
             <div className="px-4 pt-5 pb-6">
               <div className="flex items-center justify-between mb-6">
-                <div className="flex items-center">
-                  <div className="bg-red-600 p-2 rounded-lg">
-                    <Car className="h-6 w-6 text-white" />
-                  </div>
-                  <span className="ml-2 text-xl font-bold text-gray-900">Auto Eden</span>
-                </div>
+  
+                <Link to="/" className="flex items-center">
+              <Logo />
+            </Link>
                 <IconButton onClick={() => setMobileMenuOpen(false)}>
                   <X className="text-gray-600" />
                 </IconButton>

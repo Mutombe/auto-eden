@@ -1,35 +1,40 @@
-import React from 'react';
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { deleteVehicle,   fetchPendingReview, 
-    reviewVehicle,
-    fetchAllVehicles, } from '../../redux/slices/vehicleSlice';
 import { 
-  CheckCircle, XCircle, Search, Sliders, 
-  Car, DollarSign, Clock, AlertCircle 
+  deleteVehicle,
+  fetchPendingReview,
+  reviewVehicle,
+  fetchAllVehicles
+} from '../../redux/slices/vehicleSlice';
+import {
+  CheckCircle, XCircle, Search, Sliders,
+  Car, AlertCircle, ChevronDown, Filter, MoreVertical, 
+  Download, Trash2, Eye, X
 } from 'lucide-react';
-import { 
-  Tabs, Tab, Chip, Button, 
-  Dialog, TextField, Alert, Badge, Select, MenuItem
-} from '@mui/material';
-import { DataGrid } from '@mui/x-data-grid';
 
 export default function AdminDashboard() {
   const dispatch = useDispatch();
-  const { 
-    pendingVehicles, 
+  const {
+    pendingVehicles,
     allVehicles,
-    status, 
-    error 
+    status,
+    error
   } = useSelector((state) => state.vehicles);
+  
   const [activeTab, setActiveTab] = useState(0);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+  const [selectedRows, setSelectedRows] = useState([]);
+  const [filterOpen, setFilterOpen] = useState(false);
+  const [showActions, setShowActions] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
   const [filters, setFilters] = useState({
     search: '',
     listingType: 'all',
     status: 'pending'
   });
+
+  const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     dispatch(fetchPendingReview());
@@ -49,309 +54,534 @@ export default function AdminDashboard() {
     });
   };
 
-  const columns = [
-    { 
-      field: 'id', 
-      headerName: 'ID', 
-      width: 80 
-    },
-    { 
-      field: 'make', 
-      headerName: 'Make', 
-      width: 120 
-    },
-    { 
-      field: 'model', 
-      headerName: 'Model', 
-      width: 150 
-    },
-    { 
-      field: 'owner', 
-      headerName: 'Owner', 
-      width: 180,
-      valueGetter: (params) => params.row.owner?.username || 'N/A'
-    },
-    { 
-      field: 'listing_type', 
-      headerName: 'Type', 
-      width: 150,
-      renderCell: (params) => (
-        <Chip 
-          label={params.value} 
-          color={params.value === 'marketplace' ? 'primary' : 'secondary'}
-          variant="outlined"
-        />
-      )
-    },
-    { 
-      field: 'status', 
-      headerName: 'Status', 
-      width: 180,
-      renderCell: (params) => {
-        const statusMap = {
-          pending: { color: 'default', label: 'Pending' },
-          digitally_verified: { color: 'info', label: 'Digitally Verified' },
-          physically_verified: { color: 'success', label: 'Verified' },
-          rejected: { color: 'error', label: 'Rejected' }
-        };
-        const statusInfo = statusMap[params.value] || statusMap.pending;
-        return <Chip color={statusInfo.color} label={statusInfo.label} />;
-      }
-    },
-    { 
-      field: 'price', 
-      headerName: 'Price', 
-      width: 150,
-      valueGetter: (params) => 
-        `$${params.row.price?.toLocaleString() || params.row.proposed_price?.toLocaleString()}`
-    },
-    { 
-      field: 'actions', 
-      headerName: 'Actions', 
-      width: 250,
-      renderCell: (params) => (
-        <div className="flex gap-2">
-          <Button
-            variant="contained"
-            color="success"
-            size="small"
-            startIcon={<CheckCircle size={16} />}
-            onClick={() => setSelectedVehicle(params.row)}
-          >
-            Approve
-          </Button>
-          <Button
-            variant="outlined"
-            color="error"
-            size="small"
-            startIcon={<XCircle size={16} />}
-            onClick={() => setSelectedVehicle(params.row)}
-          >
-            Reject
-          </Button>
-          <Button
-            variant="outlined"
-            color="warning"
-            size="small"
-            onClick={() => dispatch(deleteVehicle(params.row.id))}
-          >
-            Delete
-          </Button>
-        </div>
-      )
+  const handleStatusClass = (status) => {
+    switch(status) {
+      case 'pending': return 'bg-gray-200 text-gray-700';
+      case 'digitally_verified': return 'bg-blue-100 text-blue-700';
+      case 'physically_verified': return 'bg-green-100 text-green-700';
+      case 'rejected': return 'bg-red-100 text-red-700';
+      default: return 'bg-gray-200 text-gray-700';
     }
-  ];
+  };
+
+  const handleListingTypeClass = (type) => {
+    return type === 'marketplace' ? 'bg-black text-white' : 'bg-red-600 text-white';
+  };
+
+  const getDisplayData = () => {
+    let displayData = activeTab === 0 ? pendingVehicles || [] : allVehicles || [];
+    
+    // Apply filters
+    if (activeTab === 1) {
+      displayData = displayData.filter(vehicle => {
+        const matchesSearch = filters.search === '' || 
+          `${vehicle.make} ${vehicle.model}`.toLowerCase().includes(filters.search.toLowerCase());
+        const matchesType = filters.listingType === 'all' || 
+          vehicle.listing_type === filters.listingType;
+        const matchesStatus = filters.status === 'all' || 
+          vehicle.status === filters.status;
+        return matchesSearch && matchesType && matchesStatus;
+      });
+    }
+    
+    // Pagination
+    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+    const endIndex = startIndex + ITEMS_PER_PAGE;
+    return displayData.slice(startIndex, endIndex);
+  };
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Admin Dashboard</h1>
-      
-      <div className="bg-white p-4 rounded-lg shadow-sm mb-6">
-        <div className="flex items-center gap-4 mb-4">
-          <Sliders className="text-gray-600" />
-          <h2 className="text-xl font-semibold">Filters</h2>
+    <div className="min-h-screen bg-gray-100">
+      {/* Top header */}
+      <div className="bg-black text-white p-4 shadow-md">
+        <div className="container mx-auto flex justify-between items-center">
+          <h1 className="text-2xl font-bold">AutoEden Admin</h1>
+          <div className="flex items-center gap-3">
+            <span className="hidden md:inline">Administrator</span>
+            <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center">
+              <span className="font-semibold">A</span>
+            </div>
+          </div>
         </div>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <TextField
-            fullWidth
-            label="Search"
-            value={filters.search}
-            onChange={(e) => setFilters({...filters, search: e.target.value})}
-            InputProps={{
-              startAdornment: <Search className="w-4 h-4 mr-2 text-gray-400" />
-            }}
+      </div>
+
+      <div className="container mx-auto p-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <h1 className="text-2xl font-bold mb-4 md:mb-0">Vehicle Management Dashboard</h1>
+          
+          <div className="flex gap-2 self-end md:self-auto">
+            <button className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md flex items-center gap-2 hover:bg-gray-50">
+              <Download size={16} />
+              <span className="hidden md:inline">Export</span>
+            </button>
+            <button className="bg-red-600 text-white px-3 py-2 rounded-md flex items-center gap-2 hover:bg-red-700">
+              <Car size={16} />
+              <span>Add Vehicle</span>
+            </button>
+          </div>
+        </div>
+
+        {/* Stats cards */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <StatCard
+            title="Total Vehicles"
+            value={allVehicles?.length || 0}
+            icon={<Car size={20} />}
+            bgColor="bg-white"
+            textColor="text-black"
+            borderColor="border-l-4 border-black"
           />
+          <StatCard
+            title="Pending Review"
+            value={pendingVehicles?.length || 0}
+            icon={<AlertCircle size={20} />}
+            bgColor="bg-white"
+            textColor="text-red-600"
+            borderColor="border-l-4 border-red-600"
+          />
+          <StatCard
+            title="Verified"
+            value={allVehicles?.filter(v => v.status === 'physically_verified').length || 0}
+            icon={<CheckCircle size={20} />}
+            bgColor="bg-white"
+            textColor="text-green-600"
+            borderColor="border-l-4 border-green-600"
+          />
+          <StatCard
+            title="Rejected"
+            value={allVehicles?.filter(v => v.status === 'rejected').length || 0}
+            icon={<XCircle size={20} />}
+            bgColor="bg-white"
+            textColor="text-gray-600"
+            borderColor="border-l-4 border-gray-400"
+          />
+        </div>
+
+        {/* Tabs and Filters */}
+        <div className="bg-white rounded-lg shadow-sm mb-6">
+          <div className="flex flex-col md:flex-row items-start md:items-center justify-between p-4 border-b border-gray-200">
+            <div className="flex gap-4 mb-4 md:mb-0 overflow-x-auto w-full md:w-auto">
+              <TabButton
+                active={activeTab === 0}
+                onClick={() => setActiveTab(0)}
+                count={pendingVehicles?.length}
+              >
+                Pending Review
+              </TabButton>
+              <TabButton
+                active={activeTab === 1}
+                onClick={() => setActiveTab(1)}
+                count={allVehicles?.length}
+              >
+                All Vehicles
+              </TabButton>
+            </div>
+            
+            <div className="relative w-full md:w-auto">
+              <div className="flex items-center gap-2">
+                <div className="relative flex-grow">
+                  <input
+                    type="text"
+                    placeholder="Search vehicles..."
+                    value={filters.search}
+                    onChange={(e) => setFilters({...filters, search: e.target.value})}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-md w-full"
+                  />
+                  <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
+                </div>
+                <button 
+                  onClick={() => setFilterOpen(!filterOpen)}
+                  className={`border ${filterOpen ? 'border-red-600 text-red-600' : 'border-gray-300 text-gray-700'} px-3 py-2 rounded-md flex items-center gap-2`}
+                >
+                  <Filter size={16} />
+                  <span className="hidden md:inline">Filters</span>
+                </button>
+              </div>
+              
+              {/* Filter dropdown */}
+              {filterOpen && (
+                <div className="absolute right-0 mt-2 bg-white border border-gray-200 rounded-md shadow-lg z-10 p-4 w-full md:w-80">
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="font-semibold">Filters</h3>
+                    <button onClick={() => setFilterOpen(false)} className="text-gray-500 hover:text-gray-700">
+                      <X size={16} />
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Listing Type</label>
+                      <select
+                        value={filters.listingType}
+                        onChange={(e) => setFilters({...filters, listingType: e.target.value})}
+                        className="w-full border border-gray-300 rounded-md p-2"
+                      >
+                        <option value="all">All Types</option>
+                        <option value="marketplace">Marketplace</option>
+                        <option value="instant_sale">Instant Sale</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
+                      <select
+                        value={filters.status}
+                        onChange={(e) => setFilters({...filters, status: e.target.value})}
+                        className="w-full border border-gray-300 rounded-md p-2"
+                      >
+                        <option value="all">All Statuses</option>
+                        <option value="pending">Pending</option>
+                        <option value="digitally_verified">Digitally Verified</option>
+                        <option value="physically_verified">Verified</option>
+                        <option value="rejected">Rejected</option>
+                      </select>
+                    </div>
+                    <div className="flex justify-end gap-2 pt-2">
+                      <button 
+                        onClick={() => {
+                          setFilters({
+                            search: '',
+                            listingType: 'all',
+                            status: 'pending'
+                          });
+                        }} 
+                        className="text-gray-600 px-3 py-1 border border-gray-300 rounded-md"
+                      >
+                        Reset
+                      </button>
+                      <button 
+                        onClick={() => setFilterOpen(false)} 
+                        className="bg-red-600 text-white px-3 py-1 rounded-md"
+                      >
+                        Apply
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
           
-          <Select
-            fullWidth
-            label="Listing Type"
-            value={filters.listingType}
-            onChange={(e) => setFilters({...filters, listingType: e.target.value})}
-          >
-            <MenuItem value="all">All Types</MenuItem>
-            <MenuItem value="marketplace">Marketplace</MenuItem>
-            <MenuItem value="instant_sale">Instant Sale</MenuItem>
-          </Select>
+          {error && (
+            <div className="bg-red-50 border-l-4 border-red-600 p-4 m-4">
+              <div className="flex items-center">
+                <AlertCircle className="text-red-600 mr-2" size={16} />
+                <p className="text-red-800">{error}</p>
+              </div>
+            </div>
+          )}
+
+          {/* Custom Data Table */}
+          <div className="overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Vehicle
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Owner
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Type
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Status
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Price
+                  </th>
+                  <th scope="col" className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    Actions
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {status === 'loading' ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-4 text-center text-gray-500">
+                      Loading...
+                    </td>
+                  </tr>
+                ) : getDisplayData().length === 0 ? (
+                  <tr>
+                    <td colSpan={6} className="px-4 py-4 text-center text-gray-500">
+                      No vehicles found
+                    </td>
+                  </tr>
+                ) : (
+                  getDisplayData().map((vehicle) => (
+                    <tr key={vehicle.id} className="hover:bg-gray-50">
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <div className="flex-shrink-0 h-10 w-10 bg-gray-200 rounded-md flex items-center justify-center">
+                            <Car size={20} className="text-gray-500" />
+                          </div>
+                          <div className="ml-4">
+                            <div className="text-sm font-medium text-gray-900">
+                              {vehicle.make} {vehicle.model}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              ID: {vehicle.id}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{vehicle.owner?.username || 'N/A'}</div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${handleListingTypeClass(vehicle.listing_type)}`}>
+                          {vehicle.listing_type === 'marketplace' ? 'Marketplace' : 'Instant Sale'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <span className={`px-2 py-1 text-xs rounded-full ${handleStatusClass(vehicle.status)}`}>
+                          {vehicle.status === 'physically_verified' ? 'Verified' :
+                           vehicle.status === 'digitally_verified' ? 'Digitally Verified' :
+                           vehicle.status === 'rejected' ? 'Rejected' : 'Pending'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-sm text-gray-900">
+                        ${vehicle.price?.toLocaleString() || vehicle.proposed_price?.toLocaleString()}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2 relative">
+                          {activeTab === 0 && (
+                            <>
+                              <button
+                                onClick={() => setSelectedVehicle(vehicle)}
+                                className="bg-green-600 text-white px-2 py-1 rounded-md flex items-center gap-1 text-xs"
+                              >
+                                <CheckCircle size={12} />
+                                <span className="hidden sm:inline">Approve</span>
+                              </button>
+                              <button
+                                onClick={() => setSelectedVehicle(vehicle)}
+                                className="bg-red-600 text-white px-2 py-1 rounded-md flex items-center gap-1 text-xs"
+                              >
+                                <XCircle size={12} />
+                                <span className="hidden sm:inline">Reject</span>
+                              </button>
+                            </>
+                          )}
+                          <button
+                            onClick={() => setShowActions(showActions === vehicle.id ? null : vehicle.id)}
+                            className="text-gray-500 hover:text-gray-700"
+                          >
+                            <MoreVertical size={16} />
+                          </button>
+                          
+                          {showActions === vehicle.id && (
+                            <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+                              <ul className="py-1">
+                                <li>
+                                  <button 
+                                    className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                    onClick={() => {/* View details action */}}
+                                  >
+                                    <Eye size={14} />
+                                    View Details
+                                  </button>
+                                </li>
+                                <li>
+                                  <button 
+                                    className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+                                    onClick={() => dispatch(deleteVehicle(vehicle.id))}
+                                  >
+                                    <Trash2 size={14} />
+                                    Delete
+                                  </button>
+                                </li>
+                              </ul>
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
+          </div>
           
-          <Select
-            fullWidth
-            label="Status"
-            value={filters.status}
-            onChange={(e) => setFilters({...filters, status: e.target.value})}
-          >
-            <MenuItem value="all">All Statuses</MenuItem>
-            <MenuItem value="pending">Pending</MenuItem>
-            <MenuItem value="digitally_verified">Digitally Verified</MenuItem>
-            <MenuItem value="physically_verified">Verified</MenuItem>
-            <MenuItem value="rejected">Rejected</MenuItem>
-          </Select>
+          {/* Pagination */}
+          <div className="px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
+            <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm text-gray-700">
+                  Showing <span className="font-medium">
+                    {Math.min((currentPage - 1) * ITEMS_PER_PAGE + 1, (activeTab === 0 ? pendingVehicles?.length : allVehicles?.length) || 0)}
+                  </span> to <span className="font-medium">
+                    {Math.min(currentPage * ITEMS_PER_PAGE, (activeTab === 0 ? pendingVehicles?.length : allVehicles?.length) || 0)}
+                  </span> of <span className="font-medium">
+                    {(activeTab === 0 ? pendingVehicles?.length : allVehicles?.length) || 0}
+                  </span> results
+                </p>
+              </div>
+              <div>
+                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                  <button
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium ${
+                      currentPage === 1 ? 'text-gray-300 cursor-not-allowed' : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    Previous
+                  </button>
+                  <button
+                    onClick={() => setCurrentPage(currentPage + 1)}
+                    disabled={currentPage * ITEMS_PER_PAGE >= (activeTab === 0 ? pendingVehicles?.length : allVehicles?.length)}
+                    className={`relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium ${
+                      currentPage * ITEMS_PER_PAGE >= (activeTab === 0 ? pendingVehicles?.length : allVehicles?.length) 
+                        ? 'text-gray-300 cursor-not-allowed' 
+                        : 'text-gray-500 hover:bg-gray-50'
+                    }`}
+                  >
+                    Next
+                  </button>
+                </nav>
+              </div>
+            </div>
+            <div className="flex items-center justify-between sm:hidden">
+              <button
+                onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                disabled={currentPage === 1}
+                className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                  currentPage === 1 ? 'text-gray-300 bg-gray-50 cursor-not-allowed' : 'text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+              >
+                Previous
+              </button>
+              <div className="text-sm text-gray-700">
+                Page {currentPage}
+              </div>
+              <button
+                onClick={() => setCurrentPage(currentPage + 1)}
+                disabled={currentPage * ITEMS_PER_PAGE >= (activeTab === 0 ? pendingVehicles?.length : allVehicles?.length)}
+                className={`relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md ${
+                  currentPage * ITEMS_PER_PAGE >= (activeTab === 0 ? pendingVehicles?.length : allVehicles?.length) 
+                    ? 'text-gray-300 bg-gray-50 cursor-not-allowed' 
+                    : 'text-gray-700 bg-white hover:bg-gray-50'
+                }`}
+              >
+                Next
+              </button>
+            </div>
+          </div>
         </div>
       </div>
 
-      <Tabs value={activeTab} onChange={(e, val) => setActiveTab(val)}>
-        <Tab label="Pending Review" icon={<Badge badgeContent={pendingVehicles?.length} color="primary" />} />
-        <Tab label="All Vehicles" icon={<Badge badgeContent={allVehicles?.length} color="secondary" />} />
-        <Tab label="Statistics" />
-      </Tabs>
-
-      {error && (
-        <Alert severity="error" className="my-4">
-          {error}
-        </Alert>
+      {/* Review Dialog */}
+      {selectedVehicle && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg max-w-md w-full">
+            <div className="p-6">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-xl font-bold">
+                  Review {selectedVehicle?.make} {selectedVehicle?.model}
+                </h2>
+                <button onClick={() => setSelectedVehicle(null)} className="text-gray-500 hover:text-gray-700">
+                  <X size={20} />
+                </button>
+              </div>
+              
+              <div className="space-y-3 mb-6">
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Owner:</span>
+                  <span className="font-medium">{selectedVehicle?.owner?.username || 'N/A'}</span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Type:</span>
+                  <span className={`px-2 py-1 text-xs rounded-full ${
+                    handleListingTypeClass(selectedVehicle?.listing_type)
+                  }`}>
+                    {selectedVehicle?.listing_type === 'marketplace' ? 'Marketplace' : 'Instant Sale'}
+                  </span>
+                </div>
+                <div className="flex justify-between py-2 border-b border-gray-100">
+                  <span className="text-gray-600">Price:</span>
+                  <span className="font-semibold">
+                    ${selectedVehicle?.price?.toLocaleString() || selectedVehicle?.proposed_price?.toLocaleString()}
+                  </span>
+                </div>
+              </div>
+              
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Rejection Reason (required for rejection)
+                </label>
+                <textarea
+                  rows={4}
+                  value={rejectionReason}
+                  onChange={(e) => setRejectionReason(e.target.value)}
+                  placeholder="Provide reason for rejection"
+                  className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                />
+              </div>
+              
+              <div className="flex justify-end gap-3">
+                <button 
+                  onClick={() => setSelectedVehicle(null)}
+                  className="px-4 py-2 border border-gray-300 rounded-md text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button 
+                  onClick={() => handleReview('reject')}
+                  disabled={!rejectionReason}
+                  className={`px-4 py-2 rounded-md flex items-center gap-2 ${
+                    !rejectionReason ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-red-600 text-white hover:bg-red-700'
+                  }`}
+                >
+                  <XCircle size={16} />
+                  Reject
+                </button>
+                <button 
+                  onClick={() => handleReview('approve')}
+                  className="px-4 py-2 bg-green-600 text-white rounded-md flex items-center gap-2 hover:bg-green-700"
+                >
+                  <CheckCircle size={16} />
+                  Approve
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
-
-      <div className="mt-4">
-        {activeTab === 0 && (
-          <div className="bg-white rounded-lg shadow-sm">
-            <DataGrid
-              rows={pendingVehicles}
-              columns={columns}
-              loading={status === 'loading'}
-              pageSize={10}
-              rowsPerPageOptions={[10]}
-              autoHeight
-            />
-          </div>
-        )}
-        
-        {activeTab === 1 && (
-          <div className="bg-white rounded-lg shadow-sm">
-            <DataGrid
-              rows={allVehicles?.filter(vehicle => {
-                const matchesSearch = filters.search === '' || 
-                  `${vehicle.make} ${vehicle.model}`.toLowerCase().includes(filters.search.toLowerCase());
-                const matchesType = filters.listingType === 'all' || 
-                  vehicle.listing_type === filters.listingType;
-                const matchesStatus = filters.status === 'all' || 
-                  vehicle.status === filters.status;
-                return matchesSearch && matchesType && matchesStatus;
-              })}
-              columns={columns}
-              loading={status === 'loading'}
-              pageSize={10}
-              rowsPerPageOptions={[10]}
-              autoHeight
-            />
-          </div>
-        )}
-        
-        {activeTab === 2 && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <StatCard 
-              icon={<Car className="w-8 h-8" />}
-              title="Total Vehicles"
-              value={allVehicles?.length || 0}
-              color="bg-blue-100 text-blue-600"
-            />
-            <StatCard 
-              icon={<CheckCircle className="w-8 h-8" />}
-              title="Verified"
-              value={allVehicles?.filter(v => v.status === 'physically_verified').length || 0}
-              color="bg-green-100 text-green-600"
-            />
-            <StatCard 
-              icon={<AlertCircle className="w-8 h-8" />}
-              title="Pending"
-              value={pendingVehicles?.length || 0}
-              color="bg-yellow-100 text-yellow-600"
-            />
-          </div>
-        )}
-      </div>
-
-      <ReviewDialog 
-        open={!!selectedVehicle}
-        vehicle={selectedVehicle}
-        rejectionReason={rejectionReason}
-        onRejectionChange={setRejectionReason}
-        onClose={() => setSelectedVehicle(null)}
-        onApprove={() => handleReview('approve')}
-        onReject={() => handleReview('reject')}
-      />
     </div>
   );
 }
 
-const ReviewDialog = ({ 
-  open, 
-  vehicle, 
-  rejectionReason, 
-  onRejectionChange, 
-  onClose, 
-  onApprove, 
-  onReject 
-}) => (
-  <Dialog open={open} onClose={onClose} maxWidth="sm" fullWidth>
-    <div className="p-6 space-y-4">
-      <h2 className="text-xl font-bold">
-        Review {vehicle?.make} {vehicle?.model}
-      </h2>
-      
-      <div className="space-y-2">
-        <div className="flex justify-between">
-          <span className="text-gray-600">Owner:</span>
-          <span>{vehicle?.owner?.username}</span>
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Type:</span>
-          <Chip 
-            label={vehicle?.listing_type} 
-            color={vehicle?.listing_type === 'marketplace' ? 'primary' : 'secondary'}
-          />
-        </div>
-        <div className="flex justify-between">
-          <span className="text-gray-600">Price:</span>
-          <span className="font-semibold">
-            ${vehicle?.price?.toLocaleString() || vehicle?.proposed_price?.toLocaleString()}
-          </span>
-        </div>
+const StatCard = ({ title, value, icon, bgColor, textColor, borderColor }) => (
+  <div className={`${bgColor} ${borderColor} shadow-sm rounded-lg p-4`}>
+    <div className="flex items-center justify-between">
+      <div>
+        <p className="text-gray-500 text-sm">{title}</p>
+        <p className={`text-2xl font-bold ${textColor} mt-1`}>{value}</p>
       </div>
-      
-      <TextField
-        fullWidth
-        multiline
-        rows={4}
-        label="Rejection Reason"
-        value={rejectionReason}
-        onChange={(e) => onRejectionChange(e.target.value)}
-        placeholder="Provide reason for rejection (required)"
-      />
-      
-      <div className="flex justify-end gap-2 pt-4">
-        <Button variant="outlined" onClick={onClose}>
-          Cancel
-        </Button>
-        <Button 
-          variant="contained" 
-          color="error"
-          onClick={onReject}
-          disabled={!rejectionReason}
-          startIcon={<XCircle size={16} />}
-        >
-          Reject
-        </Button>
-        <Button 
-          variant="contained" 
-          color="success"
-          onClick={onApprove}
-          startIcon={<CheckCircle size={16} />}
-        >
-          Approve
-        </Button>
+      <div className={`${textColor} p-2 rounded-full`}>
+        {icon}
       </div>
-    </div>
-  </Dialog>
-);
-
-const StatCard = ({ icon, title, value, color }) => (
-  <div className={`p-6 rounded-lg ${color} flex items-center gap-4`}>
-    <div className="p-3 bg-white rounded-full">
-      {icon}
-    </div>
-    <div>
-      <h3 className="text-lg font-semibold">{title}</h3>
-      <p className="text-3xl font-bold">{value}</p>
     </div>
   </div>
+);
+
+const TabButton = ({ children, active, onClick, count }) => (
+  <button
+    onClick={onClick}
+    className={`flex items-center gap-2 px-3 py-2 rounded-md ${
+      active 
+        ? 'text-red-600 border-b-2 border-red-600 font-medium' 
+        : 'text-gray-500 hover:text-gray-700'
+    }`}
+  >
+    {children}
+    {count !== undefined && (
+      <span className={`text-xs rounded-full px-2 py-0.5 ${
+        active ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-600'
+      }`}>
+        {count}
+      </span>
+    )}
+  </button>
 );
