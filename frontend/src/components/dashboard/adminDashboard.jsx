@@ -1,16 +1,98 @@
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
+import { motion } from 'framer-motion';
 import { 
   deleteVehicle,
   fetchPendingReview,
   reviewVehicle,
+  createVehicle,
+  updateVehicle,
   fetchAllVehicles
 } from '../../redux/slices/vehicleSlice';
 import {
   CheckCircle, XCircle, Search, Sliders,
   Car, AlertCircle, ChevronDown, Filter, MoreVertical, 
-  Download, Trash2, Eye, X
+  Download, Trash2, Eye, X, Plus, Info, Check, AlertTriangle
 } from 'lucide-react';
+import VehicleDialog from './vehiclemodal';
+import { Box, Typography, Button } from '@mui/material';
+
+const DashboardHero = ({ onAddVehicle }) => {
+  return (
+    <Box 
+      sx={{ 
+        background: 'linear-gradient(to bottom, #1a1a1a, #e41c38)',
+        color: 'white',
+        pt: { xs: 6, sm: 8, md: 10 },
+        pb: { xs: 4, sm: 5, md: 6 },
+        mb: 4
+      }}
+    >
+      <Box 
+        className="max-w-7xl mx-auto pt-10" 
+        sx={{ 
+          px: { xs: 2, sm: 4 },
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+        >
+          <Typography 
+            variant="h3" 
+            component="h1" 
+            sx={{ 
+              fontWeight: 'bold', 
+              mb: 1,
+              fontSize: { xs: '1.75rem', sm: '2.25rem', md: '2.5rem' }
+            }}
+          >
+            Welcome to AutoEden Admin Dashboard
+          </Typography>
+          
+          <Typography 
+            variant="body1" 
+            sx={{ 
+              color: 'rgba(255, 255, 255, 0.85)',
+              maxWidth: '700px',
+              fontSize: { xs: '0.9rem', sm: '1rem', md: '1.1rem' },
+              mb: 2
+            }}
+          >
+            Manage all the vehicles and offers in real-time. Digitally & physically verify uploaded vehicles, approve or reject offers.
+          </Typography>
+          
+          <Box sx={{ mt: 3 }}>
+            <motion.div
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3, duration: 0.5 }}
+            >
+              <Button 
+                variant="contained" 
+                startIcon={<Plus size={16} />}
+                size="large"
+                onClick={onAddVehicle}
+                sx={{ 
+                  bgcolor: 'white', 
+                  color: '#e41c38',
+                  borderRadius: '8px',
+                  px: 3,
+                  '&:hover': {
+                    bgcolor: 'rgba(255, 255, 255, 0.9)',
+                  }
+                }}
+              >
+                Add New Vehicle
+              </Button>
+            </motion.div>
+          </Box>
+        </motion.div>
+      </Box>
+    </Box>
+  );
+};
 
 export default function AdminDashboard() {
   const dispatch = useDispatch();
@@ -24,7 +106,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState(0);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
+    const [showAddModal, setShowAddModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
+  const [editVehicle, setEditVehicle] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
   const [showActions, setShowActions] = useState(null);
   const [currentPage, setCurrentPage] = useState(1);
@@ -53,6 +137,27 @@ export default function AdminDashboard() {
       setRejectionReason('');
     });
   };
+
+    const handleSubmit = (formData) => {
+      if (editVehicle) {
+        dispatch(updateVehicle({ id: editVehicle.id, data: formData }));
+      } else {
+        dispatch(createVehicle(formData));
+      }
+      setShowAddModal(false);
+      setEditVehicle(null);
+    };
+  
+    const handleDialogClose = () => {
+      setShowAddModal(false);
+      setEditVehicle(null);
+    };
+  
+    const handleEditClick = (vehicle) => {
+      setEditVehicle(vehicle);
+      setShowAddModal(true);
+    };
+  
 
   const handleStatusClass = (status) => {
     switch(status) {
@@ -93,6 +198,8 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-gray-100">
       {/* Top header */}
+
+      <DashboardHero onAddVehicle={() => setShowAddModal(true)} />
       <div className="bg-black text-white p-4 shadow-md">
         <div className="container mx-auto flex justify-between items-center">
           <h1 className="text-2xl font-bold">AutoEden Admin</h1>
@@ -548,6 +655,14 @@ export default function AdminDashboard() {
           </div>
         </div>
       )}
+
+      <VehicleDialog
+        open={showAddModal}
+        onClose={handleDialogClose}
+        onSubmit={handleSubmit}
+        editVehicle={editVehicle}
+        isSubmitting={status === 'loading'}
+      />
     </div>
   );
 }
