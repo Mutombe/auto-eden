@@ -24,7 +24,7 @@ export const refreshTokens = async (refresh) => {
 
 
 const api = axios.create({
-  baseURL:  'https://auto-eden-backend.onrender.com',
+  baseURL:  'https://auto-eden-backend.onrender.com/',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json'
