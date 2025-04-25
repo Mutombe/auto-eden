@@ -408,16 +408,13 @@ export const Navbar = () => {
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
-          <IconButton 
-              className="md:hidden !flex" // Changed to !flex to ensure it shows on mobile
-              onClick={() => setMobileMenuOpen(true)}
-              sx={{
-                color: scrolled ? "#1f2937" : "#1f2937",
-                display: { xs: 'flex', md: 'none' } // MUI way to handle responsive display
-              }}
-            >
-              <Menu />
-            </IconButton>
+{/* Right Section - Mobile Menu Button */}
+<button
+  className="block md:hidden" // Show on mobile, hide on desktop
+  onClick={() => setMobileMenuOpen(true)}
+>
+  <Menu className="h-6 w-6 text-gray-900" />
+</button>
 
             <div className="hidden md:flex items-center gap-3">
               {/*<IconButton 
