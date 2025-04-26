@@ -478,11 +478,11 @@ export default function HomePage() {
                 transition={{ duration: 0.7, type: "spring" }}
                 className="h-full"
               >
-                <img 
+                {/*<img 
                   src="/mobile-app-preview.png" 
                   alt="Auto Eden Mobile App"
                   className="w-full h-full object-cover" 
-                />
+                />*/}
               </motion.div>
               {/* Floating notification */}
               <motion.div
@@ -527,19 +527,19 @@ export default function HomePage() {
               {
                 name: "Jane Cooper",
                 role: "Buyer",
-                image: "/testimonial-1.jpg",
+                image: "user.jpg",
                 quote: "The mobile experience was seamless. I found my dream car while on my lunch break and completed the purchase the same day!"
               },
               {
                 name: "Robert Johnson",
                 role: "Seller",
-                image: "/testimonial-2.jpg",
+                image: "/user.jpg",
                 quote: "Selling my car was incredibly easy. The valuation was fair, and I had offers within 24 hours. I'll never go back to traditional dealerships."
               },
               {
                 name: "Sarah Thompson",
                 role: "Buyer",
-                image: "/testimonial-3.jpg",
+                image: "/user.jpg",
                 quote: "The verification process gave me peace of mind. Knowing every vehicle is thoroughly checked made the entire experience stress-free."
               }
             ].map((testimonial, index) => (
