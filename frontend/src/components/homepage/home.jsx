@@ -260,8 +260,8 @@ export default function HomePage() {
             className="grid grid-cols-2 md:grid-cols-4 gap-6 text-center"
           >
             {[
-              { value: "5,000+", label: "Vehicles Listed", prefix: "" },
-              { value: "10,000+", label: "Happy Customers", prefix: "" },
+              { value: "500+", label: "Vehicles Listed", prefix: "" },
+              { value: "100+", label: "Happy Customers", prefix: "" },
               { value: "98", label: "Satisfaction Rate", prefix: "", suffix: "%" },
               { value: "24/7", label: "Customer Support", prefix: "" }
             ].map((stat, index) => (
