@@ -6,7 +6,9 @@ export const fetchVehicles = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const { data } = await api.get("/core/vehicles/");
+      console.log("vehicles slice", data);
       return data;
+      
     } catch (err) {
       return rejectWithValue(err.response.data);
     }
@@ -17,7 +19,7 @@ export const fetchPendingReview = createAsyncThunk(
   'vehicles/fetchPendingReview',
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await axios.get('/api/vehicles/pending_review/',);
+      const { data } = await api.get('/core/vehicles/pending_review/',);
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -29,7 +31,8 @@ export const fetchAllVehicles = createAsyncThunk(
   'vehicles/fetchAllVehicles',
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get('/api/vehicles/',);
+      const { data } = await api.get('/core/vehicles/',);
+      console.log("all vehicles", data);
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -42,7 +45,7 @@ export const reviewVehicle = createAsyncThunk(
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.patch(
-        `/api/vehicles/${id}/review/`,
+        `/core/vehicles/${id}/review/`,
         data,
       );
       return response.data;
@@ -183,7 +186,13 @@ const vehicleSlice = createSlice({
     loading: false,
     error: null,
   },
-  reducers: {},
+  reducers: {
+    setAllVehicles: (state, action) => {
+      state.allVehicles = Array.isArray(action.payload) 
+        ? action.payload.results 
+        : [];
+    }
+  },
   extraReducers: (builder) => {
     builder
       .addCase(fetchVehicles.pending, (state) => {
@@ -191,12 +200,14 @@ const vehicleSlice = createSlice({
       })
       .addCase(fetchVehicles.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
+        console.log("vehicles reducer", action.payload);
+        state.items = action.payload.results;
       })
       .addCase(fetchVehicles.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
       })
+      
       .addCase(fetchMarketplace.fulfilled, (state, action) => {
         state.items = action.payload;
       })
@@ -207,7 +218,10 @@ const vehicleSlice = createSlice({
         state.pendingVehicles = action.payload;
       })
       .addCase(fetchAllVehicles.fulfilled, (state, action) => {
-        state.allVehicles = action.payload;
+        state.allVehicles = Array.isArray(action.payload) 
+          ? action.payload.results
+          : [];
+        console.log("all vehicles payload", state.allVehicles);
       })
       .addCase(createVehicle.pending, (state) => {
         state.loading = true;

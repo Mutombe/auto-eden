@@ -602,7 +602,7 @@ export default function MarketplacePage() {
               >
                 <div className={`relative ${viewMode === 'list' ? 'md:w-1/3' : ''}`}>
                   <img
-                    src={vehicle.images?.[0].image || '/api/placeholder/400/250'}
+                    src={vehicle.images?.[0]?.image ? `${import.meta.env.VITE_API_BASE_URL_LOCAL}${vehicle.images[0].image}` : '/api/placeholder/400/250'}
                     alt={`${vehicle.make} ${vehicle.model}`}
                     className={`w-full object-cover ${viewMode === 'list' ? 'h-56 md:h-full md:rounded-l-xl' : 'h-52 rounded-t-xl'}`}
                   />
