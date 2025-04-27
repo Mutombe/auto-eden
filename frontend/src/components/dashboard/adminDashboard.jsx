@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { 
   deleteVehicle,
   fetchPendingReview,
+  fetchVehicles,
   reviewVehicle,
   createVehicle,
   updateVehicle,
@@ -99,6 +100,7 @@ export default function AdminDashboard() {
   const {
     pendingVehicles,
     allVehicles,
+    items,
     status,
     error
   } = useSelector((state) => state.vehicles);
@@ -106,7 +108,7 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState(0);
   const [rejectionReason, setRejectionReason] = useState('');
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-    const [showAddModal, setShowAddModal] = useState(false);
+  const [showAddModal, setShowAddModal] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
   const [editVehicle, setEditVehicle] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -118,11 +120,13 @@ export default function AdminDashboard() {
     status: 'pending'
   });
 
+  console.log("all vehicles component", allVehicles);
+  console.log("vehicles", items);
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {
     dispatch(fetchPendingReview());
-    dispatch(fetchAllVehicles());
+    dispatch(fetchVehicles());
   }, [dispatch]);
 
   const handleReview = (action) => {
@@ -137,6 +141,8 @@ export default function AdminDashboard() {
       setRejectionReason('');
     });
   };
+
+  console.log("all vehicles component", allVehicles);
 
     const handleSubmit = (formData) => {
       if (editVehicle) {
@@ -174,25 +180,25 @@ export default function AdminDashboard() {
   };
 
   const getDisplayData = () => {
-    let displayData = activeTab === 0 ? pendingVehicles || [] : allVehicles || [];
+    // Get base data (pending vehicles or all items)
+    let displayData = activeTab === 0 ? pendingVehicles || [] : items || [];
     
-    // Apply filters
+    // Only apply filters for the "All Vehicles" tab (activeTab === 1)
     if (activeTab === 1) {
       displayData = displayData.filter(vehicle => {
+        // Search filter only
         const matchesSearch = filters.search === '' || 
-          `${vehicle.make} ${vehicle.model}`.toLowerCase().includes(filters.search.toLowerCase());
-        const matchesType = filters.listingType === 'all' || 
-          vehicle.listing_type === filters.listingType;
-        const matchesStatus = filters.status === 'all' || 
-          vehicle.status === filters.status;
-        return matchesSearch && matchesType && matchesStatus;
+          `${vehicle.make} ${vehicle.model}`.toLowerCase()
+            .includes(filters.search.toLowerCase());
+        
+        // No listing_type filtering - show both marketplace and instant_sale
+        return matchesSearch;
       });
     }
     
     // Pagination
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    const endIndex = startIndex + ITEMS_PER_PAGE;
-    return displayData.slice(startIndex, endIndex);
+    return displayData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
   };
 
   return (
@@ -221,7 +227,7 @@ export default function AdminDashboard() {
               <Download size={16} />
               <span className="hidden md:inline">Export</span>
             </button>
-            <button className="bg-red-600 text-white px-3 py-2 rounded-md flex items-center gap-2 hover:bg-red-700">
+            <button className="bg-red-600 text-white px-3 py-2 rounded-md flex items-center gap-2 hover:bg-red-700" onClick={() => setShowAddModal(true)}>
               <Car size={16} />
               <span>Add Vehicle</span>
             </button>
@@ -232,7 +238,7 @@ export default function AdminDashboard() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           <StatCard
             title="Total Vehicles"
-            value={allVehicles?.length || 0}
+            value={items?.length || 0}
             icon={<Car size={20} />}
             bgColor="bg-white"
             textColor="text-black"
@@ -248,7 +254,7 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Verified"
-            value={allVehicles?.filter(v => v.status === 'physically_verified').length || 0}
+            value={items?.filter(v => v.status === 'physically_verified').length || 0}
             icon={<CheckCircle size={20} />}
             bgColor="bg-white"
             textColor="text-green-600"
@@ -256,7 +262,7 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Rejected"
-            value={allVehicles?.filter(v => v.status === 'rejected').length || 0}
+            value={items?.filter(v => v.status === 'rejected').length || 0}
             icon={<XCircle size={20} />}
             bgColor="bg-white"
             textColor="text-gray-600"
@@ -278,7 +284,7 @@ export default function AdminDashboard() {
               <TabButton
                 active={activeTab === 1}
                 onClick={() => setActiveTab(1)}
-                count={allVehicles?.length}
+                count={items?.length}
               >
                 All Vehicles
               </TabButton>
