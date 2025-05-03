@@ -1,5 +1,5 @@
 from django.dispatch import receiver
-from .models import Task, Profile, User
+from .models import Profile, User
 from django.db.models.signals import post_save
 
 @receiver(post_save, sender=User)
