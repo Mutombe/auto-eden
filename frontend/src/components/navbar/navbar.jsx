@@ -36,7 +36,7 @@ import { useNavigate } from "react-router-dom";
 export function AuthHeader({ view }) {
   return (
     <div className="text-center">
-      <div className="mx-auto w-16 h-16 mb-4">
+      <div className="mx-auto w-20 h-20 mb-4">
         <img 
           src="/logo.png" 
           alt="Auto Eden Logo" 
@@ -145,7 +145,7 @@ export const AuthModals = ({ openType, onClose }) => {
           style={{ backgroundColor: "#f9fafb" }}
         >
           <div className="text-center">
-          <div className="mx-auto w-30 h-16 mb-4">
+          <div className="mx-auto w-30 h-20 mb-4">
         <img 
           src="/logo.png" 
           alt="Auto Eden Logo" 
@@ -326,7 +326,7 @@ export function Logo() {
   return (
     <div className="flex items-center">
       <Link to="/" className="flex-shrink-0 flex items-center">
-        <div className="w-15 h-15 mr-2 mt-8">
+        <div className="w-22 h-22 mr-2 mt-10">
           <img 
             src="/logo.png" 
             alt="Auto Eden Logo" 
