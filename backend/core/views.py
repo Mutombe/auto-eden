@@ -1,15 +1,17 @@
 # vehicles/views.py
 from rest_framework import viewsets, permissions
-from .models import Vehicle, Bid, Profile
+from .models import Vehicle, Bid, Profile, User
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from .serializers import VehicleReviewSerializer, VehicleSerializer, BidSerializer, ProfileSerializer, UserSerializer
+from .serializers import PublicVehicleSerializer, VehicleDetailSerializer, VehicleReviewSerializer, VehicleSerializer, BidSerializer, ProfileSerializer, UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .permissions import IsOwnerOrAdmin
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from rest_framework import status
+from django.db.models import Q
+from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
 
 class RegisterView(APIView):
@@ -72,7 +74,17 @@ class ProfileView(APIView):
         
         serializer = ProfileSerializer(profile)
         return Response(serializer.data)
+
+class PublicVehicleViewSet(viewsets.ReadOnlyModelViewSet):
+    serializer_class = PublicVehicleSerializer
+    permission_classes = [permissions.AllowAny]  # Or IsAuthenticated for logged-in users
+    queryset = Vehicle.objects.all()
     
+    def get_serializer_class(self):
+        if self.action == 'retrieve':
+            return VehicleDetailSerializer
+        return super().get_serializer_class()
+
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
@@ -230,3 +242,17 @@ class InstantSaleViewSet(viewsets.ModelViewSet):
             listing_type='instant_sale',
             status='pending'
         )
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all()
+    serializer_class = UserSerializer
+    permission_classes = [permissions.IsAdminUser]
+
+    def get_queryset(self):
+        return User.objects.filter(is_active=True)
+
+    @action(detail=False, methods=['get'])
+    def inactive_users(self, request):
+        queryset = User.objects.filter(is_active=False)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)

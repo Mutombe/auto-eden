@@ -109,11 +109,11 @@ export const AuthModals = ({ openType, onClose }) => {
         .then(() => {
           setSnackbar({
             open: true,
-            message: "Registration successful. Please verify your email!",
+            message: "Registration successful. Please Login !",
             severity: "success",
           });
           onClose();
-          navigate("/email-verify");
+          navigate("/");
         })
         .catch((err) => {
           console.error("Registration Failed:", err);
@@ -326,7 +326,7 @@ export function Logo() {
   return (
     <div className="flex items-center">
       <Link to="/" className="flex-shrink-0 flex items-center">
-        <div className="w-22 h-22 mr-2 mt-10">
+        <div className="w-40 h-40 mr-2 mt-25">
           <img 
             src="/logo.png" 
             alt="Auto Eden Logo" 
@@ -382,7 +382,7 @@ export const Navbar = () => {
               <Link to="/sell" className={`hover:text-red-600 font-medium transition-colors ${
                 scrolled ? "text-gray-800" : "text-gray-900"
               }`}>
-                Sell Your Car
+                Buy My Car(Right Now)
               </Link>
               <Link to="/about" className={`hover:text-red-600 font-medium transition-colors ${
                 scrolled ? "text-gray-800" : "text-gray-900"
