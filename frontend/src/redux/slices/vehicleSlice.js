@@ -40,6 +40,14 @@ export const fetchAllVehicles = createAsyncThunk(
   }
 );
 
+export const fetchVehicleDetails = createAsyncThunk(
+  'vehicles/fetchDetails',
+  async (vehicleId) => {
+    const response = await api.get(`/core/all-vehicles/${vehicleId}/`);
+    return response.data;
+  }
+);
+
 export const reviewVehicle = createAsyncThunk(
   'vehicles/review',
   async ({ id, data }, { rejectWithValue }) => {
@@ -81,22 +89,6 @@ export const fetchInstantSaleVehicles = createAsyncThunk(
 );
 
 export const createVehicle = createAsyncThunk(
-  "vehicles/create",
-  async (formData, { rejectWithValue }) => {
-    try {
-      const { data } = await api.post("/core/vehicles/", formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-      return data;
-    } catch (err) {
-      return rejectWithValue(err.response.data);
-    }
-  }
-);
-
-export const createVehicle1 = createAsyncThunk(
   "vehicles/create",
   async (formData, { rejectWithValue }) => {
     try {
@@ -207,7 +199,14 @@ const vehicleSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-      
+      .addCase(fetchVehicleDetails.fulfilled, (state, action) => {
+        const index = state.items.findIndex(v => v.id === action.payload.id);
+        if (index === -1) {
+          state.items.push(action.payload);
+        } else {
+          state.items[index] = action.payload;
+        }
+      })
       .addCase(fetchMarketplace.fulfilled, (state, action) => {
         state.items = action.payload;
       })

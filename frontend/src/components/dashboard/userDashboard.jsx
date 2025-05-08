@@ -2,14 +2,14 @@
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchUserVehicles, deleteVehicle, createVehicle, updateVehicle, toggleVisibility } from '../../redux/slices/vehicleSlice';
-import { fetchUserBids } from '../../redux/slices/bidSlice';
+import { fetchUserVehicles, deleteVehicle, createVehicle, updateVehicle, toggleVisibility, fetchVehicleDetails } from '../../redux/slices/vehicleSlice';
+import { fetchUserBids, fetchBidderDetails } from '../../redux/slices/bidSlice';
 import { 
   Tab, Tabs, Button, TextField, 
   IconButton, Select, MenuItem, Chip, CircularProgress,
-  Typography, Box, Grid, Paper, useMediaQuery, useTheme
+  Typography, Box, Grid, Paper, useMediaQuery, useTheme, Skeleton, Avatar
 } from '@mui/material';
-import { Car, Plus, Edit, Trash, Eye, EyeOff, AlertCircle, Upload } from 'lucide-react';
+import { Car, Plus, Edit, Trash, Eye, EyeOff, AlertCircle, Upload, Gauge, Shield } from 'lucide-react';
 import { createTheme, ThemeProvider } from '@mui/material/styles';
 import { motion } from 'framer-motion';
 import VehicleDialog from './vehiclemodal';
@@ -164,10 +164,13 @@ const DashboardHero = ({ onAddVehicle }) => {
   );
 };
 
+
+
 export default function DashboardPage() {
   const dispatch = useDispatch();
   const { userVehicles, status } = useSelector((state) => state.vehicles);
   const { items: bids, status: bidStatus } = useSelector((state) => state.bids);
+
   const [activeTab, setActiveTab] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editVehicle, setEditVehicle] = useState(null);
@@ -241,6 +244,133 @@ export default function DashboardPage() {
       )}
     </Paper>
   );
+
+  const BidItem = ({ bid }) => {
+    const dispatch = useDispatch();
+    const { user } = useSelector(state => state.auth);
+    const vehicle = useSelector(state => 
+      state.vehicles.items.find(v => v.id === bid.vehicle)
+    );
+    const bidder = useSelector(state => 
+      state.bids.biddersCache[bid.bidder] || 
+      (bid.bidder === user?.id ? user : null)
+    );
+  
+    // Fetch vehicle details if missing
+    useEffect(() => {
+      if (!vehicle) {
+        dispatch(fetchVehicleDetails(bid.vehicle));
+      }
+    }, [vehicle, bid.vehicle, dispatch]);
+  
+    // Fetch bidder details if missing
+    useEffect(() => {
+      if (!bidder && bid.bidder !== user?.id) {
+        dispatch(fetchBidderDetails(bid.bidder));
+      }
+    }, [bidder, bid.bidder, user?.id, dispatch]);
+  
+    return (
+      <Grid item xs={12} key={bid.id}>
+      <Paper 
+        elevation={0} 
+        sx={{ 
+          p: 3, 
+          borderRadius: 2, 
+          border: '1px solid #eee',
+          transition: 'transform 0.2s, box-shadow 0.2s',
+          '&:hover': {
+            boxShadow: '0 5px 15px rgba(0,0,0,0.08)',
+            transform: 'translateY(-2px)'
+          }
+        }}
+      >
+        <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} 
+          justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}>
+          
+          {/* Vehicle Details Section */}
+          <Box flex={1} mr={2}>
+            <Box display="flex" alignItems="center" gap={2} mb={1.5}>
+              {vehicle ? (
+                <>
+                  <Typography variant="h6" fontWeight={600}>
+                    {vehicle.make} {vehicle.model} ({vehicle.year})
+                  </Typography>
+                </>
+              ) : (
+                <Skeleton variant="text" width={180} height={30} />
+              )}
+            </Box>
+  
+            {vehicle ? (
+              <Box display="flex" gap={2} flexWrap="wrap">
+                <Chip
+                  label={`Mileage: ${vehicle.mileage?.toLocaleString() || 'N/A'} km`}
+                  variant="outlined"
+                  size="small"
+                  icon={<Gauge size={14} />}
+                />
+                {/*<Chip
+                  label={`VIN: ${vehicle.vin || 'Not Available'}`}
+                  variant="outlined"
+                  size="small"
+                  icon={<Shield size={14} />}
+                />*/}
+              </Box>
+            ) : (
+              <Box display="flex" gap={1}>
+                <Skeleton variant="rounded" width={140} height={24} />
+                <Skeleton variant="rounded" width={160} height={24} />
+              </Box>
+            )}
+          </Box>
+  
+          {/* Bid Details Section */}
+          <Box minWidth={200} mt={{ xs: 2, sm: 0 }}>
+            <Box display="flex" alignItems="center" gap={1} mb={1}>
+              <Avatar 
+                src={bidder?.avatar} 
+                sx={{ width: 32, height: 32 }}
+              >
+                {bidder?.username?.[0]?.toUpperCase()}
+              </Avatar>
+              <Typography variant="body2">
+                    Bid by 
+                    <strong> {bidder?.username}</strong>
+              </Typography>
+            </Box>
+  
+            <Box display="flex" justifyContent="space-between" alignItems="center">
+              <Typography variant="body1" color="primary" fontWeight={500}>
+                ${Number(bid.amount).toLocaleString()}
+              </Typography>
+              <Chip 
+                label={bid.status} 
+                size="small"
+                color={
+                  bid.status === 'accepted' ? 'success' : 
+                  bid.status === 'rejected' ? 'error' : 'default'
+                }
+              />
+            </Box>
+  
+            <Typography variant="caption" color="text.secondary">
+              Bid placed: {new Date(bid.created_at).toLocaleDateString()}
+            </Typography>
+  
+            {bid.message && (
+              <Box mt={1} p={1} bgcolor="background.default" borderRadius={1}>
+                <Typography variant="caption">
+                  Note: {bid.message}
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Box>
+      </Paper>
+    </Grid>
+    );
+  };
 
   return (
     <ThemeProvider theme={customTheme}>
@@ -338,7 +468,7 @@ export default function DashboardPage() {
                               {vehicle.make} {vehicle.model} ({vehicle.year})
                             </Typography>
                             <Typography variant="body1" color="primary" fontWeight={500} mb={2}>
-                              ${Number(vehicle.price).toLocaleString()}
+                              ${Number(vehicle.proposed_price).toLocaleString()}
                             </Typography>
                             <Box display="flex" gap={1} flexWrap="wrap" mb={{ xs: 2, sm: 0 }}>
                               <Chip 
@@ -410,44 +540,7 @@ export default function DashboardPage() {
               ) : (
                 <Grid container spacing={3}>
                   {bids.map(bid => (
-                    <Grid item xs={12} key={bid.id}>
-                      <Paper 
-                        elevation={0} 
-                        sx={{ 
-                          p: 3, 
-                          borderRadius: 2, 
-                          border: '1px solid #eee',
-                          transition: 'transform 0.2s, box-shadow 0.2s',
-                          '&:hover': {
-                            boxShadow: '0 5px 15px rgba(0,0,0,0.08)',
-                            transform: 'translateY(-2px)'
-                          }
-                        }}
-                      >
-                        <Box display="flex" flexDirection={{ xs: 'column', sm: 'row' }} justifyContent="space-between" alignItems={{ xs: 'flex-start', sm: 'center' }}>
-                          <Box>
-                            <Typography variant="h6" fontWeight={600} mb={1}>
-                              {bid.vehicle.make} {bid.vehicle.model} ({bid.vehicle.year})
-                            </Typography>
-                            <Typography variant="body1" color="primary" fontWeight={500} mb={1}>
-                              Your Bid: ${Number(bid.amount).toLocaleString()}
-                            </Typography>
-                            <Box display="flex" gap={1}>
-                              <Chip 
-                                label={bid.status} 
-                                color={bid.status === 'accepted' ? 'success' : bid.status === 'rejected' ? 'error' : 'default'}
-                                size="small"
-                              />
-                              <Chip 
-                                label={new Date(bid.createdAt).toLocaleDateString()}
-                                variant="outlined"
-                                size="small"
-                              />
-                            </Box>
-                          </Box>
-                        </Box>
-                      </Paper>
-                    </Grid>
+                    <BidItem key={bid.id} bid={bid} />
                   ))}
                 </Grid>
               )}
@@ -455,6 +548,8 @@ export default function DashboardPage() {
           )}
         </Box>
       </Box>
+
+    
 
       {/* Vehicle Dialog Component */}
       <VehicleDialog

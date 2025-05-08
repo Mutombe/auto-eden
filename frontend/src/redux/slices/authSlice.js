@@ -55,7 +55,7 @@ export const resendVerificationEmail = createAsyncThunk(
 const authSlice = createSlice({
   name: "auth",
   initialState: {
-    user: null,
+    user: JSON.parse(localStorage.getItem("auth"))?.user || null,
     tokens: JSON.parse(localStorage.getItem("auth")),
     isAuthenticated: !!JSON.parse(localStorage.getItem("auth"))?.access,
 

@@ -150,3 +150,17 @@ class BidSerializer(serializers.ModelSerializer):
         model = Bid
         fields = '__all__'
         read_only_fields = ['bidder', 'status']
+
+class PublicVehicleSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = ['id', 'make', 'model', 'year', 'price', 'mileage', 'status', 'bids']
+
+class VehicleDetailSerializer(PublicVehicleSerializer):
+    owner = serializers.StringRelatedField()
+    bids = BidSerializer(many=True, read_only=True)
+    
+    class Meta(PublicVehicleSerializer.Meta):
+        fields = PublicVehicleSerializer.Meta.fields + [
+            'vin', 'owner', 'bids'
+        ]

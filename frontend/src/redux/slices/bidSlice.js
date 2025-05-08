@@ -30,10 +30,19 @@ export const fetchUserBids = createAsyncThunk(
   }
 );
 
+export const fetchBidderDetails = createAsyncThunk(
+  'bids/fetchBidder',
+  async (userId) => {
+    const response = await api.get(`/core/users/${userId}/`);
+    return response.data;
+  }
+);
+
 const bidSlice = createSlice({
   name: "bids",
   initialState: {
     items: [],
+    biddersCache: {},
     loading: false,
     error: null,
   },
@@ -61,7 +70,12 @@ const bidSlice = createSlice({
       .addCase(fetchUserBids.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload;
-      });
+      })
+    
+      .addCase(fetchBidderDetails.fulfilled, (state, action) => {
+            state.biddersCache[action.meta.arg] = action.payload;
+      })
+  
   },
 });
 

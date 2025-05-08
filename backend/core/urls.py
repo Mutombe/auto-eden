@@ -1,11 +1,14 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import VehicleViewSet, BidViewSet, RegisterView, CustomTokenObtainPairView, MarketplaceView, InstantSaleViewSet, ProfileView
+from .views import VehicleViewSet, BidViewSet, RegisterView, CustomTokenObtainPairView, MarketplaceView, InstantSaleViewSet, ProfileView, UserViewSet, PublicVehicleViewSet 
 
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicles')
+router.register(r'all-vehicles', PublicVehicleViewSet, basename='public-vehicles')
 router.register(r'bids', BidViewSet, basename='bid')
+router.register(r'users', UserViewSet, basename='users')
+
 
 urlpatterns = [
     path('', include(router.urls)),

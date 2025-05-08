@@ -105,7 +105,7 @@ class Bid(models.Model):
         ('rejected', 'Rejected'),
     )
     
-    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE)
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='bids')
     bidder = models.ForeignKey(User, on_delete=models.CASCADE)
     message = models.TextField(default="No message provided", blank=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
