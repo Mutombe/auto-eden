@@ -1,5 +1,8 @@
 # vehicles/models.py
+from datetime import timezone
 from django.db import models
+from django.db.models.signals import post_save
+from django.dispatch import receiver
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -79,6 +82,7 @@ class Vehicle(models.Model):
     is_visible = models.BooleanField(default=True)
     status = models.CharField(max_length=20, choices=VEHICLE_STATUS, default='pending')
     listing_type = models.CharField(max_length=20, choices=LISTING_TYPE)
+    fuel_type = models.CharField(max_length=50, blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For marketplace
     rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -97,6 +101,32 @@ class VehicleImage(models.Model):
 
     def __str__(self):
         return f"Image for {self.vehicle}"
+    
+# Add to vehicles/models.py
+class QuoteRequest(models.Model):
+    vehicle = models.ForeignKey(
+        Vehicle, 
+        on_delete=models.CASCADE,
+        related_name='quote_requests'
+    )
+    user = models.ForeignKey(
+        User, 
+        on_delete=models.SET_NULL, 
+        null=True,
+        blank=True
+    )
+    full_name = models.CharField(max_length=255)
+    email = models.EmailField()
+    country = models.CharField(max_length=100)
+    city = models.CharField(max_length=100)
+    address = models.TextField()
+    telephone = models.CharField(max_length=20)
+    note = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    is_processed = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Quote request for {self.vehicle} from {self.full_name}"
 
 class Bid(models.Model):
     BID_STATUS = (
@@ -114,3 +144,48 @@ class Bid(models.Model):
 
     def __str__(self):
         return f"{self.amount} bid for {self.vehicle}"
+    
+class VehicleSearch(models.Model):
+    STATUS_CHOICES = (
+        ('active', 'Active'),
+        ('paused', 'Paused'),
+        ('matched', 'Matched'),
+    )
+
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    make = models.CharField(max_length=100)
+    model = models.CharField(max_length=100)
+    min_year = models.PositiveIntegerField()
+    max_year = models.PositiveIntegerField()
+    max_price = models.DecimalField(max_digits=10, decimal_places=2)
+    max_mileage = models.PositiveIntegerField()
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
+    created_at = models.DateTimeField(auto_now_add=True)
+    last_matched = models.DateTimeField(null=True, blank=True)
+    match_count = models.PositiveIntegerField(default=0)
+
+    def __str__(self):
+        return f"{self.user.username}'s search for {self.make} {self.model}"
+
+    def check_for_matches(sender, instance, created, **kwargs):
+        if created and instance.listing_type == 'marketplace':
+            matching_searches = VehicleSearch.objects.filter(
+                make__iexact=instance.make,
+                model__iexact=instance.model,
+                min_year__lte=instance.year,
+                max_year__gte=instance.year,
+                max_price__gte=instance.price,
+                max_mileage__gte=instance.mileage,
+                status='active'
+            )
+        
+        for search in matching_searches:
+            search.match_count += 1
+            search.last_matched = timezone.now()
+            search.status = 'matched'
+            search.save()
+
+    post_save.connect(check_for_matches, sender=Vehicle)
+
+    class Meta:
+        verbose_name_plural = "Vehicle Searches"

@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchMarketplace } from "../../redux/slices/vehicleSlice";
 import { placeBid } from "../../redux/slices/bidSlice";
+import { AuthModals } from "../navbar/navbar";
 import {
   Car,
   Search,
@@ -53,13 +54,26 @@ export default function MarketplacePage() {
     sortBy: "newest",
     bodyType: "",
     fuelType: "",
+    searchTerm: "",
   });
+  const [authModal, setAuthModal] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [bidAmount, setBidAmount] = useState("");
   const [bidMessage, setBidMessage] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid");
+  const [selectedImage, setSelectedImage] = useState(null);
+  const [showQuoteModal, setShowQuoteModal] = useState(false);
+  const [quoteForm, setQuoteForm] = useState({
+    fullName: "",
+    email: "",
+    country: "",
+    city: "",
+    address: "",
+    telephone: "",
+    note: "",
+  });
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -153,6 +167,13 @@ export default function MarketplacePage() {
           return false;
         if (filters.fuelType && vehicle.fuel_type !== filters.fuelType)
           return false;
+        if (
+          filters.searchTerm &&
+          !`${vehicle.make} ${vehicle.model} ${vehicle.description}`
+            .toLowerCase()
+            .includes(filters.searchTerm.toLowerCase())
+        )
+          return false;
         return true;
       })
       .sort((a, b) => {
@@ -233,6 +254,10 @@ export default function MarketplacePage() {
             <div className="flex-grow p-2">
               <TextField
                 fullWidth
+                value={filters.searchTerm}
+                onChange={(e) =>
+                  setFilters({ ...filters, searchTerm: e.target.value })
+                }
                 placeholder="Search by make, model, or keyword..."
                 InputProps={{
                   startAdornment: (
@@ -959,6 +984,52 @@ export default function MarketplacePage() {
       >
         {selectedVehicle && (
           <div className="p-6">
+            {/* Add image gallery section */}
+            <div className="grid grid-cols-3 gap-2 mb-4">
+              {selectedVehicle.images?.map((image, index) => (
+                <div
+                  key={index}
+                  className="cursor-pointer relative aspect-square"
+                  onClick={() => setSelectedImage(image.image)}
+                >
+                  <img
+                    src={
+                      selectedVehicle.images?.[0]?.image
+                        ? `${import.meta.env.VITE_API_BASE_URL_LOCAL}${
+                            selectedVehicle.images[0].image
+                          }`
+                        : `${import.meta.env.VITE_API_BASE_URL_DEPLOY}${
+                            selectedVehicle.images[0].image
+                          }`
+                    }
+                    className="w-full h-full object-cover rounded-md"
+                    alt={`Preview ${index + 1}`}
+                  />
+                  {index === 0 && (
+                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-sm">
+                      Click to preview
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            {/* Add more vehicle details */}
+            <Divider className="my-4" />
+            <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="flex items-center">
+                <Gauge className="w-5 h-5 mr-2 text-gray-600" />
+                <span>
+                  Mileage: {selectedVehicle.mileage?.toLocaleString()} km
+                </span>
+              </div>
+              <div className="flex items-center">
+                <Shield className="w-5 h-5 mr-2 text-gray-600" />
+                <span>VIN: {selectedVehicle.vin || "N/A"}</span>
+              </div>
+              {/* Add more details as needed */}
+            </div>
+
             <div className="flex justify-between items-start mb-4">
               <h3 className="text-xl font-bold text-gray-900">
                 Place Bid on {selectedVehicle.make} {selectedVehicle.model}
@@ -1095,28 +1166,45 @@ export default function MarketplacePage() {
                 Place Bid
               </Button>
             ) : (
-              <Button
-                fullWidth
-                variant="contained"
-                onClick={() =>
-                  setSnackbar({
-                    open: true,
-                    message: "Please log in to place a bid.",
-                    severity: "info",
-                  })
-                }
-                sx={{
-                  backgroundColor: "#dc2626",
-                  "&:hover": { backgroundColor: "#b91c1c" },
-                  padding: "12px",
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                  boxShadow:
-                    "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-                }}
-              >
-                Log In to Place Bid
-              </Button>
+              <>
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={() => {
+                    setSelectedVehicle(null);
+                    setAuthModal("login");
+                  }}
+                  sx={{
+                    backgroundColor: "#dc2626",
+                    "&:hover": { backgroundColor: "#b91c1c" },
+                    padding: "12px",
+                    paddingBottom: "0.5rem",
+                    fontWeight: 600,
+                    fontSize: "1rem",
+                    boxShadow:
+                      "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+                  }}
+                >
+                  Log In to Place Bid
+                </Button>
+
+                <Divider className="my-7" />
+                <Button
+                  fullWidth
+                  variant="contained"
+                  onClick={() => {
+                    setSelectedVehicle(null);
+                    setShowQuoteModal(true);
+                  }}
+                  sx={{
+                    backgroundColor: "#3b82f6",
+                    "&:hover": { backgroundColor: "#2563eb" },
+                    padding: "12px",
+                  }}
+                >
+                  Get a Quote
+                </Button>
+              </>
             )}
             {/* Terms of Service */}
 
@@ -1126,6 +1214,167 @@ export default function MarketplacePage() {
           </div>
         )}
       </Dialog>
+
+      {/* Image Preview Dialog */}
+      <Dialog
+        open={!!selectedImage}
+        onClose={() => setSelectedImage(null)}
+        maxWidth="lg"
+      >
+        {selectedImage && (
+          <div className="p-2">
+            <img
+              src={
+                selectedVehicle.images?.[0]?.image
+                  ? `${import.meta.env.VITE_API_BASE_URL_LOCAL}${
+                      selectedVehicle.images[0].image
+                    }`
+                  : `${import.meta.env.VITE_API_BASE_URL_DEPLOY}${
+                      selectedVehicle.images[0].image
+                    }`
+              }
+              className="w-full h-full max-h-[80vh] object-contain"
+              alt="Enlarged preview"
+            />
+          </div>
+        )}
+      </Dialog>
+
+      {/* Quote Request Dialog */}
+      <Dialog
+        open={showQuoteModal}
+        onClose={() => setShowQuoteModal(false)}
+        PaperProps={{ sx: { borderRadius: "12px", maxWidth: "500px" } }}
+      >
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Get Vehicle Quote</h3>
+            <IconButton onClick={() => setShowQuoteModal(false)}>
+              {/* Close icon */}
+            </IconButton>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              // Handle quote submission
+              setShowQuoteModal(false);
+              setSnackbar({
+                open: true,
+                message: "Quote request submitted successfully!",
+                severity: "success",
+              });
+            }}
+          >
+            <div className="space-y-4">
+              <TextField
+                fullWidth
+                label="Full Name"
+                sx={{ paddingBottom: "0.5rem" }}
+                required
+                value={quoteForm.fullName}
+                onChange={(e) =>
+                  setQuoteForm({ ...quoteForm, fullName: e.target.value })
+                }
+              />
+
+              <TextField
+                fullWidth
+                label="Email Address"
+                sx={{ paddingBottom: "0.5rem" }}
+                type="email"
+                required
+                value={quoteForm.email}
+                onChange={(e) =>
+                  setQuoteForm({ ...quoteForm, email: e.target.value })
+                }
+              />
+
+              <FormControl fullWidth sx={{ paddingBottom: "0.5rem" }}>
+                <InputLabel>Country</InputLabel>
+                <Select
+                  value={quoteForm.country}
+                  label="Country"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, country: e.target.value })
+                  }
+                  required
+                >
+                  {/* Add countries list - you might want to import a full list */}
+                  <MenuItem value="USA">United States</MenuItem>
+                  <MenuItem value="UK">United Kingdom</MenuItem>
+                  <MenuItem value="Germany">Germany</MenuItem>
+                  {/* ... more countries */}
+                </Select>
+              </FormControl>
+
+              <div className="grid grid-cols-2 gap-4">
+                <TextField
+                  fullWidth
+                  label="City"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  required
+                  value={quoteForm.city}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, city: e.target.value })
+                  }
+                />
+                <TextField
+                  fullWidth
+                  label="Telephone"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  type="tel"
+                  required
+                  value={quoteForm.telephone}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, telephone: e.target.value })
+                  }
+                />
+              </div>
+
+              <TextField
+                fullWidth
+                label="Address"
+                sx={{ paddingBottom: "0.5rem" }}
+                multiline
+                rows={2}
+                value={quoteForm.address}
+                onChange={(e) =>
+                  setQuoteForm({ ...quoteForm, address: e.target.value })
+                }
+              />
+
+              <TextField
+                fullWidth
+                label="Additional Notes"
+                sx={{ paddingBottom: "0.5rem" }}
+                placeholder="Any specific requirements or details?"
+                multiline
+                rows={3}
+                value={quoteForm.note}
+                onChange={(e) =>
+                  setQuoteForm({ ...quoteForm, note: e.target.value })
+                }
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  backgroundColor: "#3b82f6",
+                  "&:hover": { backgroundColor: "#2563eb" },
+                }}
+              >
+                Submit Quote Request
+              </Button>
+            </div>
+          </form>
+        </div>
+      </Dialog>
+
+      <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
 
       {/* Snackbar for notifications */}
       <Snackbar

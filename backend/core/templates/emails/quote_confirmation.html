@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Quote Request Confirmation</title>
+</head>
+<body>
+    <h2>Thank you for your quote request!</h2>
+    <p>We've received your request for the {{ vehicle.make }} {{ vehicle.model }} and will respond shortly.</p>
+    <h3>Your Details:</h3>
+    <ul>
+        <li><strong>Name:</strong> {{ quote.full_name }}</li>
+        <li><strong>Email:</strong> {{ quote.email }}</li>
+        <li><strong>Location:</strong> {{ quote.city }}, {{ quote.country }}</li>
+        <li><strong>Contact:</strong> {{ quote.telephone }}</li>
+    </ul>
+    <h3>Your Message:</h3>
+    <p>{{ quote.note|default:"No additional notes provided" }}</p>
+    <p>We'll be in touch within 24 hours. For urgent inquiries, please contact our sales team at {{ settings.CONTACT_PHONE }}.</p>
+</body>
+</html>

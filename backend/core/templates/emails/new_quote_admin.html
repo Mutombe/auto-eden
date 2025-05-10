@@ -1,0 +1,16 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Quote Request</title>
+</head>
+<body>
+    <h2>New Quote Request Received</h2>
+    <p><strong>Vehicle:</strong> {{ vehicle.make }} {{ vehicle.model }} ({{ vehicle.year }})</p>
+    <p><strong>From:</strong> {{ quote.full_name }} ({{ quote.email }})</p>
+    <p><strong>Location:</strong> {{ quote.city }}, {{ quote.country }}</p>
+    <p><strong>Contact:</strong> {{ quote.telephone }}</p>
+    <h3>Additional Notes:</h3>
+    <p>{{ quote.note|default:"No additional notes provided" }}</p>
+    <p>View the vehicle in admin: {{ settings.SITE_URL }}/admin/vehicles/vehicle/{{ vehicle.id }}/change/</p>
+</body>
+</html>
