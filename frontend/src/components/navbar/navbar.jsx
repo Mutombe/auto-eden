@@ -2,7 +2,17 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Car, User, LogIn, UserPlus, LogOut, Search, Menu, X } from "lucide-react";
+import { ShoppingCart, DollarSign, Info, Shield } from "lucide-react";
+import {
+  Car,
+  User,
+  LogIn,
+  UserPlus,
+  LogOut,
+  Search,
+  Menu,
+  X,
+} from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMediaQuery } from "@mui/material";
@@ -37,9 +47,9 @@ export function AuthHeader({ view }) {
   return (
     <div className="text-center">
       <div className="mx-auto w-20 h-20 mb-4">
-        <img 
-          src="/logo.png" 
-          alt="Auto Eden Logo" 
+        <img
+          src="/logo.png"
+          alt="Auto Eden Logo"
           className="rounded-2xl w-full h-full"
         />
       </div>
@@ -145,13 +155,13 @@ export const AuthModals = ({ openType, onClose }) => {
           style={{ backgroundColor: "#f9fafb" }}
         >
           <div className="text-center">
-          <div className="mx-auto w-30 h-20 mb-4">
-        <img 
-          src="/logo.png" 
-          alt="Auto Eden Logo" 
-          className="rounded-2xl w-full h-full"
-        />
-      </div>
+            <div className="mx-auto w-30 h-20 mb-4">
+              <img
+                src="/logo.png"
+                alt="Auto Eden Logo"
+                className="rounded-2xl w-full h-full"
+              />
+            </div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">
               {view === "login" ? "Welcome Back!" : "Join Auto Eden"}
             </h2>
@@ -179,29 +189,30 @@ export const AuthModals = ({ openType, onClose }) => {
           <div className="space-y-4">
             {view === "register" && (
               <>
-              <TextField
-                fullWidth
-                label="Email"
-                type="email"
-                value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
-                InputProps={{
-                  startAdornment: <AtSign className="text-gray-400 mr-2" />,
-                }}
-                sx={{
-                  '& .MuiOutlinedInput-root': {
-                    '&.Mui-focused fieldset': {
-                      borderColor: '#dc2626',
+                <TextField
+                  fullWidth
+                  label="Email"
+                  type="email"
+                  value={formData.email}
+                  onChange={(e) =>
+                    setFormData({ ...formData, email: e.target.value })
+                  }
+                  InputProps={{
+                    startAdornment: <AtSign className="text-gray-400 mr-2" />,
+                  }}
+                  sx={{
+                    "& .MuiOutlinedInput-root": {
+                      "&.Mui-focused fieldset": {
+                        borderColor: "#dc2626",
+                      },
                     },
-                  },
-                  '& .MuiFormLabel-root.Mui-focused': {
-                    color: '#dc2626',
-                  },
-                }}
-              />
-              <Divider className="!my-3"></Divider></>
+                    "& .MuiFormLabel-root.Mui-focused": {
+                      color: "#dc2626",
+                    },
+                  }}
+                />
+                <Divider className="!my-3"></Divider>
+              </>
             )}
 
             <TextField
@@ -215,13 +226,13 @@ export const AuthModals = ({ openType, onClose }) => {
                 startAdornment: <User className="text-gray-400 mr-2" />,
               }}
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#dc2626',
+                "& .MuiOutlinedInput-root": {
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#dc2626",
                   },
                 },
-                '& .MuiFormLabel-root.Mui-focused': {
-                  color: '#dc2626',
+                "& .MuiFormLabel-root.Mui-focused": {
+                  color: "#dc2626",
                 },
               }}
             />
@@ -238,13 +249,13 @@ export const AuthModals = ({ openType, onClose }) => {
                 startAdornment: <Lock className="text-gray-400 mr-2" />,
               }}
               sx={{
-                '& .MuiOutlinedInput-root': {
-                  '&.Mui-focused fieldset': {
-                    borderColor: '#dc2626',
+                "& .MuiOutlinedInput-root": {
+                  "&.Mui-focused fieldset": {
+                    borderColor: "#dc2626",
                   },
                 },
-                '& .MuiFormLabel-root.Mui-focused': {
-                  color: '#dc2626',
+                "& .MuiFormLabel-root.Mui-focused": {
+                  color: "#dc2626",
                 },
               }}
             />
@@ -259,7 +270,7 @@ export const AuthModals = ({ openType, onClose }) => {
             className="!rounded-lg !py-3 !text-base !font-semibold !shadow-lg"
             sx={{
               backgroundColor: "#dc2626",
-              '&:hover': {
+              "&:hover": {
                 backgroundColor: "#b91c1c",
               },
             }}
@@ -283,7 +294,7 @@ export const AuthModals = ({ openType, onClose }) => {
             sx={{
               color: "#1f2937",
               borderColor: "#d1d5db",
-              '&:hover': {
+              "&:hover": {
                 borderColor: "#dc2626",
                 backgroundColor: "rgba(220, 38, 38, 0.04)",
               },
@@ -308,10 +319,11 @@ export const AuthModals = ({ openType, onClose }) => {
             error: <AlertCircle className="w-5 h-5" />,
           }}
           sx={{
-            backgroundColor: snackbar.severity === 'success' ? '#f0fdf4' : undefined,
-            color: snackbar.severity === 'success' ? '#16a34a' : undefined,
-            '& .MuiAlert-icon': {
-              color: snackbar.severity === 'success' ? '#16a34a' : undefined,
+            backgroundColor:
+              snackbar.severity === "success" ? "#f0fdf4" : undefined,
+            color: snackbar.severity === "success" ? "#16a34a" : undefined,
+            "& .MuiAlert-icon": {
+              color: snackbar.severity === "success" ? "#16a34a" : undefined,
             },
           }}
         >
@@ -327,11 +339,7 @@ export function Logo() {
     <div className="flex items-center">
       <Link to="/" className="flex-shrink-0 flex items-center">
         <div className="w-40 h-40 mr-2 mt-25">
-          <img 
-            src="/logo.png" 
-            alt="Auto Eden Logo" 
-            className="rounded-sm"
-          />
+          <img src="/logo.png" alt="Auto Eden Logo" className="rounded-sm" />
         </div>
       </Link>
     </div>
@@ -356,14 +364,16 @@ export const Navbar = () => {
       }
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener("scroll", handleScroll);
+    return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
   return (
-    <nav className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-      scrolled ? "bg-white shadow-md" : "bg-gray-100"
-    }`}>
+    <nav
+      className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
+        scrolled ? "bg-white shadow-md" : "bg-gray-100"
+      }`}
+    >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20">
           {/* Left Section */}
@@ -371,35 +381,55 @@ export const Navbar = () => {
             <Link to="/" className="flex-shrink-0 flex items-center">
               <Logo />
             </Link>
-            
+
             {/* Desktop Navigation */}
             <div className="hidden md:flex md:items-center md:ml-10 space-x-8">
-              <Link to="/marketplace" className={`hover:text-red-600 font-medium transition-colors ${
-                scrolled ? "text-gray-800" : "text-gray-900"
-              }`}>
+              <Link
+                to="/marketplace"
+                className={`flex items-center hover:text-red-600 font-medium transition-colors ${
+                  scrolled ? "text-gray-800" : "text-gray-900"
+                }`}
+              >
+                <ShoppingCart className="w-5 h-5 mr-2" />
                 Marketplace
               </Link>
-              <Link to="/sell" className={`hover:text-red-600 font-medium transition-colors ${
-                scrolled ? "text-gray-800" : "text-gray-900"
-              }`}>
-                Buy My Car(Right Now)
+              <Link
+                to="/sell"
+                className={`flex items-center hover:text-red-600 font-medium transition-colors ${
+                  scrolled ? "text-gray-800" : "text-gray-900"
+                }`}
+              >
+                <DollarSign className="w-5 h-5 mr-2" />
+                Buy My Car
               </Link>
-              <Link to="/about" className={`hover:text-red-600 font-medium transition-colors ${
-                scrolled ? "text-gray-800" : "text-gray-900"
-              }`}>
-                About Us
+              <Link
+                to="/about"
+                className={`flex items-center hover:text-red-600 font-medium transition-colors ${
+                  scrolled ? "text-gray-800" : "text-gray-900"
+                }`}
+              >
+                <Info className="w-5 h-5 mr-2" />
+                About-Us
               </Link>
               {isAuthenticated && (
-                <Link to="/dashboard" className={`hover:text-red-600 font-medium transition-colors ${
-                  scrolled ? "text-gray-800" : "text-gray-900"
-                }`}>
-                  My Dashboard
+                <Link
+                  to="/dashboard"
+                  className={`flex items-center hover:text-red-600 font-medium transition-colors ${
+                    scrolled ? "text-gray-800" : "text-gray-900"
+                  }`}
+                >
+                  <LayoutDashboard className="w-5 h-5 mr-2" />
+                  Dashboard
                 </Link>
               )}
               {isAdmin && (
-                <Link to="/admin" className={`hover:text-red-600 font-medium transition-colors ${
-                  scrolled ? "text-gray-800" : "text-gray-900"
-                }`}>
+                <Link
+                  to="/admin"
+                  className={`flex items-center hover:text-red-600 font-medium transition-colors ${
+                    scrolled ? "text-gray-800" : "text-gray-900"
+                  }`}
+                >
+                  <Shield className="w-5 h-5 mr-2" />
                   Admin Dashboard
                 </Link>
               )}
@@ -408,13 +438,13 @@ export const Navbar = () => {
 
           {/* Right Section */}
           <div className="flex items-center gap-4">
-{/* Right Section - Mobile Menu Button */}
-<button
-  className="block md:hidden" // Show on mobile, hide on desktop
-  onClick={() => setMobileMenuOpen(true)}
->
-  <Menu className="h-6 w-6 text-gray-900" />
-</button>
+            {/* Right Section - Mobile Menu Button */}
+            <button
+              className="block md:hidden" // Show on mobile, hide on desktop
+              onClick={() => setMobileMenuOpen(true)}
+            >
+              <Menu className="h-6 w-6 text-gray-900" />
+            </button>
 
             <div className="hidden md:flex items-center gap-3">
               {/*<IconButton 
@@ -427,16 +457,16 @@ export const Navbar = () => {
               >
                 <Search />
               </IconButton>*/}
-              
+
               {isAuthenticated ? (
                 <>
                   <div className="flex items-center gap-3">
                     <Link to="/profile">
-                      <Avatar 
+                      <Avatar
                         className="!h-10 !w-10 border-2 border-red-600"
                         sx={{
-                          backgroundColor: '#111827',
-                          color: '#ffffff'
+                          backgroundColor: "#111827",
+                          color: "#ffffff",
                         }}
                       >
                         {user?.username?.[0]?.toUpperCase()}
@@ -449,10 +479,12 @@ export const Navbar = () => {
                       sx={{
                         color: scrolled ? "#dc2626" : "#dc2626",
                         borderColor: scrolled ? "#dc2626" : "#dc2626",
-                        '&:hover': {
+                        "&:hover": {
                           borderColor: "#b91c1c",
-                          backgroundColor: scrolled ? "rgba(220, 38, 38, 0.04)" : "rgba(255, 255, 255, 0.1)",
-                        }
+                          backgroundColor: scrolled
+                            ? "rgba(220, 38, 38, 0.04)"
+                            : "rgba(255, 255, 255, 0.1)",
+                        },
                       }}
                       className="!rounded-lg !font-medium"
                     >
@@ -469,10 +501,12 @@ export const Navbar = () => {
                     sx={{
                       color: scrolled ? "#dc2626" : "#dc2626",
                       borderColor: scrolled ? "#dc2626" : "#dc2626",
-                      '&:hover': {
+                      "&:hover": {
                         borderColor: "#b91c1c",
-                        backgroundColor: scrolled ? "rgba(220, 38, 38, 0.04)" : "rgba(255, 255, 255, 0.1)",
-                      }
+                        backgroundColor: scrolled
+                          ? "rgba(220, 38, 38, 0.04)"
+                          : "rgba(255, 255, 255, 0.1)",
+                      },
                     }}
                     className="!rounded-lg !font-medium"
                   >
@@ -484,9 +518,9 @@ export const Navbar = () => {
                     onClick={() => setAuthModal("register")}
                     sx={{
                       backgroundColor: "#dc2626",
-                      '&:hover': {
+                      "&:hover": {
                         backgroundColor: "#b91c1c",
-                      }
+                      },
                     }}
                     className="!rounded-lg !font-medium"
                   >
@@ -501,74 +535,89 @@ export const Navbar = () => {
 
       {/* Mobile Menu */}
       <AnimatePresence>
-      {mobileMenuOpen && (
+        {mobileMenuOpen && (
           <motion.div
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             className="md:hidden fixed inset-x-0 top-0 z-50 bg-white shadow-lg"
-            style={{ display: { xs: 'block', md: 'none' } }} // Ensure it's hidden on desktop
+            style={{ display: { xs: "block", md: "none" } }} // Ensure it's hidden on desktop
           >
             <div className="px-4 pt-5 pb-6">
               <div className="flex items-center justify-between mb-6">
-  
                 <Link to="/" className="flex items-center">
-              <Logo />
-            </Link>
+                  <Logo />
+                </Link>
                 <IconButton onClick={() => setMobileMenuOpen(false)}>
                   <X className="text-gray-600" />
                 </IconButton>
               </div>
-              
+
               <div className="space-y-4">
-                <Link 
-                  to="/marketplace" 
-                  className="block text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                <Link
+                  to="/marketplace"
+                  className="flex items-center text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <ShoppingCart className="w-5 h-5 mr-3" />
                   Marketplace
                 </Link>
-                <Link 
-                  to="/sell" 
-                  className="block text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                <Link
+                  to="/sell"
+                  className="flex items-center text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <DollarSign className="w-5 h-5 mr-3" />
                   Sell Your Car
                 </Link>
-                <Link 
-                  to="/about" 
-                  className="block text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                <Link
+                  to="/about"
+                  className="flex items-center text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
+                  <Info className="w-5 h-5 mr-3" />
                   About Us
                 </Link>
                 {isAuthenticated && (
-                  <Link 
-                    to="/dashboard" 
-                    className="block text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
+                    <LayoutDashboard className="w-5 h-5 mr-3" />
                     My Dashboard
                   </Link>
                 )}
-                
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    className="flex items-center text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
+                    onClick={() => setMobileMenuOpen(false)}
+                  >
+                    <Shield className="w-5 h-5 mr-3" />
+                    Admin Dashboard
+                  </Link>
+                )}
+
                 <div className="pt-2 mt-2 border-t border-gray-200">
                   {isAuthenticated ? (
                     <div className="flex flex-col gap-3">
                       <div className="flex items-center p-2 gap-3">
-                        <Avatar 
+                        <Avatar
                           className="!h-10 !w-10 border-2 border-red-600"
                           sx={{
-                            backgroundColor: '#111827',
-                            color: '#ffffff'
+                            backgroundColor: "#111827",
+                            color: "#ffffff",
                           }}
                         >
                           {user?.username?.[0]?.toUpperCase()}
                         </Avatar>
                         <div>
-                          <div className="font-medium text-gray-900">{user?.username}</div>
-                          <Link 
-                            to="/profile" 
+                          <div className="font-medium text-gray-900">
+                            {user?.username}
+                          </div>
+                          <Link
+                            to="/profile"
                             className="text-sm text-red-600"
                             onClick={() => setMobileMenuOpen(false)}
                           >
@@ -587,10 +636,10 @@ export const Navbar = () => {
                         sx={{
                           color: "#dc2626",
                           borderColor: "#dc2626",
-                          '&:hover': {
+                          "&:hover": {
                             borderColor: "#b91c1c",
                             backgroundColor: "rgba(220, 38, 38, 0.04)",
-                          }
+                          },
                         }}
                         className="!rounded-lg !mt-2 !font-medium"
                       >
@@ -610,11 +659,11 @@ export const Navbar = () => {
                         sx={{
                           color: "#dc2626",
                           borderColor: "#dc2626",
-                          '&:hover': {
+                          "&:hover": {
                             borderColor: "#b91c1c",
                             backgroundColor: "rgba(220, 38, 38, 0.04)",
                           },
-                          marginBottom: "12px"
+                          marginBottom: "12px",
                         }}
                         className="!rounded-lg !font-medium"
                       >
@@ -630,9 +679,9 @@ export const Navbar = () => {
                         }}
                         sx={{
                           backgroundColor: "#dc2626",
-                          '&:hover': {
+                          "&:hover": {
                             backgroundColor: "#b91c1c",
-                          }
+                          },
                         }}
                         className="!rounded-lg !font-medium"
                       >

@@ -1,5 +1,5 @@
 from django.contrib import admin
-from .models import User, Vehicle, Bid, Profile, VehicleImage, Notification
+from .models import User, Vehicle, Bid, Profile, VehicleImage, Notification, VehicleSearch
 
 class AdminProfileOverview(admin.ModelAdmin):
     list_display = (
@@ -43,9 +43,19 @@ class AdminBidOverview(admin.ModelAdmin):
     )
     search_fields = ("vehicle",)
 
+class AdminVehicleSearchOverview(admin.ModelAdmin):
+    list_display = (
+        "id",
+        "user",
+        "make",
+        "match_count"
+    )
+    search_fields = ("user",)
+    list_filter = ("created_at",)
 
 admin.site.register(Vehicle, AdminVehicleOverview)
 admin.site.register(Bid, AdminBidOverview)
 admin.site.register(VehicleImage, AdminImageOverview)
 admin.site.register(Profile, AdminProfileOverview)
 admin.site.register(Notification, AdminNotificationOverview)
+admin.site.register(VehicleSearch, AdminVehicleSearchOverview)

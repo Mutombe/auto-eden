@@ -2,6 +2,30 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../utils/api";
 
+export const fetchBids = createAsyncThunk(
+  'bids/fetchAll',
+  async (_, { rejectWithValue }) => {
+    try {
+      const { data } = await api.get('/core/bids/all_bids/');
+      return data;
+    } catch (err) {
+      return rejectWithValue(err.response.data);
+    }
+  }
+);
+
+export const deleteBid = createAsyncThunk(
+  'bids/delete',
+  async (bidId, { rejectWithValue }) => {
+    try {
+      await api.delete(`/core/bids/${bidId}/`);
+      return bidId;
+    } catch (err) {
+      return rejectWithValue(err.response.data);
+    }
+  }
+);
+
 export const placeBid = createAsyncThunk(
   "bids/place",
   async ({ vehicleId, amount }, { rejectWithValue }) => {
@@ -42,6 +66,7 @@ const bidSlice = createSlice({
   name: "bids",
   initialState: {
     items: [],
+    allBids: [],
     biddersCache: {},
     loading: false,
     error: null,
@@ -49,6 +74,18 @@ const bidSlice = createSlice({
   reducers: {},
   extraReducers: (builder) => {
     builder
+      .addCase(fetchBids.pending, (state) => {
+        state.loading = true;
+      })
+      .addCase(fetchBids.fulfilled, (state, action) => {    
+        state.loading = false;
+        //state.items = action.payload;
+        state.allBids = action.payload;
+      })
+      .addCase(fetchBids.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
+      })
       .addCase(placeBid.pending, (state) => {
         state.loading = true;
       })
@@ -71,10 +108,12 @@ const bidSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
-    
       .addCase(fetchBidderDetails.fulfilled, (state, action) => {
             state.biddersCache[action.meta.arg] = action.payload;
       })
+      .addCase(deleteBid.fulfilled, (state, action) => {
+        state.allBids = state.allBids.filter(bid => bid.id !== action.payload);
+      });
   
   },
 });

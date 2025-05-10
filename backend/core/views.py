@@ -1,9 +1,9 @@
 # vehicles/views.py
 from rest_framework import viewsets, permissions
-from .models import Vehicle, Bid, Profile, User
+from .models import Vehicle, Bid, Profile, User, VehicleSearch
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
-from .serializers import PublicVehicleSerializer, VehicleDetailSerializer, VehicleReviewSerializer, VehicleSerializer, BidSerializer, ProfileSerializer, UserSerializer
+from .serializers import PublicVehicleSerializer, QuoteRequestSerializer, VehicleDetailSerializer, VehicleReviewSerializer, VehicleSearchSerializer, VehicleSerializer, BidSerializer, ProfileSerializer, UserSerializer
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .permissions import IsOwnerOrAdmin
@@ -182,6 +182,30 @@ class VehicleViewSet(viewsets.ModelViewSet):
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
     
+class VehicleSearchViewSet(viewsets.ModelViewSet):
+    serializer_class = VehicleSearchSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return VehicleSearch.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        serializer.save(user=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def pause(self, request, pk=None):
+        search = self.get_object()
+        search.status = 'paused'
+        search.save()
+        return Response({'status': 'search paused'})
+
+    @action(detail=True, methods=['post'])
+    def activate(self, request, pk=None):
+        search = self.get_object()
+        search.status = 'active'
+        search.save()
+        return Response({'status': 'search activated'})
+    
 class BidViewSet(viewsets.ModelViewSet):
     serializer_class = BidSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -191,12 +215,21 @@ class BidViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(bidder=self.request.user)
-
-    @action(detail=False, methods=['get'], url_path='my-bids')
-    def my_bids(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
+    
+    @action(detail=False, methods=['get'], url_path='vehicle-bids/(?P<vehicle_pk>[^/.]+)')
+    def vehicle_bids(self, request, vehicle_pk=None):
+        vehicle = get_object_or_404(Vehicle, pk=vehicle_pk)
+        # You might want to add permission check here
+        queryset = Bid.objects.filter(vehicle=vehicle)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
+    def all_bids(self, request):
+        queryset = Bid.objects.all()
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+    
     
 class MarketplaceView(APIView):
     permission_classes = [permissions.AllowAny]
@@ -256,3 +289,24 @@ class UserViewSet(viewsets.ModelViewSet):
         queryset = User.objects.filter(is_active=False)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+class QuoteRequestView(APIView):
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request, vehicle_id):
+        try:
+            vehicle = Vehicle.objects.get(id=vehicle_id, listing_type='instant_sale')
+        except Vehicle.DoesNotExist:
+            return Response(
+                {"detail": "Vehicle not found or not available for quotes"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = QuoteRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            quote = serializer.save(
+                vehicle=vehicle,
+                user=request.user if request.user.is_authenticated else None
+            )
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

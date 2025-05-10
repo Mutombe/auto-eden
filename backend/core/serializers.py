@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Vehicle, VehicleImage, Bid, Profile, User
+from .models import QuoteRequest, Vehicle, VehicleImage, Bid, Profile, User, VehicleSearch
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -64,11 +64,12 @@ class VehicleSerializerrs(serializers.ModelSerializer):
         write_only=True,
         required=True
     )
+    owner = UserSerializer(read_only=True)
     
     class Meta:
         model = Vehicle
         fields = '__all__'
-        read_only_fields = ['owner', 'status', 'is_visible']
+        read_only_fields = ['status', 'is_visible']
         extra_kwargs = {
             'vin': {'required': True},
             'mileage': {'required': True},
@@ -97,11 +98,12 @@ class VehicleSerializer(serializers.ModelSerializer):
         write_only=True,
         required=True
     )
+    owner = UserSerializer(read_only=True)
     
     class Meta:
         model = Vehicle
         fields = '__all__'
-        read_only_fields = ['owner', 'status', 'is_visible']
+        read_only_fields = ['status', 'is_visible']
         extra_kwargs = {
             'vin': {'required': True},
             'mileage': {'required': True},
@@ -146,10 +148,12 @@ class VehicleReviewSerializer(serializers.ModelSerializer):
         return data
 
 class BidSerializer(serializers.ModelSerializer):
+    vehicle = VehicleSerializer(read_only=True)
+    bidder = UserSerializer(read_only=True)
     class Meta:
         model = Bid
         fields = '__all__'
-        read_only_fields = ['bidder', 'status']
+        read_only_fields = ['status']
 
 class PublicVehicleSerializer(serializers.ModelSerializer):
     class Meta:
@@ -164,3 +168,18 @@ class VehicleDetailSerializer(PublicVehicleSerializer):
         fields = PublicVehicleSerializer.Meta.fields + [
             'vin', 'owner', 'bids'
         ]
+
+# vehicles/serializers.py
+class VehicleSearchSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = VehicleSearch
+        fields = '__all__'
+        read_only_fields = ('user', 'status', 'last_matched', 'match_count')
+
+# Add to vehicles/serializers.py
+class QuoteRequestSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = QuoteRequest
+        fields = '__all__'
+        read_only_fields = ('user', 'vehicle', 'is_processed', 'created_at')
+        
