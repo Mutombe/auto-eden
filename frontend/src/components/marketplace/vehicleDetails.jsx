@@ -16,6 +16,7 @@ import {
   TrendingUp,
   Clock,
   ArrowLeft,
+  X
 } from "lucide-react";
 import {
   Button,
@@ -28,6 +29,10 @@ import {
   CircularProgress,
   Divider,
   Badge,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from "@mui/material";
 import { motion } from "framer-motion";
 import { useMemo } from "react";
@@ -44,6 +49,15 @@ export default function CarDetailsPage() {
   const [bidMessage, setBidMessage] = useState("");
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [authModal, setAuthModal] = useState(null);
+  const [quoteForm, setQuoteForm] = useState({
+    fullName: "",
+    email: "",
+    country: "",
+    city: "",
+    address: "",
+    telephone: "",
+    note: "",
+  });
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -178,7 +192,7 @@ export default function CarDetailsPage() {
                 )}
               </div>
 
-              <Divider className="!my-6"/>
+              <Divider className="!my-6" />
 
               {/* Specifications Grid */}
               <div className="grid grid-cols-2 gap-4">
@@ -200,7 +214,7 @@ export default function CarDetailsPage() {
                 </div>
               </div>
 
-              <Divider className="!my-6"/>
+              <Divider className="!my-6" />
 
               {/* Bid/Quote Section */}
               {vehicle.listing_type === "marketplace" ? (
@@ -218,7 +232,7 @@ export default function CarDetailsPage() {
                           startAdornment: <DollarSign className="mr-2" />,
                         }}
                       />
-                      <Divider className="!my-2"/>
+                      <Divider className="!my-2" />
                       <TextField
                         fullWidth
                         multiline
@@ -227,7 +241,7 @@ export default function CarDetailsPage() {
                         value={bidMessage}
                         onChange={(e) => setBidMessage(e.target.value)}
                       />
-                      <Divider className="!my-2"/>
+                      <Divider className="!my-2" />
                       <Button
                         fullWidth
                         variant="contained"
@@ -247,7 +261,7 @@ export default function CarDetailsPage() {
                       >
                         Login to Place Bid
                       </Button>
-                      <Divider className="!my-2"/>
+                      <Divider className="!my-2">or</Divider>
                       <Button
                         fullWidth
                         variant="outlined"
@@ -286,7 +300,132 @@ export default function CarDetailsPage() {
 
       {/* Quote Modal (similar to existing) */}
       <Dialog open={showQuoteModal} onClose={() => setShowQuoteModal(false)}>
-        {/* ... Your existing quote modal content ... */}
+        <div className="p-6">
+          <div className="flex justify-between items-center mb-4">
+            <h3 className="text-xl font-bold">Get Vehicle Quote</h3>
+            <IconButton onClick={() => setShowQuoteModal(false)}>
+              <X />
+            </IconButton>
+          </div>
+
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              // Handle quote submission
+              setShowQuoteModal(false);
+              setSnackbar({
+                open: true,
+                message: "Quote request submitted successfully!",
+                severity: "success",
+              });
+            }}
+          >
+            <div className="space-y-4">
+              <TextField
+                fullWidth
+                label="Full Name"
+                sx={{ paddingBottom: "0.5rem" }}
+                required
+                value={quoteForm.fullName}
+                onChange={(e) =>
+                  setQuoteForm({ ...quoteForm, fullName: e.target.value })
+                }
+              />
+
+              <TextField
+                fullWidth
+                label="Email Address"
+                sx={{ paddingBottom: "0.5rem" }}
+                type="email"
+                required
+                value={quoteForm.email}
+                onChange={(e) =>
+                  setQuoteForm({ ...quoteForm, email: e.target.value })
+                }
+              />
+
+              <FormControl fullWidth sx={{ paddingBottom: "0.5rem" }}>
+                <InputLabel>Country</InputLabel>
+                <Select
+                  value={quoteForm.country}
+                  label="Country"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, country: e.target.value })
+                  }
+                  required
+                >
+                  {/* Add countries list - you might want to import a full list */}
+                  <MenuItem value="USA">United States</MenuItem>
+                  <MenuItem value="UK">United Kingdom</MenuItem>
+                  <MenuItem value="Germany">Germany</MenuItem>
+                  {/* ... more countries */}
+                </Select>
+              </FormControl>
+
+              <div className="grid grid-cols-2 gap-4">
+                <TextField
+                  fullWidth
+                  label="City"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  required
+                  value={quoteForm.city}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, city: e.target.value })
+                  }
+                />
+                <TextField
+                  fullWidth
+                  label="Telephone"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  type="tel"
+                  required
+                  value={quoteForm.telephone}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, telephone: e.target.value })
+                  }
+                />
+              </div>
+
+              <TextField
+                fullWidth
+                label="Address"
+                sx={{ paddingBottom: "0.5rem" }}
+                multiline
+                rows={2}
+                value={quoteForm.address}
+                onChange={(e) =>
+                  setQuoteForm({ ...quoteForm, address: e.target.value })
+                }
+              />
+
+              <TextField
+                fullWidth
+                label="Additional Notes"
+                sx={{ paddingBottom: "0.5rem" }}
+                placeholder="Any specific requirements or details?"
+                multiline
+                rows={3}
+                value={quoteForm.note}
+                onChange={(e) =>
+                  setQuoteForm({ ...quoteForm, note: e.target.value })
+                }
+              />
+
+              <Button
+                type="submit"
+                fullWidth
+                variant="contained"
+                sx={{
+                  backgroundColor: "#3b82f6",
+                  "&:hover": { backgroundColor: "#2563eb" },
+                }}
+              >
+                Submit Quote Request
+              </Button>
+            </div>
+          </form>
+        </div>
       </Dialog>
 
       <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />

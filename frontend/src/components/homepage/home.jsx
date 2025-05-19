@@ -153,7 +153,7 @@ export default function HomePage() {
                   variants={itemVariants}
                   className="text-lg md:text-xl mb-8 text-gray-200 max-w-xl"
                 >
-                  Discover verified pre-owned vehicles or sell your car with confidence and ease.
+                  Discover verified new and pre-owned vehicles or sell your car with confidence and ease.
                   Experience the premium car marketplace designed for the modern driver.
                 </motion.p>
                 
