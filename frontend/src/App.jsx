@@ -8,6 +8,7 @@ import AboutPage from './components/about/about';
 import BuyMyCarPage from './components/buymycar/buymycar';
 import ProfilePage from './components/profile/profile';
 import AdminDashboard from './components/dashboard/adminDashboard';
+import CarDetailsPage from './components/marketplace/vehicleDetails';
 
 
 function App() {
@@ -18,6 +19,7 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/dashboard" element={<DashboardPage />} />
         <Route path="/marketplace" element={<MarketplacePage />} />
+        <Route path='/vehicles/:vehicleId' element={<CarDetailsPage />} />
         <Route path='/sell' element={< BuyMyCarPage />} />
         <Route path='/about' element={< AboutPage />} />
         <Route path='/profile' element={< ProfilePage/>} />

@@ -82,6 +82,7 @@ class Vehicle(models.Model):
     is_visible = models.BooleanField(default=True)
     status = models.CharField(max_length=20, choices=VEHICLE_STATUS, default='pending')
     listing_type = models.CharField(max_length=20, choices=LISTING_TYPE)
+    location = models.CharField(max_length=50, blank=True, null=True, default="None")
     fuel_type = models.CharField(max_length=50, blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For marketplace
     rejection_reason = models.TextField(blank=True, null=True)
