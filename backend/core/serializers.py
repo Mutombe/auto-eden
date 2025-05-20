@@ -52,6 +52,13 @@ class ProfileSerializer(serializers.ModelSerializer):
         return instance
     
 class VehicleImageSerializer(serializers.ModelSerializer):
+    image = serializers.SerializerMethodField()
+
+    def get_image(self, obj):
+        request = self.context.get('request')
+        if obj.image:
+            return request.build_absolute_uri(obj.image.url)
+        return None
     class Meta:
         model = VehicleImage
         fields = ['image']
