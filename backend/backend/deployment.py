@@ -6,6 +6,7 @@ from .settings import BASE_DIR
 ALLOWED_HOSTS = [
     os.environ.get('RENDER_EXTERNAL_HOSTNAME'),
     'auto-eden-backend.onrender.com',
+    'https://autoeden.co.zw'
     'auto-eden.onrender.com',
 ]
 
@@ -15,6 +16,7 @@ SECRET_KEY = SECRET_KEY
 # CORS SETTINGS
 CORS_ALLOWED_ORIGINS = [
     'https://auto-eden.onrender.com',
+    'https://autoeden.co.zw'
     'https://www.auto-eden.onrender.com'
     'http://localhost:5173',
 ]
@@ -51,6 +53,7 @@ CORS_EXPOSE_HEADERS = [
 
 CSRF_TRUSTED_ORIGINS = [
     'https://auto-eden.onrender.com',
+    'https://autoeden.co.zw'
     'https://auto-eden-backend.onrender.com'
 ]
 
