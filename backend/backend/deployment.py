@@ -18,6 +18,7 @@ CORS_ALLOWED_ORIGINS = [
     'https://auto-eden.onrender.com',
     'https://autoeden.co.zw',
     'https://www.auto-eden.onrender.com',
+    'https://auto-eden-backend.onrender.com',
     'http://localhost:5173',
 ]
 
@@ -53,7 +54,7 @@ CORS_EXPOSE_HEADERS = [
 
 CSRF_TRUSTED_ORIGINS = [
     'https://auto-eden.onrender.com',
-    'https://autoeden.co.zw'
+    'https://autoeden.co.zw',
     'https://auto-eden-backend.onrender.com'
 ]
 
@@ -105,11 +106,11 @@ SECURE_HSTS_PRELOAD = True
 # REST FRAMEWORK SETTINGS
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
-        'rest_framework_simplejwt.authentication.JWTAuthentication',
         'rest_framework.authentication.SessionAuthentication',
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
     ],
     'DEFAULT_PERMISSION_CLASSES': [
-       'rest_framework.permissions.IsAuthenticated',
+       'rest_framework.permissions.AllowAny',
     ],
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
