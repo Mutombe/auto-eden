@@ -147,7 +147,18 @@ export const AuthModals = ({ openType, onClose }) => {
 
   return (
     <>
-      <Dialog open={!!openType} onClose={onClose} maxWidth="xs" fullWidth>
+      <Dialog
+        open={!!openType}
+        onClose={onClose}
+        maxWidth="xs"
+        fullWidth
+        sx={{
+          "& .MuiPaper-root": {
+            backgroundColor: "#f9fafb !important",
+            color: "#1f2937 !important",
+          },
+        }}
+      >
         <motion.div
           initial={{ scale: 0.95 }}
           animate={{ scale: 1 }}
@@ -371,8 +382,10 @@ export const Navbar = () => {
   return (
     <nav
       className={`fixed top-0 left-0 right-0 z-40 transition-all duration-300 ${
-        scrolled ? "bg-white shadow-md" : "bg-gray-100"
-      }`}
+        scrolled
+          ? "bg-white dark:bg-white shadow-md"
+          : "bg-gray-100 dark:bg-gray-100"
+      } dark:text-gray-800`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-20">
