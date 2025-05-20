@@ -110,12 +110,6 @@ class QuoteRequest(models.Model):
         on_delete=models.CASCADE,
         related_name='quote_requests'
     )
-    user = models.ForeignKey(
-        User, 
-        on_delete=models.SET_NULL, 
-        null=True,
-        blank=True
-    )
     full_name = models.CharField(max_length=255)
     email = models.EmailField()
     country = models.CharField(max_length=100)
