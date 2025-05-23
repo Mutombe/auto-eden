@@ -162,10 +162,10 @@ export default function BuyMyCarPage() {
                 </div>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
-                Sell Your Car in Minutes
+                Quick Sale
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Get an instant offer from Auto Eden. No haggling, no paperwork -
+                Get an instant offer from Auto Eden. No haggling -
                 just a fair price for your vehicle.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">

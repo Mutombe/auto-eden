@@ -245,8 +245,6 @@ class MarketplaceView(APIView):
         if min_price:
             vehicles = vehicles.filter(price__gte=min_price)
         
-        # Add similar filters for maxPrice, make, year
-        
         # Add sorting
         sort_by = request.query_params.get('sortBy')
         if sort_by == 'priceLowHigh':
@@ -258,6 +256,7 @@ class MarketplaceView(APIView):
             
         serializer = VehicleSerializer(vehicles, many=True)
         return Response(serializer.data)
+    
 class InstantSaleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [permissions.IsAuthenticated]

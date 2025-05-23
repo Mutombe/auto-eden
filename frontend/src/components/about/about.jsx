@@ -99,10 +99,10 @@ export default function AboutPage() {
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-6">About Auto Eden</h1>
             <p className="text-lg md:text-xl text-gray-200 mb-10">
-              Redefining the experience of buying and selling premium pre-owned vehicles through transparency, 
+              Redefining the experience of buying and selling brand-new and premium pre-owned vehicles through transparency, 
               innovation, and exceptional service.
             </p>
-            <div className="flex justify-center">
+            {/*<div className="flex justify-center">
               <Button
                 variant="contained"
                 size="large"
@@ -111,7 +111,7 @@ export default function AboutPage() {
               >
                 Our Story
               </Button>
-            </div>
+            </div>*/}
           </motion.div>
         </div>
       </div>
@@ -126,7 +126,7 @@ export default function AboutPage() {
             >
               <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Journey</h2>
               <p className="text-lg text-gray-700 mb-6">
-                Founded in 2018, Auto Eden began with a simple yet powerful vision: to create a marketplace where buying and selling cars would be a pleasant, transparent, and rewarding experience. Our founders, having experienced the frustrations of traditional car dealerships and private sales, saw an opportunity to combine technology, expertise, and customer service to transform the industry.
+                Founded in 2019, Auto Eden began with a simple yet powerful vision: to create a marketplace where buying and selling cars would be a pleasant, transparent, and rewarding experience. Our founders, having experienced the frustrations of traditional car dealerships and private sales, saw an opportunity to combine technology, expertise, and customer service to transform the industry.
               </p>
               <p className="text-lg text-gray-700 mb-6">
                 What started as a small team with big dreams has evolved into a national platform trusted by thousands of customers. Our commitment to verification, fair pricing, and exceptional service has made us a leader in the premium pre-owned vehicle market.
@@ -143,12 +143,12 @@ export default function AboutPage() {
             >
               <div className="relative rounded-xl overflow-hidden shadow-xl">
                 <img 
-                  src="/about.jpg" 
+                  src="/about.png" 
                   alt="Auto Eden headquarters" 
                   className="w-full h-auto"
                 />
                 <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                  <p className="text-white font-medium">Our headquarters in Chisipiti</p>
+                  <p className="text-white font-medium">Our headquarters</p>
                 </div>
               </div>
             </motion.div>
