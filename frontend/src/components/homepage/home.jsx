@@ -337,7 +337,7 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Featured Listings - Enhanced with card design */}
+      {/* Featured Listings - Enhanced with card design 
       <div ref={listingsRef} className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -431,9 +431,9 @@ export default function HomePage() {
             ))}
           </motion.div>
         </div>
-      </div>
+      </div>*/}
 
-      {/* Mobile App Promotion - New Section */}
+      {/* Mobile App Promotion - New Section 
       <div className="bg-white py-16">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col md:flex-row items-center bg-gradient-to-r from-gray-900 to-red-900 rounded-2xl overflow-hidden shadow-xl">
@@ -478,13 +478,12 @@ export default function HomePage() {
                 transition={{ duration: 0.7, type: "spring" }}
                 className="h-full"
               >
-                {/*<img 
+                <img 
                   src="/mobile-app-preview.png" 
                   alt="Auto Eden Mobile App"
                   className="w-full h-full object-cover" 
-                />*/}
+                />
               </motion.div>
-              {/* Floating notification */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -505,7 +504,7 @@ export default function HomePage() {
             </div>
           </div>
         </div>
-      </div>
+      </div>*/}
 
       {/* Testimonial Section - New Section */}
       <div className="bg-gray-50 py-16">
@@ -525,19 +524,19 @@ export default function HomePage() {
           <div className="grid md:grid-cols-3 gap-8">
             {[
               {
-                name: "Jane Cooper",
+                name: "Simbarashe Mutombe",
                 role: "Buyer",
                 image: "user.jpg",
                 quote: "The mobile experience was seamless. I found my dream car while on my lunch break and completed the purchase the same day!"
               },
               {
-                name: "Robert Johnson",
+                name: "Tenda Chabarwa",
                 role: "Seller",
                 image: "/user.jpg",
                 quote: "Selling my car was incredibly easy. The valuation was fair, and I had offers within 24 hours. I'll never go back to traditional dealerships."
               },
               {
-                name: "Sarah Thompson",
+                name: "Takunda Tapfuma",
                 role: "Buyer",
                 image: "/user.jpg",
                 quote: "The verification process gave me peace of mind. Knowing every vehicle is thoroughly checked made the entire experience stress-free."

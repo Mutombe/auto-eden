@@ -10,7 +10,7 @@ ALLOWED_HOSTS = [
     'auto-eden.onrender.com',
 ]
 
-DEBUG = False
+DEBUG = True
 SECRET_KEY = SECRET_KEY
 
 # CORS SETTINGS
@@ -19,7 +19,7 @@ CORS_ALLOWED_ORIGINS = [
     'https://autoeden.co.zw',
     'https://www.auto-eden.onrender.com',
     'https://auto-eden-backend.onrender.com',
-    'http://localhost:5173',
+    'http://localhost:5175',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
