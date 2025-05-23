@@ -165,8 +165,8 @@ export default function BuyMyCarPage() {
                 Quick Sale
               </h1>
               <p className="text-lg md:text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
-                Get an instant offer from Auto Eden. No haggling -
-                just a fair price for your vehicle.
+                Get an instant offer from Auto Eden. No haggling - just a fair
+                price for your vehicle.
               </p>
               <div className="flex flex-col sm:flex-row justify-center gap-4">
                 <button
@@ -225,6 +225,7 @@ export default function BuyMyCarPage() {
             </div>
           </motion.div>
         </div>
+        <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
       </div>
     );
   }
