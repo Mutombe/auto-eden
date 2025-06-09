@@ -43,8 +43,6 @@ class Notification(models.Model):
 
     def __str__(self):
         return f"{self.get_notification_type_display()} - {self.user.username}"
-    
-
 
 class Vehicle(models.Model):
     VEHICLE_STATUS = (
@@ -103,7 +101,6 @@ class VehicleImage(models.Model):
     def __str__(self):
         return f"Image for {self.vehicle}"
     
-# Add to vehicles/models.py
 class QuoteRequest(models.Model):
     vehicle = models.ForeignKey(
         Vehicle, 

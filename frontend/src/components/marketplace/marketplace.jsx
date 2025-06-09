@@ -720,7 +720,12 @@ export default function MarketplacePage() {
                     }`}
                   >
                     <img
-                      src={vehicle.images?.[0]?.image || 'placeholder.jpg'}
+                      src={
+                        `${
+                          import.meta.env.VITE_API_BASE_URL_LOCAL ||
+                          import.meta.env.VITE_API_BASE_URL_DEPLOY
+                        }${vehicle.images?.[0]?.image}` || "placeholder.jpg"
+                      }
                       alt={`${vehicle.make} ${vehicle.model}`}
                       className={`w-full object-cover ${
                         viewMode === "list"
@@ -743,7 +748,7 @@ export default function MarketplacePage() {
                         label={
                           vehicle.listing_type === "instant_sale"
                             ? "Buy Now"
-                            : "Auction"
+                            : "Marketplace"
                         }
                         color={
                           vehicle.listing_type === "instant_sale"
@@ -858,7 +863,7 @@ export default function MarketplacePage() {
                           }}
                           className="!rounded-lg !font-medium"
                         >
-                          Place Bid
+                          Make an offer
                         </Button>
                       ) : (
                         <Button

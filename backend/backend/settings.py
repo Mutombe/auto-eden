@@ -43,16 +43,16 @@ MIDDLEWARE = [
 ]
 
 CORS_ALLOWED_ORIGINS = [
-    'http://localhost:5175',
+    'http://localhost:5173',
     'https://auto-eden.onrender.com',
     'https://autoeden.co.zw',
-    'http://127.0.0.1:5175',
+    'http://127.0.0.1:5173',
 ]
 
 CORS_TRUSTED_ORIGINS = [
     'https://auto-eden.onrender.com/',
     'https://autoeden.co.zw/',
-    'http://localhost:5175',
+    'http://localhost:5173',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -108,6 +108,7 @@ EMAIL_HOST_PASSWORD = 'itzh jjkc hdmv csih'
 DEFAULT_FROM_EMAIL = 'noreply@auto-eden.com'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
+ADMIN_EMAIL = 'simbamtombe@gmail.com'  # Admin email for notifications
 AUTHENTICATION_BACKENDS = [
    'django.contrib.auth.backends.ModelBackend',
 ]

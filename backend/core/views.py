@@ -13,6 +13,13 @@ from rest_framework import status
 from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework.decorators import action
+from django.core.mail import EmailMessage
+from django.template.loader import render_to_string
+from django.core.mail import send_mail
+from django.utils.html import strip_tags
+from django.conf import settings
+from xhtml2pdf import pisa
+from io import BytesIO
 
 class RegisterView(APIView):
     permission_classes = [AllowAny]
@@ -274,6 +281,97 @@ class InstantSaleViewSet(viewsets.ModelViewSet):
             status='pending'
         )
 
+
+
+class QuoteRequestView(APIView):
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request, vehicle_id):
+        try:
+            vehicle = Vehicle.objects.get(id=vehicle_id)
+        except Vehicle.DoesNotExist:
+            return Response(
+                {"detail": "Vehicle not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        serializer = QuoteRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            quote = serializer.save(
+                vehicle=vehicle,
+            )
+            
+            # Generate and send PDF
+            self.send_quote_email(quote, vehicle)
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def send_quote_email(self, quote, vehicle):
+        # Generate PDF
+        pdf_buffer = self.generate_quote_pdf(quote, vehicle)
+        
+        # Prepare email
+        subject = f"Your Quote for {vehicle.make} {vehicle.model}"
+        from_email = settings.DEFAULT_FROM_EMAIL
+        to_email = [quote.email]
+        
+        # Create email with PDF attachment
+        email = EmailMessage(subject, "", from_email, to_email)
+        email.attach(
+            f"quote_{quote.id}.pdf", 
+            pdf_buffer.getvalue(), 
+            "application/pdf"
+        )
+        
+        # Send email
+        email.send()
+        
+        # Also notify admins
+        self.notify_admins(quote, vehicle)
+
+    def generate_quote_pdf(self, quote, vehicle):
+        template = 'quotes/quote_pdf.html'
+        context = {
+            'quote': quote,
+            'vehicle': vehicle,
+            'date': quote.created_at.strftime("%B %d, %Y")
+        }
+        
+        html = render_to_string(template, context)
+        buffer = BytesIO()
+        
+        # Create PDF
+        pisa_status = pisa.CreatePDF(html, dest=buffer)
+        
+        if pisa_status.err:
+            raise Exception('PDF generation failed')
+            
+        buffer.seek(0)
+        return buffer
+
+    def notify_admins(self, quote, vehicle):
+        admin_subject = f"New Quote Request: {vehicle.make} {vehicle.model}"
+        admin_message = render_to_string('emails/new_quote_admin.html', {
+            'quote': quote,
+            'vehicle': vehicle
+        })
+        
+        # Send to all admin users
+        admin_emails = User.objects.filter(
+            is_staff=True
+        ).values_list('email', flat=True)
+        
+        if admin_emails:
+            send_mail(
+                admin_subject,
+                strip_tags(admin_message),
+                settings.DEFAULT_FROM_EMAIL,
+                admin_emails,
+                html_message=admin_message,
+                fail_silently=False
+            )
+
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
@@ -288,7 +386,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-class QuoteRequestView(APIView):
+class QuoteRequestVieww(APIView):
     permission_classes = [permissions.AllowAny]
     
     def post(self, request, vehicle_id):

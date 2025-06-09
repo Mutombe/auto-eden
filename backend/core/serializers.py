@@ -57,46 +57,17 @@ class VehicleImageSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         request = self.context.get('request')
         if obj.image:
-            return request.build_absolute_uri(obj.image.url)
+            if request:
+                return request.build_absolute_uri(obj.image.url)
+            else:
+                # Fallback when request context is not available
+                return obj.image.url
         return None
+    
     class Meta:
         model = VehicleImage
         fields = ['image']
         read_only_fields = ['vehicle']
-
-class VehicleSerializerrs(serializers.ModelSerializer):
-    images = VehicleImageSerializer(many=True, read_only=True)
-    image_files = serializers.ListField(
-        child=serializers.FileField(max_length=100000, allow_empty_file=False),
-        write_only=True,
-        required=True
-    )
-    owner = UserSerializer(read_only=True)
-    
-    class Meta:
-        model = Vehicle
-        fields = '__all__'
-        read_only_fields = ['status', 'is_visible']
-        extra_kwargs = {
-            'vin': {'required': True},
-            'mileage': {'required': True},
-            'listing_type': {'required': False}
-        }
-
-    def validate(self, data):
-        if self.context['view'].action == 'create_instant_sale':
-            if 'proposed_price' not in data:
-                raise serializers.ValidationError("Price is required for instant sale")
-        return data
-
-    def create(self, validated_data):
-        image_files = validated_data.pop('image_files')
-        vehicle = super().create(validated_data)
-        
-        for image_file in image_files:
-            VehicleImage.objects.create(vehicle=vehicle, image=image_file)
-            
-        return vehicle
     
 class VehicleSerializer(serializers.ModelSerializer):
     images = VehicleImageSerializer(many=True, read_only=True)
@@ -175,8 +146,7 @@ class VehicleDetailSerializer(PublicVehicleSerializer):
         fields = PublicVehicleSerializer.Meta.fields + [
             'vin', 'owner', 'bids'
         ]
-
-# vehicles/serializers.py
+        
 class VehicleSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleSearch
@@ -188,5 +158,5 @@ class QuoteRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuoteRequest
         fields = '__all__'
-        read_only_fields = ('user', 'vehicle', 'is_processed', 'created_at')
+        read_only_fields = ('vehicle', 'is_processed', 'created_at')
         
