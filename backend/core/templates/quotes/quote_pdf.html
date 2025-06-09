@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Vehicle Quote - {{ vehicle.make }} {{ vehicle.model }}</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        .header { text-align: center; margin-bottom: 20px; }
+        .header h1 { color: #dc2626; margin-bottom: 5px; }
+        .details { margin-bottom: 20px; }
+        .section { margin-bottom: 15px; }
+        .section-title { 
+            font-weight: bold; 
+            border-bottom: 2px solid #dc2626; 
+            padding-bottom: 5px;
+            margin-bottom: 10px;
+        }
+        .row { display: flex; margin-bottom: 5px; }
+        .label { width: 150px; font-weight: bold; }
+        .value { flex: 1; }
+        .footer { margin-top: 30px; text-align: center; font-size: 0.9em; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>VEHICLE QUOTATION</h1>
+        <p>Date: {{ date }}</p>
+    </div>
+    
+    <div class="details">
+        <div class="section">
+            <div class="section-title">Vehicle Information</div>
+            <div class="row">
+                <div class="label">Vehicle:</div>
+                <div class="value">{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</div>
+            </div>
+            <div class="row">
+                <div class="label">VIN:</div>
+                <div class="value">{{ vehicle.vin }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Mileage:</div>
+                <div class="value">{{ vehicle.mileage }} km</div>
+            </div>
+            <div class="row">
+                <div class="label">Price:</div>
+                <div class="value">${{ vehicle.price|floatformat:2 }}</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Customer Information</div>
+            <div class="row">
+                <div class="label">Name:</div>
+                <div class="value">{{ quote.full_name }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Email:</div>
+                <div class="value">{{ quote.email }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Phone:</div>
+                <div class="value">{{ quote.telephone }}</div>
+            </div>
+            <div class="row">
+                <div class="label">Address:</div>
+                <div class="value">{{ quote.address }}, {{ quote.city }}, {{ quote.country }}</div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <div class="section-title">Additional Notes</div>
+            <p>{{ quote.note }}</p>
+        </div>
+    </div>
+    
+    <div class="footer">
+        <p>This quote is valid for 30 days from the date of issue.</p>
+        <p>Thank you for your interest in our vehicles!</p>
+    </div>
+</body>
+</html>

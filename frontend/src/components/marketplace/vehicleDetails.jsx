@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { fetchMarketplace } from "../../redux/slices/vehicleSlice";
 import { placeBid } from "../../redux/slices/bidSlice";
+import { requestQuote } from "../../redux/slices/quoteSlice";
 import { AuthModals } from "../navbar/navbar";
 import {
   Car,
@@ -88,6 +89,32 @@ export default function CarDetailsPage() {
       });
     }
   }, [vehicleId, vehicles]);
+
+  const handleSubmitQuote = () => {
+  if (vehicle) {
+    dispatch(
+      requestQuote({
+        vehicleId: vehicle.id,
+        ...quoteForm,
+      })
+    )
+      .then(() => {
+        setShowQuoteModal(false);
+        setSnackbar({
+          open: true,
+          message: "Quote request submitted successfully!",
+          severity: "success",
+        });
+      })
+      .catch((error) => {
+        setSnackbar({
+          open: true,
+          message: error?.message || "Failed to submit quote request",
+          severity: "error",
+        });
+      });
+  }
+};
 
   const handlePlaceBid = () => {
     if (vehicle && bidAmount) {
@@ -219,7 +246,7 @@ export default function CarDetailsPage() {
               {/* Bid/Quote Section */}
               {vehicle.listing_type === "marketplace" ? (
                 <div className="space-y-4">
-                  <h3 className="text-xl font-semibold">Place a Bid</h3>
+                  <h3 className="text-xl font-semibold">Make an offer</h3>
                   {isAuthenticated ? (
                     <>
                       <TextField
@@ -248,7 +275,7 @@ export default function CarDetailsPage() {
                         onClick={handlePlaceBid}
                         sx={{ backgroundColor: "#dc2626" }}
                       >
-                        Submit Bid
+                        Submit Offer
                       </Button>
                     </>
                   ) : (
@@ -259,7 +286,7 @@ export default function CarDetailsPage() {
                         onClick={() => setAuthModal("login")}
                         sx={{ backgroundColor: "#dc2626" }}
                       >
-                        Login to Place Bid
+                        Login to Make an Offer
                       </Button>
                       <Divider className="!my-2">or</Divider>
                       <Button
@@ -311,6 +338,7 @@ export default function CarDetailsPage() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
+               handleSubmitQuote();
               // Handle quote submission
               setShowQuoteModal(false);
               setSnackbar({
@@ -326,9 +354,9 @@ export default function CarDetailsPage() {
                 label="Full Name"
                 sx={{ paddingBottom: "0.5rem" }}
                 required
-                value={quoteForm.fullName}
+                value={quoteForm.full_name}
                 onChange={(e) =>
-                  setQuoteForm({ ...quoteForm, fullName: e.target.value })
+                  setQuoteForm({ ...quoteForm, full_name: e.target.value })
                 }
               />
 

@@ -1,0 +1,17 @@
+<h3>Your Vehicle Search Matched!</h3>
+<p>We found a new vehicle that matches your saved search for:</p>
+<ul>
+    <li>Make: {{ search.make }}</li>
+    <li>Model: {{ search.model }}</li>
+    <li>Year Range: {{ search.min_year }}-{{ search.max_year }}</li>
+</ul>
+
+<p>Matching Vehicle Details:</p>
+<ul>
+    <li>Make/Model: {{ vehicle.make }} {{ vehicle.model }}</li>
+    <li>Year: {{ vehicle.year }}</li>
+    <li>Price: ${{ vehicle.price }}</li>
+    <li>Mileage: {{ vehicle.mileage }} km</li>
+</ul>
+
+<p><a href="[URL to vehicle detail page]">View this vehicle</a></p>

@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>New Quote Request</title>
+</head>
+<body>
+    <h2>New Quote Request Received</h2>
+    
+    <p><strong>Vehicle:</strong> 
+        {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} (VIN: {{ vehicle.vin }})
+    </p>
+    
+    <p><strong>Customer:</strong> {{ quote.full_name }}</p>
+    <p><strong>Email:</strong> {{ quote.email }}</p>
+    <p><strong>Phone:</strong> {{ quote.telephone }}</p>
+    <p><strong>Location:</strong> {{ quote.city }}, {{ quote.country }}</p>
+    
+    <h3>Customer Notes:</h3>
+    <p>{{ quote.note }}</p>
+    
+    <p>View vehicle details in admin: 
+        <a href="{{ admin_base_url }}/admin/vehicles/vehicle/{{ vehicle.id }}/change/">
+            {{ vehicle.make }} {{ vehicle.model }}
+        </a>
+    </p>
+</body>
+</html>

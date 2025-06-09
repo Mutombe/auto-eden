@@ -1,0 +1,9 @@
+<h3>New Bid Received</h3>
+<p>Details of the new bid:</p>
+<ul>
+    <li>Vehicle: {{ bid.vehicle }}</li>
+    <li>Bidder: {{ bid.bidder.get_full_name }} ({{ bid.bidder.email }})</li>
+    <li>Amount: ${{ bid.amount }}</li>
+    <li>Message: {{ bid.message }}</li>
+</ul>
+<p>Review bid: [Link to admin view]</p>

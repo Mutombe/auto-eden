@@ -5,6 +5,7 @@ import vehicleReducer from '../slices/vehicleSlice';
 import bidReducer from '../slices/bidSlice';
 import profileReducer from '../slices/profileSlice';
 import searchReducer from '../slices/searchSlice';
+import quoteReducer from '../slices/quoteSlice';
 
 export default configureStore({
   reducer: {
@@ -13,5 +14,6 @@ export default configureStore({
     bids: bidReducer,
     profile: profileReducer,
     searches: searchReducer,
+    quotes: quoteReducer,
   },
 });

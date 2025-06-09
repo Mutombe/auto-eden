@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import QuoteRequestView, VehicleViewSet,VehicleSearchViewSet, BidViewSet, RegisterView, CustomTokenObtainPairView, MarketplaceView, InstantSaleViewSet, ProfileView, UserViewSet, PublicVehicleViewSet 
+from .views import QuoteRequestView, VehicleViewSet,VehicleSearchViewSet, BidViewSet, RegisterView, CustomTokenObtainPairView, MarketplaceView, InstantSaleViewSet, ProfileView, UserViewSet, PublicVehicleViewSet
 
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicles')
