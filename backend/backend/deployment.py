@@ -85,11 +85,15 @@ MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'bdrldt8pm2zpmedpthty',
-        'USER': 'uqp8motrebrjmomwi5rj',
-        'PASSWORD': 'b194d9Ya0xA7oeF6GA2HYXXFqiZ98i',
-        'HOST': 'bdrldt8pm2zpmedpthty-postgresql.services.clever-cloud.com',
-        'PORT': '50013',
+        'NAME': 'autoeden_weatherfat',
+        'USER': 'autoeden_weatherfat',
+        'PASSWORD': '834e99407bfeaf721e0f2a482be7b2f6afad7eab',
+        'HOST': 'xs3gi.h.filess.io',
+        'PORT': '5434',
+        'OPTIONS': {
+            'options': '-c search_path=django_schema,public',
+            'connect_timeout': 5,
+        }
     }
 }
 
