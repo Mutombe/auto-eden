@@ -191,7 +191,7 @@ const vehicleSlice = createSlice({
       .addCase(fetchVehicles.fulfilled, (state, action) => {
         state.loading = false;
         console.log("vehicles reducer", action.payload);
-        state.items = action.payload.results;
+        state.items = action.payload.results || action.payload;
       })
       .addCase(fetchVehicles.rejected, (state, action) => {
         state.loading = false;
