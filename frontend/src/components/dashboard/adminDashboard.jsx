@@ -136,7 +136,7 @@ export default function AdminDashboard() {
   });
 
   console.log("all vehicles component", allVehicles);
-  console.log("vehicles", items);
+  console.log("vehicles items", items);
   const ITEMS_PER_PAGE = 10;
 
   useEffect(() => {

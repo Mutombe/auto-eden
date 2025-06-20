@@ -1,6 +1,5 @@
 import axios from "axios";
 
-// Centralized token refresh function
 export const refreshTokens = async (refresh) => {
   try {
     const { data } = await axios.post(
@@ -21,7 +20,6 @@ export const refreshTokens = async (refresh) => {
     throw error;
   }
 };
-
 
 const api = axios.create({
   baseURL:  'https://auto-eden-backend.onrender.com/',
