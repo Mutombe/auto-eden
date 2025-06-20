@@ -48,6 +48,9 @@ def handle_new_bid(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Vehicle)
 def check_vehicle_matches(sender, instance, created, **kwargs):
+    # Initialize matching_searches as an empty queryset
+    matching_searches = VehicleSearch.objects.none()
+
     # Only process marketplace vehicles with a price
     if instance.listing_type == 'marketplace' and instance.price is not None:
         matching_searches = VehicleSearch.objects.filter(
@@ -60,33 +63,30 @@ def check_vehicle_matches(sender, instance, created, **kwargs):
             status='active'
         )
 
-        # Only process if there are matches
-        for search in matching_searches:
-            # Update search status
-            search.match_count += 1
-            search.last_matched = timezone.now()
-            search.status = 'matched'
-            search.save()
+    # Process matches (this will work even if matching_searches is empty)
+    for search in matching_searches:
+        # Update search status
+        search.match_count += 1
+        search.last_matched = timezone.now()
+        search.status = 'matched'
+        search.save()
 
-            # Email to user
-            user_subject = f"New Match: {instance.make} {instance.model} ({instance.year})"
-            user_message = render_to_string('emails/vehicle_search_match.html', {
-                'search': search,
-                'vehicle': instance,
-                'user': search.user
-            })
-            
-            send_mail(
-                user_subject,
-                strip_tags(user_message),  # Plain text version
-                settings.DEFAULT_FROM_EMAIL,
-                [search.user.email],
-                html_message=user_message,
-                fail_silently=False
-            )
-    else:
-        # Exit gracefully for non-marketplace vehicles
-        return
+        # Email to user
+        user_subject = f"New Match: {instance.make} {instance.model} ({instance.year})"
+        user_message = render_to_string('emails/vehicle_search_match.html', {
+            'search': search,
+            'vehicle': instance,
+            'user': search.user
+        })
+        
+        send_mail(
+            user_subject,
+            strip_tags(user_message),
+            settings.DEFAULT_FROM_EMAIL,
+            [search.user.email],
+            html_message=user_message,
+            fail_silently=False
+        )
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):

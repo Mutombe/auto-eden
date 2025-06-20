@@ -81,7 +81,7 @@ class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         fields = '__all__'
-        read_only_fields = ['status', 'is_visible']
+        read_only_fields = ['verification_state', 'is_visible']
         extra_kwargs = {
             'vin': {'required': True},
             'mileage': {'required': True},
@@ -110,16 +110,41 @@ class VehicleSerializer(serializers.ModelSerializer):
             
         return vehicle
 
+class VehicleVerificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Vehicle
+        fields = [
+            'is_digitally_verified',
+            'is_physically_verified',
+            'is_rejected',
+            'rejection_reason',
+            'verification_state' 
+        ]
+        
+    def validate(self, data):
+        # Ensure only one verification state is set
+        verification_fields = [
+            data.get('is_digitally_verified', False),
+            data.get('is_physically_verified', False),
+            data.get('is_rejected', False)
+        ]
+        
+        if sum(verification_fields) > 1:
+            raise serializers.ValidationError(
+                "Only one verification state can be active at a time"
+            )
+        return data
+
 class VehicleReviewSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
-        fields = ['status', 'rejection_reason']
+        fields = ['verification_state', 'rejection_reason']
         extra_kwargs = {
             'rejection_reason': {'required': False}
         }
 
     def validate(self, data):
-        if data.get('status') == 'rejected' and not data.get('rejection_reason'):
+        if data.get('verification_state') == 'rejected' and not data.get('rejection_reason'):
             raise serializers.ValidationError(
                 "Rejection reason is required when rejecting a vehicle"
             )
@@ -136,7 +161,7 @@ class BidSerializer(serializers.ModelSerializer):
 class PublicVehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
-        fields = ['id', 'make', 'model', 'year', 'price', 'mileage', 'status', 'bids']
+        fields = ['id', 'make', 'model', 'year', 'price', 'mileage', 'verification_state', 'bids']
 
 class VehicleDetailSerializer(PublicVehicleSerializer):
     owner = serializers.StringRelatedField()
@@ -151,7 +176,7 @@ class VehicleSearchSerializer(serializers.ModelSerializer):
     class Meta:
         model = VehicleSearch
         fields = '__all__'
-        read_only_fields = ('user', 'status', 'last_matched', 'match_count')
+        read_only_fields = ('user', 'created_at', 'last_matched', 'match_count')
 
 # Add to vehicles/serializers.py
 class QuoteRequestSerializer(serializers.ModelSerializer):

@@ -1,0 +1,23 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Your Vehicle Listing Requires Changes{% endblock %}
+
+{% block content %}
+    <h2>Listing Modification Required</h2>
+    <p>We've reviewed your vehicle submission and found some areas that need attention before it can be published.</p>
+    
+    <div class="vehicle-details">
+        <h3>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h3>
+        <p><strong>Reason for Rejection:</strong></p>
+        <blockquote>{{ reason }}</blockquote>
+    </div>
+
+    <p>Please make the necessary changes and resubmit:</p>
+    <a href="{{ settings.FRONTEND_URL }}/vehicles/{{ vehicle.id }}/edit" class="button">
+        Edit Your Listing
+    </a>
+
+    <p>If you have any questions about our requirements, please don't hesitate to contact our support team.</p>
+    
+    <p>Thank you for your understanding.</p>
+{% endblock %}

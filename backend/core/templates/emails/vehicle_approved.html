@@ -1,0 +1,24 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Your Vehicle Has Been Approved{% endblock %}
+
+{% block content %}
+    <h2>Congratulations!</h2>
+    <p>Your {{ vehicle.make }} {{ vehicle.model }} has been {% if verification_type %}{{ verification_type }}ly {% endif %}approved!</p>
+    
+    <div class="vehicle-details">
+        <h3>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h3>
+        <p>VIN: {{ vehicle.vin }}</p>
+        <p>Mileage: {{ vehicle.mileage|intcomma }} km</p>
+        <p>Listed Price: ${{ vehicle.price|intcomma }}</p>
+    </div>
+
+    <p>You can view your live listing here:</p>
+    <a href="{{ settings.FRONTEND_URL }}/vehicles/{{ vehicle.id }}" class="button">
+        View Your Listing
+    </a>
+
+    <p>Need to make changes? You can edit your listing at any time from your dashboard.</p>
+    
+    <p>Thank you for choosing Auto Eden!</p>
+{% endblock %}

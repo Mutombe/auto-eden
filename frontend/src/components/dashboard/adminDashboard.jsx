@@ -4,6 +4,7 @@ import { motion } from "framer-motion";
 import {
   deleteVehicle,
   fetchPendingReview,
+  updateVehicleStatus,
   fetchVehicles,
   reviewVehicle,
   createVehicle,
@@ -150,7 +151,8 @@ export default function AdminDashboard() {
       reviewVehicle({
         id: selectedVehicle.id,
         data: {
-          status: action === "approve" ? "physically_verified" : "rejected",
+          verification_state:
+            action === "approve" ? "physically_verified" : "rejected",
           rejection_reason: action === "reject" ? rejectionReason : null,
         },
       })
@@ -182,13 +184,13 @@ export default function AdminDashboard() {
     setShowAddModal(true);
   };
 
-  const handleStatusClass = (status) => {
-    switch (status) {
+  const handleStatusClass = (verification_state) => {
+    switch (verification_state) {
       case "pending":
         return "bg-gray-200 text-gray-700";
-      case "digitally_verified":
+      case "digital":
         return "bg-blue-100 text-blue-700";
-      case "physically_verified":
+      case "physical":
         return "bg-green-100 text-green-700";
       case "rejected":
         return "bg-red-100 text-red-700";
@@ -216,45 +218,22 @@ export default function AdminDashboard() {
       : "bg-red-600 text-white";
   };
 
-  const getDisplayData1 = () => {
-    // Get base data (pending vehicles or all items)
-    let displayData = activeTab === 0 ? pendingVehicles || [] : items || [];
-
-    // Only apply filters for the "All Vehicles" tab (activeTab === 1)
-    if (activeTab === 1) {
-      displayData = displayData.filter((vehicle) => {
-        // Search filter only
-        const matchesSearch =
-          filters.search === "" ||
-          `${vehicle.make} ${vehicle.model}`
-            .toLowerCase()
-            .includes(filters.search.toLowerCase());
-
-        // No listing_type filtering - show both marketplace and instant_sale
-        return matchesSearch;
-      });
-    }
-
-    // Pagination
-    const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-    return displayData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
-  };
-
   const tabCounts = {
     pending: pendingVehicles?.length || 0,
     dVerified:
-      items?.filter((v) => v.status === "digitally_verified").length || 0,
+      items?.filter((v) => v.verification_state === "digital").length || 0,
     pVerified:
-      items?.filter((v) => v.status === "physically_verified").length || 0,
-    rejected: items?.filter((v) => v.status === "rejected").length || 0,
+      items?.filter((v) => v.verification_state === "physical").length || 0,
+    rejected:
+      items?.filter((v) => v.verification_state === "rejected").length || 0,
     all: items?.length || 0,
     bids: allBids?.length || 0, // Placeholder for bids count
   };
 
   const tabs = [
     { label: "PENDING", value: "pending" },
-    { label: "D-VERIFIED", value: "digitally_verified" },
-    { label: "P-VERIFIED", value: "physically_verified" },
+    { label: "D-VERIFIED", value: "digital" },
+    { label: "P-VERIFIED", value: "physical" },
     { label: "REJECTED", value: "rejected" },
     { label: "ALL", value: "all" },
     { label: "BIDS", value: "bids" },
@@ -269,14 +248,18 @@ export default function AdminDashboard() {
         break;
       case 1: // D-VERIFIED
         displayData =
-          items?.filter((v) => v.status === "digitally_verified") || [];
+          items?.filter((v) => v.verification_state === "digital") ||
+          [];
         break;
       case 2: // P-VERIFIED
         displayData =
-          items?.filter((v) => v.status === "physically_verified") || [];
+          items?.filter(
+            (v) => v.verification_state === "physical"
+          ) || [];
         break;
       case 3: // REJECTED
-        displayData = items?.filter((v) => v.status === "rejected") || [];
+        displayData =
+          items?.filter((v) => v.verification_state === "rejected") || [];
         break;
       case 4: // ALL VEHICLES
         displayData = items || [];
@@ -306,26 +289,33 @@ export default function AdminDashboard() {
   };
 
   const VerificationModal = ({ vehicle, onClose }) => {
-    const [digitalVerified, setDigitalVerified] = useState(
-      vehicle.status === "digitally_verified" ||
-        vehicle.status === "physically_verified"
+    const [verificationState, setVerificationState] = useState(
+      vehicle.verification_state === "physically_verified"
+        ? "physical"
+        : vehicle.verification_state === "digitally_verified"
+        ? "digital"
+        : "pending"
     );
-    const [physicalVerified, setPhysicalVerified] = useState(
-      vehicle.status === "physically_verified"
+    const [rejectionReason, setRejectionReason] = useState(
+      vehicle.rejection_reason || ""
     );
 
     const handleSave = () => {
-      let newStatus = "pending";
-      if (physicalVerified) {
-        newStatus = "physically_verified";
-      } else if (digitalVerified) {
-        newStatus = "digitally_verified";
-      }
+      let statusUpdate = {
+        verification_state: verificationState, // Use the state directly since they now match
+        rejection_reason:
+          verificationState === "rejected" ? rejectionReason : "",
+
+        // Add these boolean fields to match your serializer
+        is_digitally_verified: verificationState === "digital",
+        is_physically_verified: verificationState === "physical",
+        is_rejected: verificationState === "rejected",
+      };
 
       dispatch(
-        updateVehicle({
-          id: vehicle.id,
-          data: { status: newStatus },
+        updateVehicleStatus({
+          vehicleId: vehicle.id,
+          statusData: statusUpdate,
         })
       ).then(() => {
         onClose();
@@ -333,12 +323,12 @@ export default function AdminDashboard() {
     };
 
     return (
-      <div className="fixed inset-0 bg-black bg-opacity-10 flex items-center justify-center z-50 p-4">
+      <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg max-w-2xl w-full">
           <div className="p-6">
             <div className="flex justify-between items-center mb-4">
               <h2 className="text-xl font-bold">
-                {vehicle.make} {vehicle.model}
+                Verify {vehicle.make} {vehicle.model}
               </h2>
               <button
                 onClick={onClose}
@@ -348,52 +338,58 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div>
-                <label className="block text-sm font-medium mb-2">VIN</label>
-                <p className="p-2 bg-gray-100 rounded">{vehicle.vin}</p>
-              </div>
+            <div className="space-y-4 mb-6">
               <div>
                 <label className="block text-sm font-medium mb-2">
-                  Mileage
+                  Verification Status
                 </label>
-                <p className="p-2 bg-gray-100 rounded">{vehicle.mileage} km</p>
-              </div>
-            </div>
+                <div className="space-y-2">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={verificationState === "digital"}
+                      onChange={() => setVerificationState("digital")}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span>Digitally Verified</span>
+                  </label>
 
-            <div className="mb-6">
-              <label className="block text-sm font-medium mb-4">
-                Verification Status
-              </label>
-              <div className="flex items-center gap-4">
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={digitalVerified}
-                    onChange={(e) => {
-                      setDigitalVerified(e.target.checked);
-                      if (!e.target.checked) setPhysicalVerified(false);
-                    }}
-                    className="form-checkbox h-4 w-4 text-red-600"
-                  />
-                  <span>Digitally Verified</span>
-                </label>
-                <label className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={physicalVerified}
-                    onChange={(e) => {
-                      setPhysicalVerified(e.target.checked);
-                      if (e.target.checked) setDigitalVerified(true);
-                    }}
-                    disabled={!digitalVerified}
-                    className={`form-checkbox h-4 w-4 text-red-600 ${
-                      !digitalVerified ? "opacity-50 cursor-not-allowed" : ""
-                    }`}
-                  />
-                  <span>Physically Verified</span>
-                </label>
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={verificationState === "physical"}
+                      onChange={() => setVerificationState("physical")}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span>Physically Verified</span>
+                  </label>
+
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      checked={verificationState === "rejected"}
+                      onChange={() => setVerificationState("rejected")}
+                      className="form-radio h-4 w-4 text-red-600"
+                    />
+                    <span>Reject</span>
+                  </label>
+                </div>
               </div>
+
+              {verificationState === "rejected" && (
+                <div>
+                  <label className="block text-sm font-medium mb-2">
+                    Rejection Reason (required)
+                  </label>
+                  <textarea
+                    rows={3}
+                    value={rejectionReason}
+                    onChange={(e) => setRejectionReason(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md p-2 text-sm"
+                    placeholder="Explain why this vehicle is being rejected..."
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3">
@@ -405,10 +401,235 @@ export default function AdminDashboard() {
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 bg-red-600 text-white rounded-md"
+                disabled={verificationState === "rejected" && !rejectionReason}
+                className={`px-4 py-2 bg-red-600 text-white rounded-md ${
+                  verificationState === "rejected" && !rejectionReason
+                    ? "opacity-50 cursor-not-allowed"
+                    : ""
+                }`}
               >
                 Save Changes
               </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const VehicleDetailModal = ({ vehicle, onClose }) => {
+    if (!vehicle) return null;
+
+    return (
+      <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-2xl font-bold">
+                {vehicle.year} {vehicle.make} {vehicle.model}
+              </h2>
+              <button
+                onClick={onClose}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <X size={24} />
+              </button>
+            </div>
+
+            {/* Image Gallery */}
+            <div className="mb-6">
+              <h3 className="text-lg font-semibold mb-2">Images</h3>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                {vehicle.images?.length > 0 ? (
+                  vehicle.images.map((image, index) => (
+                    <div
+                      key={index}
+                      className="rounded-lg overflow-hidden border"
+                    >
+                      <img
+                        src={image.image}
+                        alt={`Vehicle ${index + 1}`}
+                        className="w-full h-48 object-cover"
+                      />
+                    </div>
+                  ))
+                ) : (
+                  <div className="col-span-3 py-10 text-center text-gray-500">
+                    <Car className="mx-auto mb-2" size={32} />
+                    <p>No images available</p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Vehicle Details */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+              <div>
+                <h3 className="text-lg font-semibold mb-3">
+                  Basic Information
+                </h3>
+                <div className="space-y-2">
+                  <p>
+                    <strong>VIN:</strong> {vehicle.vin || "N/A"}
+                  </p>
+                  <p>
+                    <strong>Mileage:</strong>{" "}
+                    {vehicle.mileage?.toLocaleString() || "0"} km
+                  </p>
+                  <p>
+                    <strong>Year:</strong> {vehicle.year}
+                  </p>
+                  <p>
+                    <strong>Location:</strong>{" "}
+                    {vehicle.location || "Not specified"}
+                  </p>
+                  <p>
+                    <strong>Fuel Type:</strong>{" "}
+                    {vehicle.fuel_type || "Not specified"}
+                  </p>
+                </div>
+              </div>
+
+              <div>
+                <h3 className="text-lg font-semibold mb-3">Listing Details</h3>
+                <div className="space-y-2">
+                  <p>
+                    <strong>Type:</strong>
+                    <span
+                      className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                        vehicle.listing_type === "marketplace"
+                          ? "bg-black text-white"
+                          : "bg-red-600 text-white"
+                      }`}
+                    >
+                      {vehicle.listing_type === "marketplace"
+                        ? "Marketplace"
+                        : "Instant Sale"}
+                    </span>
+                  </p>
+                  <p>
+                    <strong>Price:</strong> $
+                    {vehicle.price?.toLocaleString() ||
+                      vehicle.proposed_price?.toLocaleString() ||
+                      "Not specified"}
+                  </p>
+                  <p>
+                    <strong>Status:</strong>
+                    <span
+                      className={`ml-2 px-2 py-1 text-xs rounded-full ${
+                        vehicle.verification_state === "pending"
+                          ? "bg-gray-200 text-gray-700"
+                          : vehicle.verification_state === "digital"
+                          ? "bg-blue-100 text-blue-700"
+                          : vehicle.verification_state === "physical"
+                          ? "bg-green-100 text-green-700"
+                          : "bg-red-100 text-red-700"
+                      }`}
+                    >
+                      {vehicle.verification_state === "physical"
+                        ? "Verified"
+                        : vehicle.verification_state === "digital"
+                        ? "Digitally Verified"
+                        : vehicle.verification_state === "rejected"
+                        ? "Rejected"
+                        : "Pending"}
+                    </span>
+                  </p>
+                  <p>
+                    <strong>Visible:</strong>{" "}
+                    {vehicle.is_visible ? "Yes" : "No"}
+                  </p>
+                  <p>
+                    <strong>Submitted:</strong>{" "}
+                    {new Date(vehicle.created_at).toLocaleDateString()}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Verification Section */}
+            <div className="border-t pt-4">
+              <h3 className="text-lg font-semibold mb-3">Verification</h3>
+              <div className="space-y-4">
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={
+                        vehicle.verification_state === "digitally_verified" ||
+                        vehicle.verification_state === "physically_verified"
+                      }
+                      readOnly
+                      className="form-checkbox h-4 w-4 text-red-600"
+                    />
+                    <span>Digitally Verified</span>
+                  </label>
+                  {vehicle.digitally_verified_at && (
+                    <span className="text-sm text-gray-500">
+                      {new Date(vehicle.digitally_verified_at).toLocaleString()}{" "}
+                      by {vehicle.digitally_verified_by?.username || "admin"}
+                    </span>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-4">
+                  <label className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      checked={
+                        vehicle.verification_state === "physically_verified"
+                      }
+                      readOnly
+                      className="form-checkbox h-4 w-4 text-red-600"
+                    />
+                    <span>Physically Verified</span>
+                  </label>
+                  {vehicle.physically_verified_at && (
+                    <span className="text-sm text-gray-500">
+                      {new Date(
+                        vehicle.physically_verified_at
+                      ).toLocaleString()}{" "}
+                      by {vehicle.physically_verified_by?.username || "admin"}
+                    </span>
+                  )}
+                </div>
+
+                {vehicle.verification_state === "rejected" && (
+                  <div className="bg-red-50 p-3 rounded">
+                    <h4 className="font-medium text-red-800">
+                      Rejection Details
+                    </h4>
+                    <p className="text-red-700 mt-1">
+                      {vehicle.rejection_reason || "No reason provided"}
+                    </p>
+                    <p className="text-sm text-red-600 mt-2">
+                      Rejected on{" "}
+                      {new Date(vehicle.rejected_at).toLocaleString()} by{" "}
+                      {vehicle.rejected_by?.username || "admin"}
+                    </p>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-3 mt-6">
+              <button
+                onClick={onClose}
+                className="px-4 py-2 border border-gray-300 rounded-md"
+              >
+                Close
+              </button>
+              {vehicle.verification_state === "pending" && (
+                <button
+                  onClick={() => {
+                    setSelectedVehicle(vehicle);
+                    setSelectedDetailsVehicle(null);
+                  }}
+                  className="px-4 py-2 bg-red-600 text-white rounded-md"
+                >
+                  Process Verification
+                </button>
+              )}
             </div>
           </div>
         </div>
@@ -475,7 +696,7 @@ export default function AdminDashboard() {
           <StatCard
             title="Verified"
             value={
-              items?.filter((v) => v.status === "physically_verified").length ||
+              items?.filter((v) => v.verification_state === "physical").length ||
               0
             }
             icon={<CheckCircle size={20} />}
@@ -485,7 +706,7 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Rejected"
-            value={items?.filter((v) => v.status === "rejected").length || 0}
+            value={items?.filter((v) => v.verification_state === "rejected").length || 0}
             icon={<XCircle size={20} />}
             bgColor="bg-white"
             textColor="text-gray-600"
@@ -640,14 +861,14 @@ export default function AdminDashboard() {
                       <td className="px-4 py-4 whitespace-nowrap">
                         <span
                           className={`px-2 py-1 text-xs rounded-full ${handleStatusClass(
-                            vehicle.status
+                            vehicle.verification_state
                           )}`}
                         >
-                          {vehicle.status === "physically_verified"
+                          {vehicle.verification_state === "physical"
                             ? "Verified"
-                            : vehicle.status === "digitally_verified"
+                            : vehicle.verification_state === "digital"
                             ? "Digitally Verified"
-                            : vehicle.status === "rejected"
+                            : vehicle.verification_state === "rejected"
                             ? "Rejected"
                             : "Pending"}
                         </span>
@@ -672,16 +893,34 @@ export default function AdminDashboard() {
                               </button>
                             </>
                           )}
-                          {/*<button
-                            onClick={() =>
-                              setShowActions(
-                                showActions === vehicle.id ? null : vehicle.id
-                              )
-                            }
-                            className="text-gray-500 hover:text-gray-700"
-                          >
-                            <MoreVertical size={16} />
-                          </button>
+                          {/* Verification Actions - Only for pending vehicles */}
+                          {vehicle.verificationState === "pending" && (
+                            <>
+                              <button
+                                onClick={() => {
+                                  setSelectedVehicle(vehicle);
+                                  setRejectionReason("");
+                                }}
+                                className="text-green-600 hover:text-green-800 p-1"
+                                title="Approve vehicle"
+                              >
+                                <CheckCircle size={18} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setSelectedVehicle(vehicle);
+                                  setRejectionReason(
+                                    vehicle.rejection_reason || ""
+                                  );
+                                }}
+                                className="text-red-600 hover:text-red-800 p-1"
+                                title="Reject vehicle"
+                              >
+                                <XCircle size={18} />
+                              </button>
+                            </>
+                          )}
+                          {/*
 
                           {showActions === vehicle.id && (
                             <div className="absolute right-0 top-full mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-10">
@@ -1028,6 +1267,20 @@ export default function AdminDashboard() {
         <VerificationModal
           vehicle={selectedDetailsVehicle}
           onClose={() => setSelectedDetailsVehicle(null)}
+        />
+      )}
+
+      {selectedDetailsVehicle && (
+        <VehicleDetailModal
+          vehicle={selectedDetailsVehicle}
+          onClose={() => setSelectedDetailsVehicle(null)}
+        />
+      )}
+
+      {selectedVehicle && (
+        <VerificationModal
+          vehicle={selectedVehicle}
+          onClose={() => setSelectedVehicle(null)}
         />
       )}
 

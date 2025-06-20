@@ -245,7 +245,7 @@ export default function DashboardPage() {
   };
 
   const canEditDelete = (vehicle) =>
-    vehicle.status === "pending" || vehicle.status === "rejected";
+    vehicle.verification_state === "pending" || vehicle.verification_state === "rejected";
 
   const handleEditSearch = (search) => {
     setEditSearch(search);
@@ -257,9 +257,9 @@ export default function DashboardPage() {
     setEditSearch(null);
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "verified":
+  const getStatusColor = (verification_state) => {
+    switch (verification_state) {
+      case "physical":
         return "success";
       case "rejected":
         return "error";
@@ -557,7 +557,7 @@ export default function DashboardPage() {
                               fontWeight={500}
                               mb={2}
                             >
-                              ${Number(vehicle.proposed_price).toLocaleString()}
+                              ${Number(vehicle.proposed_price) || vehicle.price}
                             </Typography>
                             <Box
                               display="flex"
@@ -566,8 +566,8 @@ export default function DashboardPage() {
                               mb={{ xs: 2, sm: 0 }}
                             >
                               <Chip
-                                label={vehicle.status}
-                                color={getStatusColor(vehicle.status)}
+                                label={vehicle.verification_state}
+                                color={getStatusColor(vehicle.verification_state)}
                                 size="small"
                               />
                               <Chip
@@ -580,7 +580,7 @@ export default function DashboardPage() {
                                 size="small"
                               />
                               {vehicle.listingType === "marketplace" &&
-                                vehicle.status === "verified" && (
+                                vehicle.verification_state === "physical" && (
                                   <Chip
                                     label={
                                       vehicle.is_visible ? "Visible" : "Hidden"
@@ -615,7 +615,7 @@ export default function DashboardPage() {
                               </>
                             )}
                             {vehicle.listingType === "marketplace" &&
-                              vehicle.status === "verified" && (
+                              vehicle.verification_state === "physical" && (
                                 <IconButton
                                   onClick={() =>
                                     dispatch(toggleVisibility(vehicle.id))

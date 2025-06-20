@@ -73,7 +73,7 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
             }}
           />
 
-          {vehicle.is_verified && (
+          {vehicle.is_physically_verified && (
             <Chip
               icon={<Shield className="w-3 h-3 text-green-700" />}
               label="Verified"

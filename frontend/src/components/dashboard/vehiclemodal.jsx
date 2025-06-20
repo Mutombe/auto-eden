@@ -1,4 +1,3 @@
-// src/components/VehicleDialog.jsx
 import React, { useState } from "react";
 import {
   Dialog,
@@ -12,6 +11,8 @@ import {
   Typography,
   IconButton,
   Grid,
+  Snackbar,
+  Alert,
 } from "@mui/material";
 import { X, Upload, Trash } from "lucide-react";
 
@@ -21,6 +22,8 @@ const VehicleDialog = ({
   onSubmit,
   editVehicle = null,
   isSubmitting = false,
+  submitError = null,
+  submitSuccess = null,
 }) => {
   const [formData, setFormData] = useState({
     make: editVehicle?.make || "",
@@ -35,6 +38,24 @@ const VehicleDialog = ({
 
   const [imageFiles, setImageFiles] = useState([]);
   const [previewUrls, setPreviewUrls] = useState([]);
+  const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const [snackbarMessage, setSnackbarMessage] = useState("");
+  const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+
+  // Show snackbar when there's a success or error from parent
+  React.useEffect(() => {
+    if (submitError) {
+      setSnackbarMessage(submitError);
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+    } else if (submitSuccess) {
+      setSnackbarMessage(
+        editVehicle ? "Vehicle updated successfully!" : "Vehicle added successfully!"
+      );
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+    }
+  }, [submitError, submitSuccess, editVehicle]);
 
   const validateForm = () => {
     const errors = {};
@@ -44,7 +65,7 @@ const VehicleDialog = ({
     if (!formData.mileage) errors.mileage = "Mileage is required";
     if (!formData.vin) errors.vin = "VIN is required";
     if (!formData.price) errors.price = "Price is required";
-    if (imageFiles.length === 0)
+    if (imageFiles.length === 0 && formData.images.length === 0)
       errors.images = "At least one image is required";
     return errors;
   };
@@ -62,8 +83,14 @@ const VehicleDialog = ({
       const files = Array.from(e.target.files);
       setImageFiles([...imageFiles, ...files]);
 
-      // Create preview URLs for display
-      const newPreviewUrls = files.map((file) => URL.createObjectURL(file));
+      // Create preview URLs for display - only for File objects
+      const newPreviewUrls = files.map((file) => {
+        if (file instanceof File) {
+          return URL.createObjectURL(file);
+        }
+        return null;
+      }).filter(Boolean);
+      
       setPreviewUrls([...previewUrls, ...newPreviewUrls]);
 
       // Update form data with file objects
@@ -74,35 +101,52 @@ const VehicleDialog = ({
     }
   };
 
-  const removeImage = (index) => {
-    // Remove image from the arrays
-    const updatedFiles = [...imageFiles];
-    updatedFiles.splice(index, 1);
-    setImageFiles(updatedFiles);
+  const removeImage = (index, isExisting = false) => {
+    if (isExisting) {
+      // Remove existing image
+      const updatedImages = [...formData.images];
+      updatedImages.splice(index, 1);
+      setFormData({
+        ...formData,
+        images: updatedImages,
+      });
+    } else {
+      // Remove new image file
+      const updatedFiles = [...imageFiles];
+      updatedFiles.splice(index, 1);
+      setImageFiles(updatedFiles);
 
-    const updatedPreviews = [...previewUrls];
-    // Revoke the object URL to avoid memory leaks
-    URL.revokeObjectURL(updatedPreviews[index]);
-    updatedPreviews.splice(index, 1);
-    setPreviewUrls(updatedPreviews);
+      const updatedPreviews = [...previewUrls];
+      // Revoke the object URL to avoid memory leaks
+      if (updatedPreviews[index]) {
+        URL.revokeObjectURL(updatedPreviews[index]);
+      }
+      updatedPreviews.splice(index, 1);
+      setPreviewUrls(updatedPreviews);
 
-    const updatedImages = [...formData.images];
-    updatedImages.splice(index, 1);
-    setFormData({
-      ...formData,
-      images: updatedImages,
-    });
-  };
-
-  const handleSubmit1 = () => {
-    onSubmit({
-      ...formData,
-      images: imageFiles, // Pass the actual File objects
-    });
+      // Also remove from formData.images if it was added there
+      const updatedImages = [...formData.images];
+      // Find the corresponding index in formData.images for new files
+      const newFileStartIndex = (editVehicle?.images?.length || 0);
+      if (newFileStartIndex + index < updatedImages.length) {
+        updatedImages.splice(newFileStartIndex + index, 1);
+        setFormData({
+          ...formData,
+          images: updatedImages,
+        });
+      }
+    }
   };
 
   const handleSubmit = () => {
     const errors = validateForm();
+    if (Object.keys(errors).length > 0) {
+      setSnackbarMessage("Please fill all required fields");
+      setSnackbarSeverity("error");
+      setSnackbarOpen(true);
+      return;
+    }
+
     const formDataObj = new FormData();
 
     // Append all required fields
@@ -120,8 +164,8 @@ const VehicleDialog = ({
       formDataObj.append("proposed_price", formData.price);
     }
 
-    // Append images
-    imageFiles.forEach((file, index) => {
+    // Append images (new files only)
+    imageFiles.forEach((file) => {
       formDataObj.append(`image_files`, file);
     });
 
@@ -130,214 +174,305 @@ const VehicleDialog = ({
 
   const handleClose = () => {
     // Clean up preview URLs to prevent memory leaks
-    previewUrls.forEach((url) => URL.revokeObjectURL(url));
+    previewUrls.forEach((url) => {
+      if (url) {
+        URL.revokeObjectURL(url);
+      }
+    });
     setPreviewUrls([]);
     setImageFiles([]);
     onClose();
   };
 
+  const handleSnackbarClose = (event, reason) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setSnackbarOpen(false);
+  };
+
+  // Helper function to get image source URL
+  const getImageSrc = (image) => {
+    if (typeof image === 'string') {
+      return image; // It's already a URL
+    } else if (image instanceof File) {
+      return URL.createObjectURL(image);
+    }
+    return null;
+  };
+
   return (
-    <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
-      <DialogTitle>
-        <Typography variant="h5" fontWeight="bold">
-          {editVehicle ? "Edit Vehicle" : "Add New Vehicle"}
-        </Typography>
-      </DialogTitle>
-      <DialogContent>
-        <Box
-          component="form"
-          sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 3 }}
-        >
-          <TextField
-            fullWidth
-            label="Make"
-            name="make"
-            value={formData.make}
-            onChange={handleInputChange}
-            required
-            variant="outlined"
-          />
-
-          <TextField
-            fullWidth
-            label="Model"
-            name="model"
-            value={formData.model}
-            onChange={handleInputChange}
-            required
-            variant="outlined"
-          />
-
-          <TextField
-            fullWidth
-            label="Year"
-            name="year"
-            type="number"
-            value={formData.year}
-            onChange={handleInputChange}
-            required
-            variant="outlined"
-            InputProps={{
-              inputProps: { min: 1900, max: new Date().getFullYear() + 1 },
-            }}
-          />
-
-          <TextField
-            fullWidth
-            label="VIN (Vehicle Identification Number)"
-            name="vin"
-            value={formData.vin}
-            onChange={handleInputChange}
-            required
-            variant="outlined"
-            sx={{ mt: 2 }}
-          />
-
-          <TextField
-            fullWidth
-            label="Mileage"
-            name="mileage"
-            type="number"
-            value={formData.mileage}
-            onChange={handleInputChange}
-            required
-            variant="outlined"
-            InputProps={{ inputProps: { min: 0 } }}
-          />
-
-          <TextField
-            fullWidth
-            label="Price ($)"
-            name="price"
-            type="number"
-            value={formData.price}
-            onChange={handleInputChange}
-            required
-            variant="outlined"
-            InputProps={{ inputProps: { min: 0 } }}
-          />
-
-          <Select
-            fullWidth
-            name="listingType"
-            value={formData.listingType}
-            onChange={handleInputChange}
-            variant="outlined"
-            displayEmpty
+    <>
+      <Dialog open={open} onClose={handleClose} fullWidth maxWidth="sm">
+        <DialogTitle>
+          <Typography variant="h5" fontWeight="bold">
+            {editVehicle ? "Edit Vehicle" : "Add New Vehicle"}
+          </Typography>
+        </DialogTitle>
+        <DialogContent>
+          <Box
+            component="form"
+            sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 3 }}
           >
-            <MenuItem value="marketplace">Marketplace Listing</MenuItem>
-            <MenuItem value="instant_sale">Instant Sale</MenuItem>
-          </Select>
+            <TextField
+              fullWidth
+              label="Make"
+              name="make"
+              value={formData.make}
+              onChange={handleInputChange}
+              required
+              variant="outlined"
+            />
 
-          {/* Image Upload Section */}
-          <Box sx={{ mt: 1 }}>
-            <Typography variant="subtitle1" fontWeight={500} mb={1}>
-              Vehicle Images
-            </Typography>
+            <TextField
+              fullWidth
+              label="Model"
+              name="model"
+              value={formData.model}
+              onChange={handleInputChange}
+              required
+              variant="outlined"
+            />
 
-            <Box
-              sx={{
-                border: "1px dashed #ccc",
-                borderRadius: 1,
-                p: 2,
-                textAlign: "center",
-                mb: 2,
-                cursor: "pointer",
-                "&:hover": {
-                  backgroundColor: "rgba(0,0,0,0.02)",
-                },
+            <TextField
+              fullWidth
+              label="Year"
+              name="year"
+              type="number"
+              value={formData.year}
+              onChange={handleInputChange}
+              required
+              variant="outlined"
+              InputProps={{
+                inputProps: { min: 1900, max: new Date().getFullYear() + 1 },
               }}
-              onClick={() => document.getElementById("vehicle-images").click()}
-            >
-              <Upload size={24} color="#666" />
-              <Typography variant="body2" color="text.secondary" mt={1}>
-                Click to upload images (JPG, PNG)
-              </Typography>
-              <input
-                id="vehicle-images"
-                type="file"
-                accept="image/jpeg,image/png"
-                multiple
-                onChange={handleFileChange}
-                style={{ display: "none" }}
-              />
-            </Box>
+            />
 
-            {/* Image Previews */}
-            {previewUrls.length > 0 && (
-              <Grid container spacing={1} sx={{ mt: 1 }}>
-                {previewUrls.map((url, index) => (
-                  <Grid item xs={4} sm={3} key={index}>
-                    <Box
-                      sx={{
-                        position: "relative",
-                        height: 80,
-                        borderRadius: 1,
-                        overflow: "hidden",
-                      }}
-                    >
-                      <img
-                        src={url}
-                        alt={`Vehicle image ${index + 1}`}
-                        style={{
-                          width: "100%",
-                          height: "100%",
-                          objectFit: "cover",
-                        }}
-                      />
-                      <IconButton
-                        size="small"
-                        onClick={() => removeImage(index)}
+            <TextField
+              fullWidth
+              label="VIN (Vehicle Identification Number)"
+              name="vin"
+              value={formData.vin}
+              onChange={handleInputChange}
+              required
+              variant="outlined"
+              sx={{ mt: 2 }}
+            />
+
+            <TextField
+              fullWidth
+              label="Mileage"
+              name="mileage"
+              type="number"
+              value={formData.mileage}
+              onChange={handleInputChange}
+              required
+              variant="outlined"
+              InputProps={{ inputProps: { min: 0 } }}
+            />
+
+            <TextField
+              fullWidth
+              label="Price ($)"
+              name="price"
+              type="number"
+              value={formData.price}
+              onChange={handleInputChange}
+              required
+              variant="outlined"
+              InputProps={{ inputProps: { min: 0 } }}
+            />
+
+            <Select
+              fullWidth
+              name="listingType"
+              value={formData.listingType}
+              onChange={handleInputChange}
+              variant="outlined"
+              displayEmpty
+            >
+              <MenuItem value="marketplace">Marketplace Listing</MenuItem>
+              <MenuItem value="instant_sale">Instant Sale</MenuItem>
+            </Select>
+
+            {/* Image Upload Section */}
+            <Box sx={{ mt: 1 }}>
+              <Typography variant="subtitle1" fontWeight={500} mb={1}>
+                Vehicle Images
+              </Typography>
+
+              <Box
+                sx={{
+                  border: "1px dashed #ccc",
+                  borderRadius: 1,
+                  p: 2,
+                  textAlign: "center",
+                  mb: 2,
+                  cursor: "pointer",
+                  "&:hover": {
+                    backgroundColor: "rgba(0,0,0,0.02)",
+                  },
+                }}
+                onClick={() => document.getElementById("vehicle-images").click()}
+              >
+                <Upload size={24} color="#666" />
+                <Typography variant="body2" color="text.secondary" mt={1}>
+                  Click to upload images (JPG, PNG)
+                </Typography>
+                <input
+                  id="vehicle-images"
+                  type="file"
+                  accept="image/jpeg,image/png"
+                  multiple
+                  onChange={handleFileChange}
+                  style={{ display: "none" }}
+                />
+              </Box>
+
+              {/* Image Previews */}
+              {(previewUrls.length > 0 || (editVehicle?.images?.length > 0)) && (
+                <Grid container spacing={1} sx={{ mt: 1 }}>
+                  {/* Show existing images when editing */}
+                  {editVehicle?.images?.length > 0 && 
+                    editVehicle.images.map((image, index) => {
+                      const imageSrc = getImageSrc(image);
+                      if (!imageSrc) return null;
+                      
+                      return (
+                        <Grid item xs={4} sm={3} key={`existing-${index}`}>
+                          <Box
+                            sx={{
+                              position: "relative",
+                              height: 80,
+                              borderRadius: 1,
+                              overflow: "hidden",
+                            }}
+                          >
+                            <img
+                              src={imageSrc}
+                              alt={`Vehicle image ${index + 1}`}
+                              style={{
+                                width: "100%",
+                                height: "100%",
+                                objectFit: "cover",
+                              }}
+                              onError={(e) => {
+                                console.error("Failed to load image:", imageSrc);
+                                e.target.style.display = 'none';
+                              }}
+                            />
+                            <IconButton
+                              size="small"
+                              onClick={() => removeImage(index, true)}
+                              sx={{
+                                position: "absolute",
+                                top: 0,
+                                right: 0,
+                                backgroundColor: "rgba(0,0,0,0.5)",
+                                color: "white",
+                                padding: "2px",
+                                "&:hover": {
+                                  backgroundColor: "rgba(0,0,0,0.7)",
+                                },
+                              }}
+                            >
+                              <X size={16} />
+                            </IconButton>
+                          </Box>
+                        </Grid>
+                      );
+                    })
+                  }
+                  
+                  {/* Show new preview images */}
+                  {previewUrls.map((url, index) => (
+                    <Grid item xs={4} sm={3} key={`new-${index}`}>
+                      <Box
                         sx={{
-                          position: "absolute",
-                          top: 0,
-                          right: 0,
-                          backgroundColor: "rgba(0,0,0,0.5)",
-                          color: "white",
-                          padding: "2px",
-                          "&:hover": {
-                            backgroundColor: "rgba(0,0,0,0.7)",
-                          },
+                          position: "relative",
+                          height: 80,
+                          borderRadius: 1,
+                          overflow: "hidden",
                         }}
                       >
-                        <X size={16} />
-                      </IconButton>
-                    </Box>
-                  </Grid>
-                ))}
-              </Grid>
-            )}
-          </Box>
+                        <img
+                          src={url}
+                          alt={`New vehicle image ${index + 1}`}
+                          style={{
+                            width: "100%",
+                            height: "100%",
+                            objectFit: "cover",
+                          }}
+                        />
+                        <IconButton
+                          size="small"
+                          onClick={() => removeImage(index, false)}
+                          sx={{
+                            position: "absolute",
+                            top: 0,
+                            right: 0,
+                            backgroundColor: "rgba(0,0,0,0.5)",
+                            color: "white",
+                            padding: "2px",
+                            "&:hover": {
+                              backgroundColor: "rgba(0,0,0,0.7)",
+                            },
+                          }}
+                        >
+                          <X size={16} />
+                        </IconButton>
+                      </Box>
+                    </Grid>
+                  ))}
+                </Grid>
+              )}
+            </Box>
 
-          <Box display="flex" gap={2} mt={2}>
-            <Button variant="outlined" fullWidth onClick={handleClose}>
-              Cancel
-            </Button>
-            <Button
-              variant="contained"
-              fullWidth
-              onClick={handleSubmit}
-              disabled={
-                isSubmitting ||
-                !formData.make ||
-                !formData.model ||
-                !formData.year ||
-                !formData.price ||
-                !formData.mileage ||
-                !formData.vin ||
-                imageFiles.length === 0
-              }
-            >
-              {isSubmitting
-                ? "Submitting..."
-                : editVehicle
-                ? "Update Vehicle"
-                : "Add Vehicle"}
-            </Button>
+            <Box display="flex" gap={2} mt={2}>
+              <Button variant="outlined" fullWidth onClick={handleClose}>
+                Cancel
+              </Button>
+              <Button
+                variant="contained"
+                fullWidth
+                onClick={handleSubmit}
+                disabled={
+                  isSubmitting ||
+                  !formData.make ||
+                  !formData.model ||
+                  !formData.year ||
+                  !formData.price ||
+                  !formData.mileage ||
+                  !formData.vin ||
+                  (imageFiles.length === 0 && formData.images.length === 0)
+                }
+              >
+                {isSubmitting
+                  ? "Submitting..."
+                  : editVehicle
+                  ? "Update Vehicle"
+                  : "Add Vehicle"}
+              </Button>
+            </Box>
           </Box>
-        </Box>
-      </DialogContent>
-    </Dialog>
+        </DialogContent>
+      </Dialog>
+
+      <Snackbar
+        open={snackbarOpen}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <Alert
+          onClose={handleSnackbarClose}
+          severity={snackbarSeverity}
+          sx={{ width: "100%" }}
+        >
+          {snackbarMessage}
+        </Alert>
+      </Snackbar>
+    </>
   );
 };
 

@@ -1,0 +1,24 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}Digital Verification Complete{% endblock %}
+
+{% block content %}
+    <h2>Digital Verification Completed</h2>
+    <p>Your vehicle has passed our digital verification process.</p>
+    
+    <div class="vehicle-details">
+        <h3>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h3>
+        <p>Verified by: {{ vehicle.digitally_verified_by.get_full_name|default:"Auto Eden Team" }}</p>
+        <p>Verified on: {{ vehicle.digitally_verified_at|date:"F j, Y" }}</p>
+    </div>
+
+    <p>Next steps:</p>
+    <ol>
+        <li>Schedule a physical inspection if required</li>
+        <li>Monitor your listing for inquiries</li>
+    </ol>
+
+    <a href="{{ settings.FRONTEND_URL }}/vehicles/{{ vehicle.id }}" class="button">
+        View Your Listing Status
+    </a>
+{% endblock %}
