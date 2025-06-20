@@ -3,6 +3,8 @@ from datetime import timezone
 from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
+from django.core.validators import MinValueValidator, MaxValueValidator
+from django.utils import timezone
 from django.contrib.auth import get_user_model
 
 User = get_user_model()
@@ -45,10 +47,10 @@ class Notification(models.Model):
         return f"{self.get_notification_type_display()} - {self.user.username}"
 
 class Vehicle(models.Model):
-    VEHICLE_STATUS = (
+    VERIFICATION_STATES = (
         ('pending', 'Pending'),
-        ('digitally_verified', 'Digitally Verified'),
-        ('physically_verified', 'Physically Verified'),
+        ('digital', 'Digitally Verified'),
+        ('physical', 'Physically Verified'),
         ('rejected', 'Rejected'),
     )
     
@@ -57,14 +59,53 @@ class Vehicle(models.Model):
         ('instant_sale', 'Instant Sale'),
     )
 
+    is_digitally_verified = models.BooleanField(default=False)
+    is_physically_verified = models.BooleanField(default=False)
+    is_rejected = models.BooleanField(default=False)
+    rejection_reason = models.TextField(blank=True, null=True)
+    
+    # Add verification metadata
+    digitally_verified_by = models.ForeignKey(
+        User, 
+        null=True, 
+        blank=True,
+        related_name='digital_verifications',
+        on_delete=models.SET_NULL
+    )
+    digitally_verified_at = models.DateTimeField(null=True, blank=True)
+    physically_verified_by = models.ForeignKey(
+        User,
+        null=True,
+        blank=True,
+        related_name='physical_verifications',
+        on_delete=models.SET_NULL
+    )
+    physically_verified_at = models.DateTimeField(null=True, blank=True)
+    rejected_at = models.DateTimeField(null=True, blank=True)
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     make = models.CharField(max_length=100)
     model = models.CharField(max_length=100)
-    year = models.PositiveIntegerField()
     vin = models.CharField(
-        max_length=17, 
+        max_length=17,
         unique=True,
+        db_index=True,  # Add index for VIN lookups
         help_text="Vehicle Identification Number"
+    )
+    
+    location = models.CharField(
+        max_length=50,
+        blank=True,
+        null=True,
+        default=None,  # Better than "None" string
+        db_index=True  # If you frequently filter by location
+    )
+    
+    # Consider using PositiveIntegerField for year
+    year = models.PositiveIntegerField(
+        validators=[
+            MinValueValidator(1900),
+            MaxValueValidator(timezone.now().year + 1)
+        ]
     )
     mileage = models.PositiveIntegerField(
         help_text="Current vehicle mileage in kilometers"
@@ -78,13 +119,43 @@ class Vehicle(models.Model):
         null=True
     ) # For instant sale
     is_visible = models.BooleanField(default=True)
-    status = models.CharField(max_length=20, choices=VEHICLE_STATUS, default='pending')
+    verification_state = models.CharField(
+        max_length=20,
+        choices=VERIFICATION_STATES,
+        default='pending',
+        db_index=True
+    )
     listing_type = models.CharField(max_length=20, choices=LISTING_TYPE)
-    location = models.CharField(max_length=50, blank=True, null=True, default="None")
     fuel_type = models.CharField(max_length=50, blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For marketplace
     rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['is_digitally_verified', 'is_physically_verified']),
+            models.Index(fields=['listing_type', 'is_visible']),
+            models.Index(fields=['make', 'model']),
+            models.Index(fields=['price']),
+            models.Index(fields=['created_at']),
+        ]
+
+        constraints = [
+            # Ensure only one verification state is active
+            models.CheckConstraint(
+                check=~models.Q(verification_state='rejected') | models.Q(rejection_reason__isnull=False),
+                name='rejection_requires_reason'
+            ),
+            # Validate price based on listing type
+            models.CheckConstraint(
+                check=(
+                    models.Q(listing_type='marketplace', price__isnull=False) |
+                    models.Q(listing_type='instant_sale', proposed_price__isnull=False)
+                ),
+                name='valid_pricing_for_listing_type'
+            )
+        ]
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.make
@@ -158,26 +229,6 @@ class VehicleSearch(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s search for {self.make} {self.model}"
-
-    def check_for_matches(sender, instance, created, **kwargs):
-        if created and instance.listing_type == 'marketplace':
-            matching_searches = VehicleSearch.objects.filter(
-                make__iexact=instance.make,
-                model__iexact=instance.model,
-                min_year__lte=instance.year,
-                max_year__gte=instance.year,
-                max_price__gte=instance.price,
-                max_mileage__gte=instance.mileage,
-                status='active'
-            )
-        
-        for search in matching_searches:
-            search.match_count += 1
-            search.last_matched = timezone.now()
-            search.status = 'matched'
-            search.save()
-
-    post_save.connect(check_for_matches, sender=Vehicle)
 
     class Meta:
         verbose_name_plural = "Vehicle Searches"

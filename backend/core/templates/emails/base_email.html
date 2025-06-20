@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}Auto Eden Notification{% endblock %}</title>
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .header {
+            background-color: #e41c38;
+            padding: 20px;
+            text-align: center;
+            color: white;
+        }
+        .content {
+            padding: 20px;
+            background-color: #f9f9f9;
+        }
+        .button {
+            display: inline-block;
+            padding: 10px 20px;
+            background-color: #e41c38;
+            color: white !important;
+            text-decoration: none;
+            border-radius: 4px;
+            margin: 15px 0;
+        }
+        .footer {
+            margin-top: 20px;
+            padding: 20px;
+            text-align: center;
+            font-size: 12px;
+            color: #777;
+        }
+        .vehicle-details {
+            background-color: white;
+            padding: 15px;
+            border-radius: 4px;
+            margin: 15px 0;
+            border: 1px solid #eee;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Auto Eden</h1>
+    </div>
+    
+    <div class="content">
+        {% block content %}{% endblock %}
+    </div>
+    
+    <div class="footer">
+        <p>© {% now "Y" %} Auto Eden. All rights reserved.</p>
+        <p>
+            <a href="{{ settings.FRONTEND_URL }}/privacy">Privacy Policy</a> | 
+            <a href="{{ settings.FRONTEND_URL }}/contact">Contact Us</a>
+        </p>
+    </div>
+</body>
+</html>

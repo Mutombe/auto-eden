@@ -1,0 +1,22 @@
+{% extends "emails/base_email.html" %}
+
+{% block title %}New Vehicle Verification Request{% endblock %}
+
+{% block content %}
+    <h2>New Vehicle Submission</h2>
+    <p>A new vehicle has been submitted for verification:</p>
+    
+    <div class="vehicle-details">
+        <h3>{{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</h3>
+        <p>Submitted by: {{ vehicle.owner.get_full_name|default:vehicle.owner.username }}</p>
+        <p>Listing Type: {{ vehicle.get_listing_type_display }}</p>
+        <p>Price: ${{ vehicle.price|default:vehicle.proposed_price|intcomma }}</p>
+    </div>
+
+    <p>Please review the vehicle details:</p>
+    <a href="{{ settings.ADMIN_URL }}/vehicles/vehicle/{{ vehicle.id }}/change/" class="button">
+        Review in Admin Panel
+    </a>
+
+    <p>Submitted: {{ vehicle.created_at|date:"F j, Y H:i" }}</p>
+{% endblock %}

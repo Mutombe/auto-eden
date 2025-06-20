@@ -302,15 +302,15 @@ export default function BuyMyCarPage() {
                     <span className="text-gray-600">Status:</span>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        vehicle.status === "verified"
+                        vehicle.verification_state === "verified"
                           ? "bg-green-100 text-green-800"
-                          : vehicle.status === "rejected"
+                          : vehicle.verification_state === "rejected"
                           ? "bg-red-100 text-red-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {vehicle.status.charAt(0).toUpperCase() +
-                        vehicle.status.slice(1)}
+                      {vehicle.verification_state.charAt(0).toUpperCase() +
+                        vehicle.verification_state.slice(1)}
                     </span>
                   </div>
                   <div className="flex justify-between items-center">
@@ -453,7 +453,7 @@ export default function BuyMyCarPage() {
         )}
         {/* Add Vehicle Modal */}
         {showForm && (
-          <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-gray-900/30 backdrop-blur-sm fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl p-6 w-full max-w-lg max-h-90vh overflow-y-auto">
               {error && (
                 <div className="mb-4 p-4 bg-red-50 border-l-4 border-red-600 text-red-700 rounded">

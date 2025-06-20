@@ -8,7 +8,6 @@ export const fetchVehicles = createAsyncThunk(
       const { data } = await api.get("/core/vehicles/");
       console.log("vehicles slice", data);
       return data;
-      
     } catch (err) {
       return rejectWithValue(err.response.data);
     }
@@ -16,10 +15,10 @@ export const fetchVehicles = createAsyncThunk(
 );
 
 export const fetchPendingReview = createAsyncThunk(
-  'vehicles/fetchPendingReview',
+  "vehicles/fetchPendingReview",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get('/core/vehicles/pending_review/',);
+      const { data } = await api.get("/core/vehicles/pending_review/");
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -28,10 +27,10 @@ export const fetchPendingReview = createAsyncThunk(
 );
 
 export const fetchAllVehicles = createAsyncThunk(
-  'vehicles/fetchAllVehicles',
+  "vehicles/fetchAllVehicles",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get('/core/vehicles/',);
+      const { data } = await api.get("/core/vehicles/");
       console.log("all vehicles", data);
       return data;
     } catch (err) {
@@ -41,7 +40,7 @@ export const fetchAllVehicles = createAsyncThunk(
 );
 
 export const fetchVehicleDetails = createAsyncThunk(
-  'vehicles/fetchDetails',
+  "vehicles/fetchDetails",
   async (vehicleId) => {
     const response = await api.get(`/core/all-vehicles/${vehicleId}/`);
     return response.data;
@@ -49,13 +48,10 @@ export const fetchVehicleDetails = createAsyncThunk(
 );
 
 export const reviewVehicle = createAsyncThunk(
-  'vehicles/review',
+  "vehicles/review",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(
-        `/core/vehicles/${id}/review/`,
-        data,
-      );
+      const response = await api.patch(`/core/vehicles/${id}/review/`, data);
       return response.data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -64,7 +60,7 @@ export const reviewVehicle = createAsyncThunk(
 );
 
 export const fetchMarketplace = createAsyncThunk(
-  'vehicles/fetchMarketplace',
+  "vehicles/fetchMarketplace",
   async (filters, { rejectWithValue }) => {
     try {
       const params = new URLSearchParams(filters);
@@ -77,10 +73,10 @@ export const fetchMarketplace = createAsyncThunk(
 );
 
 export const fetchInstantSaleVehicles = createAsyncThunk(
-  'vehicles/fetchInstantSale',
+  "vehicles/fetchInstantSale",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get('/core/vehicles/instant-sales/');
+      const { data } = await api.get("/core/vehicles/instant-sales/");
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -94,8 +90,8 @@ export const createVehicle = createAsyncThunk(
     try {
       const { data } = await api.post("/core/vehicles/", formData, {
         headers: {
-          'Content-Type': 'multipart/form-data'
-        }
+          "Content-Type": "multipart/form-data",
+        },
       });
       return data;
     } catch (err) {
@@ -112,7 +108,7 @@ export const updateVehicleStatus = createAsyncThunk(
         `/core/vehicles/${vehicleId}/verify/`,
         statusData
       );
-      return data;
+      return data; // This should be the full vehicle object
     } catch (err) {
       return rejectWithValue(err.response.data);
     }
@@ -120,7 +116,7 @@ export const updateVehicleStatus = createAsyncThunk(
 );
 
 export const updateVehicle = createAsyncThunk(
-  'vehicles/update',
+  "vehicles/update",
   async ({ id, data }, { rejectWithValue }) => {
     try {
       const response = await api.patch(`/core/vehicles/${id}/`, data);
@@ -132,10 +128,13 @@ export const updateVehicle = createAsyncThunk(
 );
 
 export const toggleVisibility = createAsyncThunk(
-  'vehicles/toggleVisibility',
+  "vehicles/toggleVisibility",
   async (id, { rejectWithValue }) => {
     try {
-      const { data } = await api.patch(`/core/vehicles/${id}/toggle_visibility/`, {});
+      const { data } = await api.patch(
+        `/core/vehicles/${id}/toggle_visibility/`,
+        {}
+      );
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -143,12 +142,11 @@ export const toggleVisibility = createAsyncThunk(
   }
 );
 
-
 export const fetchUserVehicles = createAsyncThunk(
-  'vehicles/fetchUserVehicles',
+  "vehicles/fetchUserVehicles",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get('/core/vehicles/my_vehicles/');
+      const { data } = await api.get("/core/vehicles/my_vehicles/");
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -157,7 +155,7 @@ export const fetchUserVehicles = createAsyncThunk(
 );
 
 export const deleteVehicle = createAsyncThunk(
-  'vehicles/delete',
+  "vehicles/delete",
   async (vehicleId, { rejectWithValue }) => {
     try {
       await api.delete(`/core/vehicles/${vehicleId}/`);
@@ -180,10 +178,10 @@ const vehicleSlice = createSlice({
   },
   reducers: {
     setAllVehicles: (state, action) => {
-      state.allVehicles = Array.isArray(action.payload) 
-        ? action.payload.results 
+      state.allVehicles = Array.isArray(action.payload)
+        ? action.payload.results
         : [];
-    }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -200,7 +198,7 @@ const vehicleSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(fetchVehicleDetails.fulfilled, (state, action) => {
-        const index = state.items.findIndex(v => v.id === action.payload.id);
+        const index = state.items.findIndex((v) => v.id === action.payload.id);
         if (index === -1) {
           state.items.push(action.payload);
         } else {
@@ -211,13 +209,13 @@ const vehicleSlice = createSlice({
         state.items = action.payload;
       })
       .addCase(fetchInstantSaleVehicles.fulfilled, (state, action) => {
-        state.instantSaleVehicles = action.payload; 
+        state.instantSaleVehicles = action.payload;
       })
       .addCase(fetchPendingReview.fulfilled, (state, action) => {
         state.pendingVehicles = action.payload;
       })
       .addCase(fetchAllVehicles.fulfilled, (state, action) => {
-        state.allVehicles = Array.isArray(action.payload) 
+        state.allVehicles = Array.isArray(action.payload)
           ? action.payload.results
           : [];
         console.log("all vehicles payload", state.allVehicles);
@@ -234,32 +232,48 @@ const vehicleSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(updateVehicleStatus.fulfilled, (state, action) => {
-        const index = state.items.findIndex(v => v.id === action.payload.id);
+        const index = state.items.findIndex((v) => v.id === action.payload.id);
         if (index !== -1) {
           state.items[index] = action.payload;
         }
+
+        // Also update in pendingVehicles if exists
+        if (state.pendingVehicles) {
+          const pendingIndex = state.pendingVehicles.findIndex(
+            (v) => v.id === action.payload.id
+          );
+          if (pendingIndex !== -1) {
+            state.pendingVehicles[pendingIndex] = action.payload;
+          }
+        }
       })
-      
+
       // User vehicles
       .addCase(fetchUserVehicles.fulfilled, (state, action) => {
         state.userVehicles = action.payload;
       })
-      
+
       // Delete vehicle
       .addCase(deleteVehicle.fulfilled, (state, action) => {
-        state.items = state.items.filter(v => v.id !== action.payload);
+        state.items = state.items.filter((v) => v.id !== action.payload);
         if (state.userVehicles) {
-          state.userVehicles = state.userVehicles.filter(v => v.id !== action.payload);
+          state.userVehicles = state.userVehicles.filter(
+            (v) => v.id !== action.payload
+          );
         }
       })
       .addCase(updateVehicle.fulfilled, (state, action) => {
-        const index = state.userVehicles.findIndex(v => v.id === action.payload.id);
+        const index = state.userVehicles.findIndex(
+          (v) => v.id === action.payload.id
+        );
         if (index !== -1) {
           state.userVehicles[index] = action.payload;
         }
       })
       .addCase(toggleVisibility.fulfilled, (state, action) => {
-        const index = state.userVehicles.findIndex(v => v.id === action.payload.id);
+        const index = state.userVehicles.findIndex(
+          (v) => v.id === action.payload.id
+        );
         if (index !== -1) {
           state.userVehicles[index] = action.payload;
         }
