@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Vehicle Listing Has Been Removed</title>
+</head>
+<body>
+    <h2>Your Vehicle Listing Has Been Removed</h2>
+    
+    <p>Dear {{ user.username }},</p>
+    
+    <p>Your vehicle listing for the {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} has been removed from our platform.</p>
+    
+    <p><strong>Details:</strong></p>
+    <ul>
+        <li><strong>VIN:</strong> {{ vehicle.vin }}</li>
+        <li><strong>Mileage:</strong> {{ vehicle.mileage }} km</li>
+        <li><strong>Price:</strong> ${{ vehicle.price|default:vehicle.proposed_price }}</li>
+    </ul>
+    
+    <p>If you believe this was done in error or would like more information, please contact our support team.</p>
+    
+    <p>Best regards,<br>
+    The Platform Team</p>
+</body>
+</html>

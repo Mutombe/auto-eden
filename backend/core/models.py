@@ -6,6 +6,7 @@ from django.dispatch import receiver
 from django.core.validators import MinValueValidator, MaxValueValidator
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+from model_utils import FieldTracker
 
 User = get_user_model()
 
@@ -130,6 +131,7 @@ class Vehicle(models.Model):
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For marketplace
     rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    tracker = FieldTracker()
 
     class Meta:
         indexes = [

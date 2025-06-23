@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>User Account Deleted</title>
+</head>
+<body>
+    <h2>User Account Deleted</h2>
+    
+    <p>A user account has been removed from the platform:</p>
+    
+    <ul>
+        <li><strong>Email:</strong> {{ user.email }}</li>
+        <li><strong>Username:</strong> {{ user.username }}</li>
+        <li><strong>Date Joined:</strong> {{ user.date_joined }}</li>
+        <li><strong>Last Login:</strong> {{ user.last_login }}</li>
+    </ul>
+    
+    <p>This action was performed by the system or an administrator.</p>
+    
+    <p>Best regards,<br>
+    The Platform Team</p>
+</body>
+</html>

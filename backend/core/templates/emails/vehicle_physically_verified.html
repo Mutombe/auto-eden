@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Vehicle Has Been Physically Verified</title>
+</head>
+<body>
+    <h2>Congratulations!</h2>
+    
+    <p>Dear {{ user.username }},</p>
+    
+    <p>We're pleased to inform you that your {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} has successfully passed our physical verification process.</p>
+    
+    <p><strong>Vehicle Details:</strong></p>
+    <ul>
+        <li><strong>VIN:</strong> {{ vehicle.vin }}</li>
+        <li><strong>Mileage:</strong> {{ vehicle.mileage }} km</li>
+        <li><strong>Price:</strong> ${{ vehicle.price|default:vehicle.proposed_price }}</li>
+        <li><strong>Verification Date:</strong> {{ vehicle.physically_verified_at }}</li>
+    </ul>
+    
+    <p>Your vehicle is now prominently displayed in our marketplace with the "Physically Verified" badge, which increases buyer confidence.</p>
+    
+    <p>Thank you for choosing our platform, and we wish you success in your sale!</p>
+    
+    <p>Best regards,<br>
+    The Platform Team</p>
+</body>
+</html>

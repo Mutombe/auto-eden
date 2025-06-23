@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle Deleted</title>
+</head>
+<body>
+    <h2>Vehicle Listing Deleted</h2>
+    
+    <p>The following vehicle has been removed from the platform:</p>
+    
+    <ul>
+        <li><strong>Vehicle:</strong> {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</li>
+        <li><strong>VIN:</strong> {{ vehicle.vin }}</li>
+        <li><strong>Owner:</strong> {{ vehicle.owner.email }}</li>
+        <li><strong>Listing Type:</strong> {{ vehicle.get_listing_type_display }}</li>
+    </ul>
+    
+    <p>This action was performed by the system or an administrator.</p>
+    
+    <p>Best regards,<br>
+    The Platform Team</p>
+</body>
+</html>

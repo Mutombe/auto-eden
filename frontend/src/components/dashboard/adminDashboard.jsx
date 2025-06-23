@@ -556,8 +556,8 @@ export default function AdminDashboard() {
                     <input
                       type="checkbox"
                       checked={
-                        vehicle.verification_state === "digitally_verified" ||
-                        vehicle.verification_state === "physically_verified"
+                        vehicle.verification_state === "digital" ||
+                        vehicle.verification_state === "physical"
                       }
                       readOnly
                       className="form-checkbox h-4 w-4 text-red-600"
@@ -577,7 +577,7 @@ export default function AdminDashboard() {
                     <input
                       type="checkbox"
                       checked={
-                        vehicle.verification_state === "physically_verified"
+                        vehicle.verification_state === "physical"
                       }
                       readOnly
                       className="form-checkbox h-4 w-4 text-red-600"
@@ -880,7 +880,7 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-2 relative">
-                          {activeTab === 0 && (
+                       
                             <>
                               <button
                                 className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex justify-end gap-2"
@@ -892,9 +892,9 @@ export default function AdminDashboard() {
                                 View Details
                               </button>
                             </>
-                          )}
+                      
                           {/* Verification Actions - Only for pending vehicles */}
-                          {vehicle.verificationState === "pending" && (
+                          {vehicle.verification_state === "pending" && (
                             <>
                               <button
                                 onClick={() => {
