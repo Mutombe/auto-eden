@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Your Vehicle Listing Has Been Updated</title>
+</head>
+<body>
+    <h2>Your Vehicle Listing Has Been Updated</h2>
+    
+    <p>Dear {{ user.username }},</p>
+    
+    <p>Your vehicle listing for the {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }} has been updated.</p>
+    
+    <h3>Important Changes:</h3>
+    <ul>
+        {% for field, values in changes.items %}
+        <li><strong>{{ field|title }}:</strong> Changed from "{{ values.0 }}" to "{{ values.1 }}"</li>
+        {% endfor %}
+    </ul>
+    
+    <p>If you didn't make these changes or believe they were made in error, please contact our support team immediately.</p>
+    
+    <p>Best regards,<br>
+    The Platform Team</p>
+</body>
+</html>

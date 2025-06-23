@@ -11,7 +11,11 @@ import {
   fetchVehicleDetails,
 } from "../../redux/slices/vehicleSlice";
 import SearchModal from "./searchModal";
-import { fetchUserSearches, deleteSearch, createSearch } from "../../redux/slices/searchSlice";
+import {
+  fetchUserSearches,
+  deleteSearch,
+  createSearch,
+} from "../../redux/slices/searchSlice";
 import { fetchUserBids, fetchBidderDetails } from "../../redux/slices/bidSlice";
 import {
   Tab,
@@ -31,7 +35,6 @@ import {
   useTheme,
   Skeleton,
   Avatar,
-
 } from "@mui/material";
 import {
   Search,
@@ -49,6 +52,7 @@ import {
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { motion } from "framer-motion";
 import VehicleDialog from "./vehiclemodal";
+import VehicleDetailsModal from "./vehiclemodal2";
 
 // Create theme with brand colors
 const customTheme = createTheme({
@@ -205,6 +209,7 @@ export default function DashboardPage() {
   const dispatch = useDispatch();
   const { userVehicles, status } = useSelector((state) => state.vehicles);
   const { items: bids, status: bidStatus } = useSelector((state) => state.bids);
+  const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
   const [editSearch, setEditSearch] = useState(null);
   const { searches, status: searchStatus } = useSelector(
@@ -245,7 +250,8 @@ export default function DashboardPage() {
   };
 
   const canEditDelete = (vehicle) =>
-    vehicle.verification_state === "pending" || vehicle.verification_state === "rejected";
+    vehicle.verification_state === "pending" ||
+    vehicle.verification_state === "rejected";
 
   const handleEditSearch = (search) => {
     setEditSearch(search);
@@ -285,24 +291,55 @@ export default function DashboardPage() {
         minHeight: "300px",
       }}
     >
-      <Upload size={64} color="#999" />
-      <Typography variant="h6" mt={2} color="text.secondary">
-        You haven't{" "}
-        {type === "vehicles" ? "uploaded any vehicles" : "placed any bids"} yet
-      </Typography>
-      {type === "vehicles" && (
-        <Button
-          variant="contained"
-          startIcon={<Plus />}
-          sx={{ mt: 2 }}
-          onClick={() => setShowAddModal(true)}
-        >
-          Add Your First Car
-        </Button>
+      {type === "vehicles" ? (
+        <>
+          <Upload size={64} color="#999" />
+          <Typography variant="h6" mt={2} color="text.secondary">
+            You haven't uploaded any vehicles yet
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<Plus />}
+            sx={{ mt: 2 }}
+            onClick={() => setShowAddModal(true)}
+          >
+            Add Your First Car
+          </Button>
+        </>
+      ) : type === "bids" ? (
+        <>
+          <AlertCircle size={64} color="#999" />
+          <Typography variant="h6" mt={2} color="text.secondary">
+            You haven't placed any bids yet
+          </Typography>
+        </>
+      ) : (
+        <>
+          <Search size={64} color="#999" />
+          <Typography variant="h6" mt={2} color="text.secondary">
+            You haven't saved any vehicle searches yet
+          </Typography>
+          <Typography
+            variant="body2"
+            color="text.secondary"
+            mt={1}
+            textAlign="center"
+          >
+            Save your search criteria to get notified when matching vehicles are
+            listed
+          </Typography>
+          <Button
+            variant="contained"
+            startIcon={<Plus />}
+            sx={{ mt: 2 }}
+            onClick={() => setShowSearchModal(true)}
+          >
+            Create Your First Search
+          </Button>
+        </>
       )}
     </Paper>
   );
-
   const BidItem = ({ bid }) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
@@ -540,6 +577,7 @@ export default function DashboardPage() {
                             transform: "translateY(-2px)",
                           },
                         }}
+                        
                       >
                         <Box
                           display="flex"
@@ -566,20 +604,26 @@ export default function DashboardPage() {
                               mb={{ xs: 2, sm: 0 }}
                             >
                               <Chip
-                                label={vehicle.verification_state}
-                                color={getStatusColor(vehicle.verification_state)}
+                                label={
+                                  vehicle.verification_state === "physical"
+                                    ? "Verified"
+                                    : vehicle.verification_state
+                                }
+                                color={getStatusColor(
+                                  vehicle.verification_state
+                                )}
                                 size="small"
                               />
                               <Chip
                                 label={
-                                  vehicle.listingType === "marketplace"
+                                  vehicle.listing_type === "marketplace"
                                     ? "Marketplace"
                                     : "Instant Sale"
                                 }
                                 variant="outlined"
                                 size="small"
                               />
-                              {vehicle.listingType === "marketplace" &&
+                              {vehicle.listing_type === "marketplace" &&
                                 vehicle.verification_state === "physical" && (
                                   <Chip
                                     label={
@@ -614,7 +658,13 @@ export default function DashboardPage() {
                                 </IconButton>
                               </>
                             )}
-                            {vehicle.listingType === "marketplace" &&
+                            <IconButton
+                              onClick={() => setSelectedVehicle(vehicle)}
+                              sx={{ color: "text.secondary" }}
+                            >
+                              <Eye size={18} />
+                            </IconButton>
+                            {/*{vehicle.listing_type === "marketplace" &&
                               vehicle.verification_state === "physical" && (
                                 <IconButton
                                   onClick={() =>
@@ -632,7 +682,7 @@ export default function DashboardPage() {
                                     <EyeOff size={18} />
                                   )}
                                 </IconButton>
-                              )}
+)}*/}
                           </Box>
                         </Box>
                       </Paper>
@@ -784,6 +834,12 @@ export default function DashboardPage() {
         onSubmit={handleSubmit}
         editVehicle={editVehicle}
         isSubmitting={status === "loading"}
+      />
+
+      <VehicleDetailsModal
+        open={!!selectedVehicle}
+        onClose={() => setSelectedVehicle(null)}
+        vehicle={selectedVehicle}
       />
 
       <SearchModal

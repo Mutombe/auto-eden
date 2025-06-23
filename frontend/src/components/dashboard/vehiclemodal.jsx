@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Dialog,
   DialogContent,
@@ -26,14 +26,14 @@ const VehicleDialog = ({
   submitSuccess = null,
 }) => {
   const [formData, setFormData] = useState({
-    make: editVehicle?.make || "",
-    model: editVehicle?.model || "",
-    year: editVehicle?.year || new Date().getFullYear(),
-    price: editVehicle?.price || "",
-    mileage: editVehicle?.mileage || "",
-    vin: editVehicle?.vin || "",
-    listingType: editVehicle?.listingType || "marketplace",
-    images: editVehicle?.images || [],
+    make: "",
+    model: "",
+    year: new Date().getFullYear(),
+    price: "",
+    mileage: "",
+    vin: "",
+    listingType: "marketplace",
+    images: [],
   });
 
   const [imageFiles, setImageFiles] = useState([]);
@@ -42,8 +42,51 @@ const VehicleDialog = ({
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
 
+  // Initialize form with editVehicle data when it changes
+  useEffect(() => {
+    if (editVehicle) {
+      setFormData({
+        make: editVehicle.make || "",
+        model: editVehicle.model || "",
+        year: editVehicle.year || new Date().getFullYear(),
+        price: editVehicle.price || editVehicle.proposed_price || "",
+        mileage: editVehicle.mileage || "",
+        vin: editVehicle.vin || "",
+        listingType: editVehicle.listing_type || "marketplace",
+        images: editVehicle.images || [],
+      });
+
+      // If editVehicle has images, set them as preview URLs
+      if (editVehicle.images && editVehicle.images.length > 0) {
+        const urls = editVehicle.images.map(image => {
+          if (typeof image === 'string') {
+            return image; // It's already a URL
+          } else if (image instanceof File) {
+            return URL.createObjectURL(image);
+          }
+          return null;
+        }).filter(Boolean);
+        setPreviewUrls(urls);
+      }
+    } else {
+      // Reset form for new vehicle
+      setFormData({
+        make: "",
+        model: "",
+        year: new Date().getFullYear(),
+        price: "",
+        mileage: "",
+        vin: "",
+        listingType: "marketplace",
+        images: [],
+      });
+      setPreviewUrls([]);
+      setImageFiles([]);
+    }
+  }, [editVehicle]);
+
   // Show snackbar when there's a success or error from parent
-  React.useEffect(() => {
+  useEffect(() => {
     if (submitError) {
       setSnackbarMessage(submitError);
       setSnackbarSeverity("error");
@@ -110,6 +153,14 @@ const VehicleDialog = ({
         ...formData,
         images: updatedImages,
       });
+
+      // Also remove from preview URLs if it's there
+      const updatedPreviews = [...previewUrls];
+      if (updatedPreviews[index]) {
+        URL.revokeObjectURL(updatedPreviews[index]);
+      }
+      updatedPreviews.splice(index, 1);
+      setPreviewUrls(updatedPreviews);
     } else {
       // Remove new image file
       const updatedFiles = [...imageFiles];
@@ -117,24 +168,22 @@ const VehicleDialog = ({
       setImageFiles(updatedFiles);
 
       const updatedPreviews = [...previewUrls];
-      // Revoke the object URL to avoid memory leaks
-      if (updatedPreviews[index]) {
-        URL.revokeObjectURL(updatedPreviews[index]);
+      // Find the index in previewUrls (after existing images)
+      const newImageIndex = (formData.images.length - imageFiles.length) + index;
+      if (updatedPreviews[newImageIndex]) {
+        URL.revokeObjectURL(updatedPreviews[newImageIndex]);
       }
-      updatedPreviews.splice(index, 1);
+      updatedPreviews.splice(newImageIndex, 1);
       setPreviewUrls(updatedPreviews);
 
-      // Also remove from formData.images if it was added there
+      // Also remove from formData.images
       const updatedImages = [...formData.images];
-      // Find the corresponding index in formData.images for new files
-      const newFileStartIndex = (editVehicle?.images?.length || 0);
-      if (newFileStartIndex + index < updatedImages.length) {
-        updatedImages.splice(newFileStartIndex + index, 1);
-        setFormData({
-          ...formData,
-          images: updatedImages,
-        });
-      }
+      const imageIndex = formData.images.length - imageFiles.length + index;
+      updatedImages.splice(imageIndex, 1);
+      setFormData({
+        ...formData,
+        images: updatedImages,
+      });
     }
   };
 
@@ -164,10 +213,19 @@ const VehicleDialog = ({
       formDataObj.append("proposed_price", formData.price);
     }
 
-    // Append images (new files only)
+    // Append new image files only
     imageFiles.forEach((file) => {
       formDataObj.append(`image_files`, file);
     });
+
+    // If editing, include the remaining existing images
+    if (editVehicle) {
+      formData.images.forEach((image, index) => {
+        if (typeof image === 'string') { // It's an existing image URL
+          formDataObj.append(`existing_images[${index}]`, image);
+        }
+      });
+    }
 
     onSubmit(formDataObj);
   };
@@ -330,63 +388,10 @@ const VehicleDialog = ({
               </Box>
 
               {/* Image Previews */}
-              {(previewUrls.length > 0 || (editVehicle?.images?.length > 0)) && (
+              {(previewUrls.length > 0) && (
                 <Grid container spacing={1} sx={{ mt: 1 }}>
-                  {/* Show existing images when editing */}
-                  {editVehicle?.images?.length > 0 && 
-                    editVehicle.images.map((image, index) => {
-                      const imageSrc = getImageSrc(image);
-                      if (!imageSrc) return null;
-                      
-                      return (
-                        <Grid item xs={4} sm={3} key={`existing-${index}`}>
-                          <Box
-                            sx={{
-                              position: "relative",
-                              height: 80,
-                              borderRadius: 1,
-                              overflow: "hidden",
-                            }}
-                          >
-                            <img
-                              src={imageSrc}
-                              alt={`Vehicle image ${index + 1}`}
-                              style={{
-                                width: "100%",
-                                height: "100%",
-                                objectFit: "cover",
-                              }}
-                              onError={(e) => {
-                                console.error("Failed to load image:", imageSrc);
-                                e.target.style.display = 'none';
-                              }}
-                            />
-                            <IconButton
-                              size="small"
-                              onClick={() => removeImage(index, true)}
-                              sx={{
-                                position: "absolute",
-                                top: 0,
-                                right: 0,
-                                backgroundColor: "rgba(0,0,0,0.5)",
-                                color: "white",
-                                padding: "2px",
-                                "&:hover": {
-                                  backgroundColor: "rgba(0,0,0,0.7)",
-                                },
-                              }}
-                            >
-                              <X size={16} />
-                            </IconButton>
-                          </Box>
-                        </Grid>
-                      );
-                    })
-                  }
-                  
-                  {/* Show new preview images */}
                   {previewUrls.map((url, index) => (
-                    <Grid item xs={4} sm={3} key={`new-${index}`}>
+                    <Grid item xs={4} sm={3} key={`image-${index}`}>
                       <Box
                         sx={{
                           position: "relative",
@@ -397,16 +402,20 @@ const VehicleDialog = ({
                       >
                         <img
                           src={url}
-                          alt={`New vehicle image ${index + 1}`}
+                          alt={`Vehicle image ${index + 1}`}
                           style={{
                             width: "100%",
                             height: "100%",
                             objectFit: "cover",
                           }}
+                          onError={(e) => {
+                            console.error("Failed to load image:", url);
+                            e.target.style.display = 'none';
+                          }}
                         />
                         <IconButton
                           size="small"
-                          onClick={() => removeImage(index, false)}
+                          onClick={() => removeImage(index, typeof formData.images[index] === 'string')}
                           sx={{
                             position: "absolute",
                             top: 0,

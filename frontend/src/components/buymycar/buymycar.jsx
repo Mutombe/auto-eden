@@ -302,7 +302,7 @@ export default function BuyMyCarPage() {
                     <span className="text-gray-600">Status:</span>
                     <span
                       className={`px-3 py-1 rounded-full text-sm font-medium ${
-                        vehicle.verification_state === "verified"
+                        vehicle.verification_state === "physical"
                           ? "bg-green-100 text-green-800"
                           : vehicle.verification_state === "rejected"
                           ? "bg-red-100 text-red-800"
@@ -316,7 +316,7 @@ export default function BuyMyCarPage() {
                   <div className="flex justify-between items-center">
                     <span className="text-gray-600">Offer:</span>
                     <span className="font-semibold text-gray-900">
-                      ${vehicle.proposed_price?.toLocaleString()}
+                      ${vehicle.proposed_price?.toLocaleString() || vehicle.price?.toLocaleString()}
                     </span>
                   </div>
                   <button
@@ -358,7 +358,7 @@ export default function BuyMyCarPage() {
         )}
 
         {selectedVehicle && (
-          <div className="fixed inset-0 bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="fixed inset-0 bg-gray-900/30 backdrop-blur-sm flex items-center justify-center p-4 z-50">
             <div className="bg-white rounded-xl p-6 w-full max-w-2xl max-h-[90vh] overflow-y-auto">
               <div className="flex justify-between items-center mb-6">
                 <h2 className="text-2xl font-bold text-gray-900">
@@ -401,14 +401,14 @@ export default function BuyMyCarPage() {
                     </label>
                     <span
                       className={`mt-1 px-2 py-1 rounded-full text-sm ${
-                        selectedVehicle.status === "verified"
+                        selectedVehicle.verification_state === "physical"
                           ? "bg-green-100 text-green-800"
-                          : selectedVehicle.status === "rejected"
+                          : selectedVehicle.verification_state === "rejected"
                           ? "bg-red-100 text-red-800"
                           : "bg-gray-100 text-gray-800"
                       }`}
                     >
-                      {selectedVehicle.status}
+                      {selectedVehicle.verification_state}
                     </span>
                   </div>
                 </div>
@@ -444,7 +444,7 @@ export default function BuyMyCarPage() {
                     <p className="text-gray-600">Original asking price</p>
                   </div>
                   <span className="text-2xl font-bold text-red-600">
-                    ${selectedVehicle.proposed_price?.toLocaleString()}
+                    ${selectedVehicle.proposed_price?.toLocaleString() || selectedVehicle.price?.toLocaleString()}
                   </span>
                 </div>
               </div>

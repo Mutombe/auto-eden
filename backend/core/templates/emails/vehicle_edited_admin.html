@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Vehicle Listing Edited</title>
+</head>
+<body>
+    <h2>Vehicle Listing Modified</h2>
+    
+    <p>The following vehicle listing has been updated:</p>
+    
+    <ul>
+        <li><strong>Vehicle:</strong> {{ vehicle.year }} {{ vehicle.make }} {{ vehicle.model }}</li>
+        <li><strong>VIN:</strong> {{ vehicle.vin }}</li>
+        <li><strong>Owner:</strong> {{ vehicle.owner.email }}</li>
+    </ul>
+    
+    <h3>Changes Made:</h3>
+    <ul>
+        {% for field, values in changes.items %}
+        <li><strong>{{ field|title }}:</strong> Changed from "{{ values.0 }}" to "{{ values.1 }}"</li>
+        {% endfor %}
+    </ul>
+    
+    <p>Best regards,<br>
+    The Platform Team</p>
+</body>
+</html>
