@@ -321,14 +321,14 @@ export default function EnhancedHeroCarousel() {
                     {/* Blended image container with full view */}
                     <div className="relative h-80 sm:h-96 lg:h-[600px] w-full overflow-hidden">
                       {/* Background blend overlay */}
-                      <div className="absolute inset-0 bg-gradient-to-br from-black/40 via-red-900/30 to-transparent z-10 mix-blend-overlay" />
+                      <div className="absolute inset-0  z-10 mix-blend-overlay" />
                       
                       {/* Radial gradient blend */}
-                      <div className="absolute inset-0 bg-gradient-radial from-transparent via-red-900/20 to-black/60 z-10" />
+                      <div className="absolute inset-0  z-10" />
                       
-                      {/* Soft edge fade for seamless blending */}
+                      {/* Soft edge fade for seamless blending 
                       <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-black/80 z-20" />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20" />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent z-20" />*/}
                       
                       {/* Main image - displayed in full with object-contain */}
                       <motion.img
