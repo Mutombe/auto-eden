@@ -619,7 +619,7 @@ export default function AdminDashboard() {
               >
                 Close
               </button>
-              {vehicle.verification_state === "pending" && (
+              {vehicle.verification_state === "pending" || vehicle.verification_state === "digital" && (
                 <button
                   onClick={() => {
                     setSelectedVehicle(vehicle);

@@ -420,6 +420,7 @@ class QuoteRequestView(APIView):
         context = {
             "quote": quote,
             "vehicle": vehicle,
+            "qr_url": "https://autoeden.com",
             "date": quote.created_at.strftime("%B %d, %Y"),
         }
 
