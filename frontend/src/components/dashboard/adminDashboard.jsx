@@ -248,14 +248,11 @@ export default function AdminDashboard() {
         break;
       case 1: // D-VERIFIED
         displayData =
-          items?.filter((v) => v.verification_state === "digital") ||
-          [];
+          items?.filter((v) => v.verification_state === "digital") || [];
         break;
       case 2: // P-VERIFIED
         displayData =
-          items?.filter(
-            (v) => v.verification_state === "physical"
-          ) || [];
+          items?.filter((v) => v.verification_state === "physical") || [];
         break;
       case 3: // REJECTED
         displayData =
@@ -576,9 +573,7 @@ export default function AdminDashboard() {
                   <label className="flex items-center gap-2">
                     <input
                       type="checkbox"
-                      checked={
-                        vehicle.verification_state === "physical"
-                      }
+                      checked={vehicle.verification_state === "physical"}
                       readOnly
                       className="form-checkbox h-4 w-4 text-red-600"
                     />
@@ -619,7 +614,8 @@ export default function AdminDashboard() {
               >
                 Close
               </button>
-              {vehicle.verification_state === "pending" || vehicle.verification_state === "digital" && (
+              {(vehicle.verification_state === "pending" ||
+                vehicle.verification_state === "digital") && (
                 <button
                   onClick={() => {
                     setSelectedVehicle(vehicle);
@@ -696,8 +692,8 @@ export default function AdminDashboard() {
           <StatCard
             title="Verified"
             value={
-              items?.filter((v) => v.verification_state === "physical").length ||
-              0
+              items?.filter((v) => v.verification_state === "physical")
+                .length || 0
             }
             icon={<CheckCircle size={20} />}
             bgColor="bg-white"
@@ -706,7 +702,10 @@ export default function AdminDashboard() {
           />
           <StatCard
             title="Rejected"
-            value={items?.filter((v) => v.verification_state === "rejected").length || 0}
+            value={
+              items?.filter((v) => v.verification_state === "rejected")
+                .length || 0
+            }
             icon={<XCircle size={20} />}
             bgColor="bg-white"
             textColor="text-gray-600"
@@ -880,19 +879,16 @@ export default function AdminDashboard() {
                       </td>
                       <td className="px-4 py-4 whitespace-nowrap text-right text-sm font-medium">
                         <div className="flex justify-end gap-2 relative">
-                       
-                            <>
-                              <button
-                                className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex justify-end gap-2"
-                                onClick={() =>
-                                  setSelectedDetailsVehicle(vehicle)
-                                }
-                              >
-                                <Eye size={14} />
-                                View Details
-                              </button>
-                            </>
-                      
+                          <>
+                            <button
+                              className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex justify-end gap-2"
+                              onClick={() => setSelectedDetailsVehicle(vehicle)}
+                            >
+                              <Eye size={14} />
+                              View Details
+                            </button>
+                          </>
+
                           {/* Verification Actions - Only for pending vehicles */}
                           {vehicle.verification_state === "pending" && (
                             <>
