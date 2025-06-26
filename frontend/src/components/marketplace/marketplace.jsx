@@ -195,7 +195,7 @@ export default function MarketplacePage() {
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section with Parallax Effect */}
       <motion.section
-        className="relative h-72 md:h-96 bg-gradient-to-r from-red-700 to-red-900 overflow-hidden"
+        className="relative h-[calc(100vh-64px)] md:h-72 lg:h-96 bg-gradient-to-r from-red-700 to-red-900 overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
