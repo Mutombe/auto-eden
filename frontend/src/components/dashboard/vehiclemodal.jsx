@@ -31,6 +31,7 @@ const VehicleDialog = ({
     year: new Date().getFullYear(),
     price: "",
     mileage: "",
+    fuel_type: "petrol",
     vin: "",
     listingType: "marketplace",
     images: [],
@@ -51,6 +52,7 @@ const VehicleDialog = ({
         year: editVehicle.year || new Date().getFullYear(),
         price: editVehicle.price || editVehicle.proposed_price || "",
         mileage: editVehicle.mileage || "",
+        fuel_type: editVehicle.fuel_type || "petrol",
         vin: editVehicle.vin || "",
         listingType: editVehicle.listing_type || "marketplace",
         images: editVehicle.images || [],
@@ -76,6 +78,7 @@ const VehicleDialog = ({
         year: new Date().getFullYear(),
         price: "",
         mileage: "",
+        fuel_type: "petrol",
         vin: "",
         listingType: "marketplace",
         images: [],
@@ -106,6 +109,7 @@ const VehicleDialog = ({
     if (!formData.model) errors.model = "Model is required";
     if (!formData.year) errors.year = "Year is required";
     if (!formData.mileage) errors.mileage = "Mileage is required";
+    if (!formData.fuel_type) errors.fuel_type = "Fuel type is required";
     if (!formData.vin) errors.vin = "VIN is required";
     if (!formData.price) errors.price = "Price is required";
     if (imageFiles.length === 0 && formData.images.length === 0)
@@ -203,6 +207,7 @@ const VehicleDialog = ({
     formDataObj.append("model", formData.model);
     formDataObj.append("year", formData.year);
     formDataObj.append("mileage", formData.mileage);
+    formDataObj.append("fuel_type", formData.fuel_type);
     formDataObj.append("vin", formData.vin);
     formDataObj.append("listing_type", formData.listingType);
 
@@ -328,6 +333,18 @@ const VehicleDialog = ({
               variant="outlined"
               InputProps={{ inputProps: { min: 0 } }}
             />
+            <Select
+              fullWidth
+              name="fuel_type"
+              value={formData.fuel_type}
+              onChange={handleInputChange}
+              variant="outlined"
+              displayEmpty
+            >
+              <MenuItem value="petrol">Petrol</MenuItem>
+              <MenuItem value="diesel">Diesel</MenuItem>
+              <MenuItem value="electric">Electric</MenuItem>
+            </Select>
 
             <TextField
               fullWidth
@@ -452,6 +469,7 @@ const VehicleDialog = ({
                   !formData.year ||
                   !formData.price ||
                   !formData.mileage ||
+                  !formData.fuel_type ||
                   !formData.vin ||
                   (imageFiles.length === 0 && formData.images.length === 0)
                 }
