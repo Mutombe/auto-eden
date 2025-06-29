@@ -57,17 +57,22 @@ class VehicleImageSerializer(serializers.ModelSerializer):
     def get_image(self, obj):
         request = self.context.get('request')
         if obj.image:
+            # Add debug logging
+            print(f"Building URL for: {obj.image.name}")
+            print(f"Relative URL: {obj.image.url}")
+            
             if request:
-                return request.build_absolute_uri(obj.image.url)
+                absolute_url = request.build_absolute_uri(obj.image.url)
+                print(f"Absolute URL: {absolute_url}")
+                return absolute_url
             else:
-                # Fallback when request context is not available
+                print("No request in context")
                 return obj.image.url
         return None
     
     class Meta:
         model = VehicleImage
         fields = ['image']
-        read_only_fields = ['vehicle']
     
 class VehicleSerializer(serializers.ModelSerializer):
     images = VehicleImageSerializer(many=True, read_only=True)
