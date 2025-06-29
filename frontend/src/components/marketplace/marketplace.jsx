@@ -720,12 +720,7 @@ export default function MarketplacePage() {
                     }`}
                   >
                     <img
-                      src={
-                        `${
-                          import.meta.env.VITE_API_BASE_URL_LOCAL ||
-                          import.meta.env.VITE_API_BASE_URL_DEPLOY
-                        }${vehicle.images?.[0]?.image}` || "placeholder.jpg"
-                      }
+                      src={vehicle.images?.[0]?.image || "placeholder.jpg"}
                       alt={`${vehicle.make} ${vehicle.model}`}
                       className={`w-full object-cover ${
                         viewMode === "list"
