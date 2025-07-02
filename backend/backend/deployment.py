@@ -104,15 +104,15 @@ print(f"AWS_STORAGE_BUCKET_NAME: {AWS_STORAGE_BUCKET_NAME}")
 
 
 STORAGES = {
+    # Media (uploads/images)
     "default": {
         "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
+    # Static files (JS/CSS)
     "staticfiles": {
-        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
     },
 }
-
-
 
 # DATABASE CONFIGURATION
 
