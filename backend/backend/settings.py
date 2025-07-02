@@ -194,7 +194,9 @@ SIMPLE_JWT = {
 }
 
 # Email Configuration (Development)
-EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+# settings.py
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 EMAIL_HOST = 'smtp.hostinger.com'  # Hostinger's SMTP server
 EMAIL_PORT = 587  # 465 for SSL
 EMAIL_USE_TLS = True  # Use False if using port 465
@@ -203,7 +205,7 @@ EMAIL_HOST_USER = 'admin@autoeden.co.zw'
 EMAIL_HOST_PASSWORD = 'Admin@AutoEden2060'  # Password you set in Hostinger email account
 DEFAULT_FROM_EMAIL = 'Auto Eden <admin@autoeden.co.zw>'
 SERVER_EMAIL = 'admin@autoeden.co.zw'  # For error notifications
-ADMIN_EMAIL = ['simbamtombe@gmail.com', 'admin@autoeden.co.zw', 'simbarashemutombe1@gmail.com']  # Admin email for notifications
+ADMIN_EMAIL = []  # Admin email for notifications
 AUTHENTICATION_BACKENDS = [
    'django.contrib.auth.backends.ModelBackend',
 ]
