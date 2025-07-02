@@ -317,21 +317,22 @@ AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
 AWS_S3_REGION_NAME = 'us-east-2'
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
 AWS_S3_FILE_OVERWRITE = False
+AWS_DEFAULT_ACL = None  # Disable default ACLs
+AWS_S3_ADDRESSING_STYLE = "auto"  # or "virtual"
+AWS_QUERYSTRING_AUTH = False  # This makes S3 links public if bucket policy allows
+
 
 print(f"S3 Configuration:")
 print(f"AWS_ACCESS_KEY_ID: {AWS_ACCESS_KEY_ID[:10]}..." if AWS_ACCESS_KEY_ID else "Not set")
 print(f"AWS_STORAGE_BUCKET_NAME: {AWS_STORAGE_BUCKET_NAME}")
 
-STORAGES = {
 
-    # Media file (image) management   
+STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
-    
-    # CSS and JS file management
     "staticfiles": {
-        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
     },
 }
 
