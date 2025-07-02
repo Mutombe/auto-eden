@@ -1,5 +1,9 @@
 from pathlib import Path
 from datetime import timedelta
+import os
+from dotenv import load_dotenv
+ 
+load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -8,9 +12,87 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-rg5$^x0nm)lmj0v6-2^x#nhk9uewd&k=lc@%jsu3^f^y3##34)"
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
 
-ALLOWED_HOSTS = []
+# Add this to your settings.py temporarily for debugging
+import logging
+
+# Enable detailed logging for storage operations
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'level': 'DEBUG',
+            'class': 'logging.StreamHandler',
+        },
+    },
+    'loggers': {
+        'storages': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'boto3': {
+            'handlers': ['console'],
+            'level': 'DEBUG',
+            'propagate': True,
+        },
+        'botocore': {
+            'handlers': ['console'],
+            'level': 'DEBUG', 
+            'propagate': True,
+        },
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': True,
+        },
+    },
+}
+
+# Test your S3 connection in Django shell
+# python manage.py shell
+"""
+from django.core.files.storage import default_storage
+from django.core.files.base import ContentFile
+
+# Test basic S3 connection
+try:
+    # Test writing a file
+    test_file = ContentFile(b'Hello S3!')
+    file_path = default_storage.save('test/hello.txt', test_file)
+    print(f"File saved to: {file_path}")
+    print(f"File URL: {default_storage.url(file_path)}")
+    
+    # Test if file exists
+    exists = default_storage.exists(file_path)
+    print(f"File exists: {exists}")
+    
+    # Test reading the file back
+    if exists:
+        with default_storage.open(file_path, 'rb') as f:
+            content = f.read()
+            print(f"File content: {content}")
+    
+    # Clean up
+    default_storage.delete(file_path)
+    print("Test file deleted")
+    
+except Exception as e:
+    print(f"S3 Error: {e}")
+    import traceback
+    traceback.print_exc()
+"""
+DEBUG = False
+
+ALLOWED_HOSTS = [
+    'auto-eden-backend.onrender.com',
+    'auto-eden.onrender.com',
+    'autoeden.co.zw',
+    'localhost',
+    'http://127.0.0.1:8000/',
+    '127.0.0.1'
+]
 
 
 # Application definition
@@ -28,6 +110,7 @@ INSTALLED_APPS = [
     "rest_framework_simplejwt",
     "corsheaders",
     'django_filters',
+    'storages',
     'core'
 ]
 
@@ -214,15 +297,44 @@ USE_TZ = True
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
-import os
 
-USE_X_FORWARDED_HOST = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+# Add this USE_S3 flag
 
-STATIC_URL = '/static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'static/')
-MEDIA_URL = '/media/'
-MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+# STATIC FILES CONFIGURATION
+MEDIA_URL = 'media/'
+
+MEDIA_ROOT = BASE_DIR / 'media'
+
+
+STATIC_URL = 'static/'
+
+STATICFILES_DIRS = [BASE_DIR / 'static']
+
+
+AWS_ACCESS_KEY_ID = os.getenv('AWS_ACCESS_KEY_ID')
+AWS_SECRET_ACCESS_KEY = os.getenv('AWS_SECRET_ACCESS_KEY')
+AWS_STORAGE_BUCKET_NAME = os.getenv('AWS_STORAGE_BUCKET_NAME')
+AWS_S3_REGION_NAME = 'us-east-2'
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.amazonaws.com'
+AWS_S3_FILE_OVERWRITE = False
+
+print(f"S3 Configuration:")
+print(f"AWS_ACCESS_KEY_ID: {AWS_ACCESS_KEY_ID[:10]}..." if AWS_ACCESS_KEY_ID else "Not set")
+print(f"AWS_STORAGE_BUCKET_NAME: {AWS_STORAGE_BUCKET_NAME}")
+
+STORAGES = {
+
+    # Media file (image) management   
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+    },
+    
+    # CSS and JS file management
+    "staticfiles": {
+        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+    },
+}
+
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field

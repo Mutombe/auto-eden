@@ -182,10 +182,7 @@ export default function CarDetailsPage() {
                     key={index}
                     src={
                       img.image
-                        ? `${
-                            import.meta.env.VITE_API_BASE_URL_LOCAL ||
-                            import.meta.env.VITE_API_BASE_URL_DEPLOY
-                          }${img.image}`
+                        ? `${img.image}`
                         : "/placeholder-car.jpg"
                     }
                     className="h-32 w-full object-cover rounded-md"
