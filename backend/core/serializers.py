@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from .models import QuoteRequest, Vehicle, VehicleImage, Bid, Profile, User, VehicleSearch
+from django.conf import settings
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -55,19 +56,8 @@ class VehicleImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
     def get_image(self, obj):
-        request = self.context.get('request')
         if obj.image:
-            # Add debug logging
-            print(f"Building URL for: {obj.image.name}")
-            print(f"Relative URL: {obj.image.url}")
-            
-            if request:
-                absolute_url = request.build_absolute_uri(obj.image.url)
-                print(f"Absolute URL: {absolute_url}")
-                return absolute_url
-            else:
-                print("No request in context")
-                return obj.image.url
+            return f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{obj.image.name}"
         return None
     
     class Meta:

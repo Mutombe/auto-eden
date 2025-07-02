@@ -162,17 +162,55 @@ class Vehicle(models.Model):
     def __str__(self):
         return self.make
 
+from django.db import models
+from django.contrib.auth.models import User
+import logging
+
+logger = logging.getLogger(__name__)
+
 class VehicleImage(models.Model):
     vehicle = models.ForeignKey(
-        Vehicle, 
+        'Vehicle',  # Use string reference to avoid circular imports
         on_delete=models.CASCADE,
         related_name='images',
         null=True
     )
     image = models.ImageField(upload_to='vehicle_images/')
 
+    def save(self, *args, **kwargs):
+        """Override save to add debugging"""
+        logger.info(f"Saving VehicleImage: {self.image.name if self.image else 'No image'}")
+        
+        if self.image:
+            logger.info(f"Image file size: {self.image.size}")
+            logger.info(f"Image storage: {self.image.storage}")
+            
+        try:
+            super().save(*args, **kwargs)
+            logger.info(f"VehicleImage saved successfully. Image URL: {self.image.url if self.image else 'No URL'}")
+        except Exception as e:
+            logger.error(f"Error saving VehicleImage: {e}")
+            raise
+
     def __str__(self):
-        return f"Image for {self.vehicle}"
+        return f"Image for {self.vehicle}" if self.vehicle else "Image (no vehicle)"
+
+# Also add this to test direct upload
+class TestUpload(models.Model):
+    """Temporary model for testing uploads"""
+    name = models.CharField(max_length=100)
+    test_file = models.FileField(upload_to='test_uploads/')
+    
+    def save(self, *args, **kwargs):
+        logger.info(f"Saving TestUpload: {self.name}")
+        if self.test_file:
+            logger.info(f"File: {self.test_file.name}, Size: {self.test_file.size}")
+        super().save(*args, **kwargs)
+        if self.test_file:
+            logger.info(f"TestUpload saved. File URL: {self.test_file.url}")
+
+    class Meta:
+        verbose_name = "Test Upload"
     
 class QuoteRequest(models.Model):
     vehicle = models.ForeignKey(
