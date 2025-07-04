@@ -337,9 +337,10 @@ print(f"AWS_S3_CUSTOM_DOMAIN: {AWS_S3_CUSTOM_DOMAIN}")
 # STORAGES BACKEND CONFIGURATION
 STORAGES = {
     "default": {
-        "BACKEND": "dospace.storage.CustomMediaS3Boto3Storage",
+        "BACKEND": "storages.backends.s3.S3Storage",
         "OPTIONS": {
             'location': 'media', # All media uploads go into the 'media' folder
+            'default_acl': 'public-read',
         },
     },
     "staticfiles": {
