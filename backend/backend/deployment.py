@@ -88,21 +88,12 @@ AWS_DEFAULT_ACL = 'private'  # Keep files private and use pre-signed URLs
 AWS_S3_FILE_OVERWRITE = False
 AWS_QUERYSTRING_AUTH = True # **FIX 3: Ensure pre-signed URLs are generated**
 
-# STATIC FILES CONFIGURATION
-# settings.py
-
-# ... other settings
-
-# STATIC FILES & MEDIA CONFIGURATION
-# This is the base URL that will be used for constructing file URLs in your templates and APIs
-
-MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-MEDIA_ROOT = BASE_DIR / 'media' # For local development fallback if needed
 
 STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
+
 
 print(f"S3 Configuration:")
 print(f"AWS_ACCESS_KEY_ID: {AWS_ACCESS_KEY_ID[:10]}..." if AWS_ACCESS_KEY_ID else "Not set")
@@ -112,19 +103,21 @@ print(f"AWS_S3_CUSTOM_DOMAIN: {AWS_S3_CUSTOM_DOMAIN}")
 # STORAGES BACKEND CONFIGURATION
 STORAGES = {
     "default": {
-        "BACKEND": "storages.backends.s3.S3Storage",
+        "BACKEND": "dospace.storage.MediaStorage",
         "OPTIONS": {
-            'location': 'media', # All media uploads go into the 'media' folder
+            'default_acl': 'public-read',
+            'custom_domain': AWS_S3_CUSTOM_DOMAIN,
         },
     },
     "staticfiles": {
         "BACKEND": "storages.backends.s3.S3StaticStorage",
         "OPTIONS": {
-            'location': 'static', # All static files go into the 'static' folder
-            'default_acl': 'public-read', # Static files should be public
+            'location': 'static', 
+            'default_acl': 'public-read', 
         },
     },
 }
+
 
 # DATABASE CONFIGURATION
 
