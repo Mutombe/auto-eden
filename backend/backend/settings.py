@@ -340,7 +340,6 @@ STORAGES = {
         "BACKEND": "dospace.storage.CustomMediaS3Boto3Storage",
         "OPTIONS": {
             'location': 'media', # All media uploads go into the 'media' folder
-            'default_acl': 'public-read',
         },
     },
     "staticfiles": {
