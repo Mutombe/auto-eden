@@ -1,4 +1,4 @@
-# Remove the location = 'media' from MediaStorage
+from storages.backends.s3boto3 import S3Storage
 class MediaStorage(S3Storage):
     # location = 'media' # Remove or comment this line out
     file_overwrite = False
