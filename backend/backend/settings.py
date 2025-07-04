@@ -1,9 +1,8 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-from dotenv import load_dotenv
+from decouple import config
  
-load_dotenv()
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -300,46 +299,60 @@ USE_TZ = True
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/5.1/howto/static-files/
 
-# Add this USE_S3 flag
+# DIGITALOCEAN SPACES / S3 CONFIGURATION
+AWS_ACCESS_KEY_ID = 'DO8013WV2RVKZMWWT8NJ'
+AWS_SECRET_ACCESS_KEY = 'u4GevFPGgAyxV4XXZxk2FrQuiogf3FeXLqKP/0v2d84'
+AWS_STORAGE_BUCKET_NAME = 'autoeden'
+AWS_S3_REGION_NAME = 'sgp1'  # **FIX 1: Explicitly set the correct region**
+AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_REGION_NAME}.digitaloceanspaces.com' # **FIX 2: Use the correct regional endpoint**
+AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_REGION_NAME}.cdn.digitaloceanspaces.com'
+AWS_S3_OBJECT_PARAMETERS = {
+    'CacheControl': 'max-age=86400',
+}
+AWS_DEFAULT_ACL = 'private'  # Keep files private and use pre-signed URLs
+AWS_S3_FILE_OVERWRITE = False
+AWS_QUERYSTRING_AUTH = True # **FIX 3: Ensure pre-signed URLs are generated**
 
 # STATIC FILES CONFIGURATION
-MEDIA_URL = 'media/'
+# settings.py
 
-MEDIA_ROOT = BASE_DIR / 'media'
+# ... other settings
 
+# STATIC FILES & MEDIA CONFIGURATION
+# This is the base URL that will be used for constructing file URLs in your templates and APIs
 
-STATIC_URL = 'static/'
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+MEDIA_ROOT = BASE_DIR / 'media' # For local development fallback if needed
 
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
-
-AWS_ACCESS_KEY_ID = 'AKIA2WBW442MOFZ6W56B'
-AWS_SECRET_ACCESS_KEY = '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'
-AWS_STORAGE_BUCKET_NAME = 'autoeden-s3'
-AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.s3.us-west-1.amazonaws.com'
-AWS_S3_FILE_OVERWRITE = False
-AWS_S3_REGION_NAME = 'us-west-1'
-AWS_DEFAULT_ACL = None  
-AWS_S3_ADDRESSING_STYLE = "auto" 
-AWS_QUERYSTRING_AUTH = False 
+MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
+STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 
 print(f"S3 Configuration:")
 print(f"AWS_ACCESS_KEY_ID: {AWS_ACCESS_KEY_ID[:10]}..." if AWS_ACCESS_KEY_ID else "Not set")
 print(f"AWS_STORAGE_BUCKET_NAME: {AWS_STORAGE_BUCKET_NAME}")
 print(f"AWS_S3_CUSTOM_DOMAIN: {AWS_S3_CUSTOM_DOMAIN}")
-print(f"AWS_S3_REGION_NAME: {AWS_S3_REGION_NAME}")
 
-
+# STORAGES BACKEND CONFIGURATION
 STORAGES = {
-    # Media (uploads/images)
     "default": {
-        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+        "BACKEND": "dospace.storage.CustomMediaS3Boto3Storage",
+        "OPTIONS": {
+            'location': 'media', # All media uploads go into the 'media' folder
+            'default_acl': 'public-read',
+        },
     },
-    # Static files (JS/CSS)
     "staticfiles": {
-        "BACKEND": "storages.backends.s3boto3.S3StaticStorage",
+        "BACKEND": "storages.backends.s3.S3StaticStorage",
+        "OPTIONS": {
+            'location': 'static', # All static files go into the 'static' folder
+            'default_acl': 'public-read', # Static files should be public
+        },
     },
 }
 
+# ... rest of your settings
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.1/ref/settings/#default-auto-field
