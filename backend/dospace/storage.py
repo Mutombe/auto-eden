@@ -1,5 +1,5 @@
-from storages.backends.s3boto3 import S3Storage
-class MediaStorage(S3Storage):
+from storages.backends.s3boto3 import S3Boto3Storage
+class MediaStorage(S3Boto3Storage):
     # location = 'media' # Remove or comment this line out
     file_overwrite = False
     default_acl = 'private' # You might want this public-read for vehicle_images
