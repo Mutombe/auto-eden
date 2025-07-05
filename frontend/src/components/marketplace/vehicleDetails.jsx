@@ -17,7 +17,7 @@ import {
   TrendingUp,
   Clock,
   ArrowLeft,
-  X
+  X,
 } from "lucide-react";
 import {
   Button,
@@ -36,6 +36,7 @@ import {
   MenuItem,
 } from "@mui/material";
 import { motion } from "framer-motion";
+import { formatMediaUrl } from "../../utils/image";
 import { useMemo } from "react";
 import VehicleCard from "./vehicleCard"; // Reuse your existing card component
 
@@ -91,30 +92,30 @@ export default function CarDetailsPage() {
   }, [vehicleId, vehicles]);
 
   const handleSubmitQuote = () => {
-  if (vehicle) {
-    dispatch(
-      requestQuote({
-        vehicleId: vehicle.id,
-        ...quoteForm,
-      })
-    )
-      .then(() => {
-        setShowQuoteModal(false);
-        setSnackbar({
-          open: true,
-          message: "Quote request submitted successfully!",
-          severity: "success",
+    if (vehicle) {
+      dispatch(
+        requestQuote({
+          vehicleId: vehicle.id,
+          ...quoteForm,
+        })
+      )
+        .then(() => {
+          setShowQuoteModal(false);
+          setSnackbar({
+            open: true,
+            message: "Quote request submitted successfully!",
+            severity: "success",
+          });
+        })
+        .catch((error) => {
+          setSnackbar({
+            open: true,
+            message: error?.message || "Failed to submit quote request",
+            severity: "error",
+          });
         });
-      })
-      .catch((error) => {
-        setSnackbar({
-          open: true,
-          message: error?.message || "Failed to submit quote request",
-          severity: "error",
-        });
-      });
-  }
-};
+    }
+  };
 
   const handlePlaceBid = () => {
     if (vehicle && bidAmount) {
@@ -164,31 +165,36 @@ export default function CarDetailsPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             {/* Image Gallery */}
             <div className="space-y-4">
-              <img
-                src={
-                  vehicle.images?.[0]?.image
-                    ? `${
-                        import.meta.env.VITE_API_BASE_URL_LOCAL ||
-                        import.meta.env.VITE_API_BASE_URL_DEPLOY
-                      }${vehicle.images[0].image}`
-                    : "/placeholder-car.jpg"
-                }
-                className="w-full h-96 object-cover rounded-xl"
-                alt={`${vehicle.make} ${vehicle.model}`}
-              />
-              <div className="grid grid-cols-3 gap-2">
-                {vehicle.images.slice(0, 3).map((img, index) => (
-                  <img
-                    key={index}
-                    src={
-                      img.image
-                        ? `${img.image}`
-                        : "/placeholder-car.jpg"
-                    }
-                    className="h-32 w-full object-cover rounded-md"
-                    alt={`Preview ${index + 1}`}
-                  />
-                ))}
+              <div>
+                {/* Main vehicle image */}
+                <img
+                  src={formatMediaUrl(vehicle.images?.[0]?.image)}
+                  className="w-full h-96 object-cover rounded-xl"
+                  alt={`${vehicle.make} ${vehicle.model}`}
+                  onError={(e) => {
+                    e.target.src = "/placeholder-car.jpg";
+                  }}
+                  loading="eager" // Important image loads first
+                />
+
+                {/* Thumbnail gallery */}
+                <div className="grid grid-cols-3 gap-2 mt-2">
+                  {vehicle.images.slice(0, 3).map((img, index) => {
+                    const formattedUrl = formatMediaUrl(img.image);
+                    return (
+                      <img
+                        key={index}
+                        src={formattedUrl}
+                        className="h-32 w-full object-cover rounded-md hover:opacity-90 transition-opacity"
+                        alt={`Preview ${index + 1}`}
+                        onError={(e) => {
+                          e.target.src = "/placeholder-car.jpg";
+                        }}
+                        loading="lazy"
+                      />
+                    );
+                  })}
+                </div>
               </div>
             </div>
 
@@ -335,7 +341,7 @@ export default function CarDetailsPage() {
           <form
             onSubmit={(e) => {
               e.preventDefault();
-               handleSubmitQuote();
+              handleSubmitQuote();
               // Handle quote submission
               setShowQuoteModal(false);
               setSnackbar({
@@ -381,9 +387,9 @@ export default function CarDetailsPage() {
                   required
                 >
                   {/* Add countries list - you might want to import a full list */}
-                  <MenuItem value="USA">United States</MenuItem>
-                  <MenuItem value="UK">United Kingdom</MenuItem>
-                  <MenuItem value="Germany">Germany</MenuItem>
+                  <MenuItem value="Zimbabwe">Zimbabwe</MenuItem>
+                  <MenuItem value="Bostwana">Bostwana</MenuItem>
+                  <MenuItem value="Zambia">Zambia</MenuItem>
                   {/* ... more countries */}
                 </Select>
               </FormControl>

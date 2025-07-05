@@ -20,7 +20,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
-
+import { formatMediaUrl } from './../../utils/image';
 const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -34,20 +34,18 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
     >
       <div className={`relative ${viewMode === "list" ? "md:w-1/3" : ""}`}>
         <img
-          src={
-            vehicle.images?.[0]?.image
-              ? `${
-                  import.meta.env.VITE_API_BASE_URL_LOCAL ||
-                  import.meta.env.VITE_API_BASE_URL_DEPLOY
-                }${vehicle.images[0].image}`
-              : "/placeholder-car.jpg"
-          }
+          src={formatMediaUrl(vehicle.images?.[0]?.image)}
           alt={`${vehicle.make} ${vehicle.model}`}
           className={`w-full object-cover ${
             viewMode === "list"
               ? "h-56 md:h-full md:rounded-l-xl"
               : "h-52 rounded-t-xl"
           }`}
+          onError={(e) => {
+            e.target.src = "/placeholder-car.jpg";
+          }}
+          loading={viewMode === "list" ? "eager" : "lazy"}
+          fetchpriority={viewMode === "list" ? "high" : "auto"}
         />
 
         {/* Featured Badge */}
@@ -61,8 +59,12 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
         {/* Chips and badges */}
         <div className="absolute top-3 right-3 flex flex-col gap-2">
           <Chip
-            label={vehicle.listing_type === "instant_sale" ? "Buy Now" : "Auction"}
-            color={vehicle.listing_type === "instant_sale" ? "success" : "primary"}
+            label={
+              vehicle.listing_type === "instant_sale" ? "Buy Now" : "Auction"
+            }
+            color={
+              vehicle.listing_type === "instant_sale" ? "success" : "primary"
+            }
             size="small"
             sx={{
               backgroundColor:
@@ -93,9 +95,7 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
       </div>
 
       <div
-        className={`p-4 flex flex-col ${
-          viewMode === "list" ? "md:w-2/3" : ""
-        }`}
+        className={`p-4 flex flex-col ${viewMode === "list" ? "md:w-2/3" : ""}`}
       >
         <div className="flex justify-between items-start">
           <div>

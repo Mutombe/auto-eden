@@ -1,5 +1,6 @@
 // src/pages/VehicleDetailsModal.jsx
 import React, { useState } from "react";
+import { formatMediaUrl } from "../../utils/image";
 import {
   Dialog,
   DialogTitle,
@@ -45,8 +46,8 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
 
   // Extract image URLs from the vehicle.images array
   // vehicle.images is an array of objects with 'image' field containing the URL
-  const vehicleImages = vehicle.images?.map(img => img.image) || [];
-  
+  const vehicleImages = vehicle.images?.map((img) => img.image) || [];
+
   // Fallback demo images if no images exist (remove this in production)
   const fallbackImages = [
     "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop",
@@ -54,16 +55,17 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
     "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?w=800&h=600&fit=crop",
     "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&h=600&fit=crop",
   ];
-  
+
   // Use actual images if available, otherwise use fallback for demo
-  const displayImages = vehicleImages.length > 0 ? vehicleImages : fallbackImages;
+  const displayImages =
+    vehicleImages.length > 0 ? vehicleImages : fallbackImages;
 
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
   };
 
   const prevImage = () => {
-    setCurrentImageIndex((prev) => 
+    setCurrentImageIndex((prev) =>
       prev === 0 ? displayImages.length - 1 : prev - 1
     );
   };
@@ -87,21 +89,21 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
         PaperProps={{
           sx: {
             borderRadius: isMobile ? 0 : 3,
-            overflow: 'hidden',
-          }
+            overflow: "hidden",
+          },
         }}
       >
         {/* Header with gradient background */}
         <DialogTitle
           sx={{
-            background: 'linear-gradient(135deg, #e41c38 0%, #c4102a 100%)',
-            color: 'white',
+            background: "linear-gradient(135deg, #e41c38 0%, #c4102a 100%)",
+            color: "white",
             p: 0,
           }}
         >
-          <Box 
-            display="flex" 
-            justifyContent="space-between" 
+          <Box
+            display="flex"
+            justifyContent="space-between"
             alignItems="center"
             p={3}
           >
@@ -113,14 +115,14 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                 {vehicle.year} • {vehicle.mileage?.toLocaleString()} km
               </Typography>
             </Box>
-            <IconButton 
+            <IconButton
               onClick={onClose}
-              sx={{ 
-                color: 'white',
-                backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                '&:hover': {
-                  backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                }
+              sx={{
+                color: "white",
+                backgroundColor: "rgba(255, 255, 255, 0.1)",
+                "&:hover": {
+                  backgroundColor: "rgba(255, 255, 255, 0.2)",
+                },
               }}
             >
               <X size={24} />
@@ -132,7 +134,7 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
           <Grid container>
             {/* Image Carousel Section */}
             <Grid item xs={12} md={7}>
-              <Box sx={{ position: 'relative', height: { xs: 300, md: 500 } }}>
+              <Box sx={{ position: "relative", height: { xs: 300, md: 500 } }}>
                 {displayImages.length > 0 ? (
                   <>
                     {/* Main Image */}
@@ -141,19 +143,19 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                       src={displayImages[currentImageIndex]}
                       alt={`${vehicle.make} ${vehicle.model}`}
                       sx={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        cursor: 'pointer',
-                        transition: 'transform 0.3s ease',
-                        '&:hover': {
-                          transform: 'scale(1.02)',
-                        }
+                        width: "100%",
+                        height: "100%",
+                        objectFit: "cover",
+                        cursor: "pointer",
+                        transition: "transform 0.3s ease",
+                        "&:hover": {
+                          transform: "scale(1.02)",
+                        },
                       }}
                       onClick={openImagePreview}
                       onError={(e) => {
                         // Handle broken image links
-                        e.target.style.display = 'none';
+                        e.target.style.display = "none";
                       }}
                     />
 
@@ -163,15 +165,15 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                         <IconButton
                           onClick={prevImage}
                           sx={{
-                            position: 'absolute',
+                            position: "absolute",
                             left: 16,
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                            color: 'white',
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            }
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            backgroundColor: "rgba(0, 0, 0, 0.6)",
+                            color: "white",
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 0, 0, 0.8)",
+                            },
                           }}
                         >
                           <ChevronLeft />
@@ -179,15 +181,15 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                         <IconButton
                           onClick={nextImage}
                           sx={{
-                            position: 'absolute',
+                            position: "absolute",
                             right: 16,
-                            top: '50%',
-                            transform: 'translateY(-50%)',
-                            backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                            color: 'white',
-                            '&:hover': {
-                              backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                            }
+                            top: "50%",
+                            transform: "translateY(-50%)",
+                            backgroundColor: "rgba(0, 0, 0, 0.6)",
+                            color: "white",
+                            "&:hover": {
+                              backgroundColor: "rgba(0, 0, 0, 0.8)",
+                            },
                           }}
                         >
                           <ChevronRight />
@@ -198,16 +200,16 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                     {/* Image Counter */}
                     <Box
                       sx={{
-                        position: 'absolute',
+                        position: "absolute",
                         bottom: 16,
                         right: 16,
-                        backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                        color: 'white',
+                        backgroundColor: "rgba(0, 0, 0, 0.7)",
+                        color: "white",
                         px: 2,
                         py: 1,
                         borderRadius: 2,
-                        display: 'flex',
-                        alignItems: 'center',
+                        display: "flex",
+                        alignItems: "center",
                         gap: 1,
                       }}
                     >
@@ -221,14 +223,14 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                     <IconButton
                       onClick={openImagePreview}
                       sx={{
-                        position: 'absolute',
+                        position: "absolute",
                         top: 16,
                         right: 16,
-                        backgroundColor: 'rgba(0, 0, 0, 0.6)',
-                        color: 'white',
-                        '&:hover': {
-                          backgroundColor: 'rgba(0, 0, 0, 0.8)',
-                        }
+                        backgroundColor: "rgba(0, 0, 0, 0.6)",
+                        color: "white",
+                        "&:hover": {
+                          backgroundColor: "rgba(0, 0, 0, 0.8)",
+                        },
                       }}
                     >
                       <ZoomIn size={20} />
@@ -238,15 +240,15 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                     {displayImages.length > 1 && (
                       <Box
                         sx={{
-                          position: 'absolute',
+                          position: "absolute",
                           bottom: 0,
                           left: 0,
                           right: 0,
-                          display: 'flex',
+                          display: "flex",
                           gap: 1,
                           p: 2,
-                          backgroundColor: 'rgba(0, 0, 0, 0.7)',
-                          overflowX: 'auto',
+                          backgroundColor: "rgba(0, 0, 0, 0.7)",
+                          overflowX: "auto",
                         }}
                       >
                         {displayImages.map((image, index) => (
@@ -259,20 +261,23 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                             sx={{
                               width: 60,
                               height: 40,
-                              objectFit: 'cover',
+                              objectFit: "cover",
                               borderRadius: 1,
-                              cursor: 'pointer',
-                              border: index === currentImageIndex ? '2px solid #e41c38' : '2px solid transparent',
+                              cursor: "pointer",
+                              border:
+                                index === currentImageIndex
+                                  ? "2px solid #e41c38"
+                                  : "2px solid transparent",
                               opacity: index === currentImageIndex ? 1 : 0.7,
-                              transition: 'all 0.3s ease',
+                              transition: "all 0.3s ease",
                               flexShrink: 0,
-                              '&:hover': {
+                              "&:hover": {
                                 opacity: 1,
-                              }
+                              },
                             }}
                             onError={(e) => {
                               // Hide broken thumbnail images
-                              e.target.style.display = 'none';
+                              e.target.style.display = "none";
                             }}
                           />
                         ))}
@@ -306,25 +311,33 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
 
             {/* Vehicle Details Section */}
             <Grid item xs={12} md={6}>
-              <Box sx={{ p: 3, height: { md: 500 }, overflowY: 'auto' }}>
+              <Box sx={{ p: 3, height: { md: 500 }, overflowY: "auto" }}>
                 {/* Price Card */}
                 <Card
                   elevation={0}
                   sx={{
                     mb: 3,
-                    background: 'linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)',
-                    border: '1px solid #dee2e6',
+                    background:
+                      "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
+                    border: "1px solid #dee2e6",
                   }}
                 >
                   <CardContent sx={{ p: 2.5 }}>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
                       <DollarSign size={20} color="#e41c38" />
-                      <Typography variant="body2" color="text.secondary" fontWeight={500}>
-                        {vehicle.listing_type === "marketplace" ? "Listed Price" : "Proposed Price"}
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        fontWeight={500}
+                      >
+                        {vehicle.listing_type === "marketplace"
+                          ? "Listed Price"
+                          : "Proposed Price"}
                       </Typography>
                     </Box>
                     <Typography variant="h4" color="#e41c38" fontWeight={700}>
-                      ${Number(
+                      $
+                      {Number(
                         vehicle.listing_type === "marketplace"
                           ? vehicle.price
                           : vehicle.proposed_price
@@ -358,9 +371,14 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                 </Box>
 
                 {/* Vehicle Specifications */}
-                <Card elevation={0} sx={{ mb: 3, border: '1px solid #e0e0e0' }}>
+                <Card elevation={0} sx={{ mb: 3, border: "1px solid #e0e0e0" }}>
                   <CardContent>
-                    <Typography variant="h6" fontWeight={600} mb={2} color="#333">
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      mb={2}
+                      color="#333"
+                    >
                       Vehicle Specifications
                     </Typography>
                     <Grid container spacing={2}>
@@ -413,9 +431,14 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                 </Card>
 
                 {/* VIN Information */}
-                <Card elevation={0} sx={{ border: '1px solid #e0e0e0' }}>
+                <Card elevation={0} sx={{ border: "1px solid #e0e0e0" }}>
                   <CardContent>
-                    <Typography variant="h6" fontWeight={600} mb={2} color="#333">
+                    <Typography
+                      variant="h6"
+                      fontWeight={600}
+                      mb={2}
+                      color="#333"
+                    >
                       Vehicle Identification
                     </Typography>
                     <Box display="flex" alignItems="center" gap={1} mb={1}>
@@ -424,15 +447,15 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                         VIN Number
                       </Typography>
                     </Box>
-                    <Typography 
-                      fontWeight={600} 
+                    <Typography
+                      fontWeight={600}
                       color="#333"
-                      sx={{ 
-                        fontFamily: 'monospace',
-                        backgroundColor: '#f8f9fa',
+                      sx={{
+                        fontFamily: "monospace",
+                        backgroundColor: "#f8f9fa",
                         p: 1,
                         borderRadius: 1,
-                        fontSize: '0.9rem'
+                        fontSize: "0.9rem",
                       }}
                     >
                       {vehicle.vin || "Not Available"}
@@ -444,8 +467,8 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
           </Grid>
         </DialogContent>
 
-        <DialogActions sx={{ p: 3, backgroundColor: '#f8f9fa' }}>
-          <Button 
+        <DialogActions sx={{ p: 3, backgroundColor: "#f8f9fa" }}>
+          <Button
             onClick={onClose}
             variant="outlined"
             size="large"
@@ -463,23 +486,23 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
         maxWidth={false}
         fullWidth
         sx={{
-          '& .MuiDialog-paper': {
-            backgroundColor: 'rgba(0, 0, 0, 0.9)',
-            boxShadow: 'none',
+          "& .MuiDialog-paper": {
+            backgroundColor: "rgba(0, 0, 0, 0.9)",
+            boxShadow: "none",
             margin: 0,
-            maxHeight: '100vh',
-            maxWidth: '100vw',
+            maxHeight: "100vh",
+            maxWidth: "100vw",
             borderRadius: 0,
-          }
+          },
         }}
       >
         <Box
           sx={{
-            position: 'relative',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            minHeight: '100vh',
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            minHeight: "100vh",
             p: 2,
           }}
         >
@@ -487,15 +510,15 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
           <IconButton
             onClick={closeImagePreview}
             sx={{
-              position: 'absolute',
+              position: "absolute",
               top: 20,
               right: 20,
-              color: 'white',
-              backgroundColor: 'rgba(255, 255, 255, 0.1)',
+              color: "white",
+              backgroundColor: "rgba(255, 255, 255, 0.1)",
               zIndex: 1000,
-              '&:hover': {
-                backgroundColor: 'rgba(255, 255, 255, 0.2)',
-              }
+              "&:hover": {
+                backgroundColor: "rgba(255, 255, 255, 0.2)",
+              },
             }}
           >
             <X size={24} />
@@ -507,14 +530,14 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
               <IconButton
                 onClick={prevImage}
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   left: 20,
-                  color: 'white',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: "white",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
                   zIndex: 1000,
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  }
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  },
                 }}
               >
                 <ChevronLeft size={32} />
@@ -522,14 +545,14 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
               <IconButton
                 onClick={nextImage}
                 sx={{
-                  position: 'absolute',
+                  position: "absolute",
                   right: 20,
-                  color: 'white',
-                  backgroundColor: 'rgba(255, 255, 255, 0.1)',
+                  color: "white",
+                  backgroundColor: "rgba(255, 255, 255, 0.1)",
                   zIndex: 1000,
-                  '&:hover': {
-                    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                  }
+                  "&:hover": {
+                    backgroundColor: "rgba(255, 255, 255, 0.2)",
+                  },
                 }}
               >
                 <ChevronRight size={32} />
@@ -540,30 +563,34 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
           {/* Full Size Image */}
           <Box
             component="img"
-            src={vehicleImages[currentImageIndex]}
-            alt={`${vehicle.make} ${vehicle.model} - Image ${currentImageIndex + 1}`}
+            src={formatMediaUrl(vehicleImages[currentImageIndex])}
+            alt={`${vehicle.make} ${vehicle.model} - Image ${
+              currentImageIndex + 1
+            }`}
             sx={{
-              maxWidth: '95%',
-              maxHeight: '95%',
-              objectFit: 'contain',
+              maxWidth: "95%",
+              maxHeight: "95%",
+              objectFit: "contain",
               borderRadius: 1,
             }}
+            onError={(e) => {
+              e.target.src = "/placeholder-car.jpg";
+            }}
           />
-
           {/* Image Counter for Preview */}
           <Box
             sx={{
-              position: 'absolute',
+              position: "absolute",
               bottom: 30,
-              left: '50%',
-              transform: 'translateX(-50%)',
-              backgroundColor: 'rgba(0, 0, 0, 0.7)',
-              color: 'white',
+              left: "50%",
+              transform: "translateX(-50%)",
+              backgroundColor: "rgba(0, 0, 0, 0.7)",
+              color: "white",
               px: 3,
               py: 1.5,
               borderRadius: 3,
-              display: 'flex',
-              alignItems: 'center',
+              display: "flex",
+              alignItems: "center",
               gap: 1,
             }}
           >

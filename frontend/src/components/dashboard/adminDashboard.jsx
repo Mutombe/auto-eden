@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import VehicleDialog from "./vehiclemodal";
 import { Box, Typography, Button } from "@mui/material";
+import { formatMediaUrl } from './../../utils/image';
 
 const DashboardHero = ({ onAddVehicle }) => {
   return (
@@ -444,9 +445,12 @@ export default function AdminDashboard() {
                       className="rounded-lg overflow-hidden border"
                     >
                       <img
-                        src={image.image}
+                        src={formatMediaUrl(image.image)}
                         alt={`Vehicle ${index + 1}`}
                         className="w-full h-48 object-cover"
+                        onError={(e) => {
+                          e.target.src = "/placeholder-car.jpg";
+                        }}
                       />
                     </div>
                   ))

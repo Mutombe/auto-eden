@@ -4,6 +4,7 @@ import { fetchMarketplace } from "../../redux/slices/vehicleSlice";
 import { Link } from "react-router-dom";
 import { placeBid } from "../../redux/slices/bidSlice";
 import { AuthModals } from "../navbar/navbar";
+import { formatMediaUrl } from "../../utils/image";
 import {
   Car,
   Search,
@@ -190,6 +191,16 @@ export default function MarketplacePage() {
         }
       });
   }, [vehicles, filters]);
+
+  // Inside your component
+  const formattedImages = useMemo(
+    () =>
+      filteredVehicles.images?.map((img) => ({
+        ...img,
+        formattedUrl: formatMediaUrl(img.image),
+      })),
+    [filteredVehicles.images]
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -720,13 +731,16 @@ export default function MarketplacePage() {
                     }`}
                   >
                     <img
-                       src={vehicle?.images[0]?.image}
+                      src={formatMediaUrl(vehicle.images?.[0]?.image)}
                       alt={`${vehicle.make} ${vehicle.model}`}
                       className={`w-full object-cover ${
                         viewMode === "list"
                           ? "h-56 md:h-full md:rounded-l-xl"
                           : "h-52 rounded-t-xl"
                       }`}
+                      onError={(e) => {
+                        e.target.src = "/placeholder-car.jpg";
+                      }}
                     />
 
                     {/* Featured Badge */}
@@ -981,32 +995,31 @@ export default function MarketplacePage() {
           <div className="p-6">
             {/* Add image gallery section */}
             <div className="grid grid-cols-3 gap-2 mb-4">
-              {selectedVehicle.images?.map((image, index) => (
-                <div
-                  key={index}
-                  className="cursor-pointer relative aspect-square"
-                  onClick={() => setSelectedImage(image.image)}
-                >
-                  <img
-                    src={
-                      selectedVehicle.images?.[0]?.image
-                        ? `${import.meta.env.VITE_API_BASE_URL_LOCAL}${
-                            selectedVehicle.images[0].image
-                          }`
-                        : `${import.meta.env.VITE_API_BASE_URL_DEPLOY}${
-                            selectedVehicle.images[0].image
-                          }`
-                    }
-                    className="w-full h-full object-cover rounded-md"
-                    alt={`Preview ${index + 1}`}
-                  />
-                  {index === 0 && (
-                    <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-sm">
-                      Click to preview
-                    </div>
-                  )}
-                </div>
-              ))}
+              {selectedVehicle.images?.map((image, index) => {
+                const formattedUrl = formatMediaUrl(image.image);
+                return (
+                  <div
+                    key={index}
+                    className="cursor-pointer relative aspect-square group"
+                    onClick={() => setSelectedImage(formattedUrl)}
+                  >
+                    <img
+                      src={formattedUrl}
+                      className="w-full h-full object-cover rounded-md transition-opacity group-hover:opacity-90"
+                      alt={`Preview ${index + 1}`}
+                      loading="lazy"
+                      onError={(e) => {
+                        e.target.src = "/placeholder-car.jpg";
+                      }}
+                    />
+                    {index === 0 && (
+                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                        Click to preview
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Add more vehicle details */}
@@ -1053,12 +1066,8 @@ export default function MarketplacePage() {
               <img
                 src={
                   selectedVehicle.images?.[0]?.image
-                    ? `${import.meta.env.VITE_API_BASE_URL_LOCAL}${
-                        selectedVehicle.images[0].image
-                      }`
-                    : `${import.meta.env.VITE_API_BASE_URL_DEPLOY}${
-                        selectedVehicle.images[0].image
-                      }`
+                    ? selectedVehicle.images[0].image
+                    : selectedVehicle.images[0].image
                 }
                 alt={`${selectedVehicle.make} ${selectedVehicle.model}`}
                 className="w-20 h-20 object-cover rounded-md mr-4"

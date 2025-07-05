@@ -255,14 +255,6 @@ const VehicleDialog = ({
   };
 
   // Helper function to get image source URL
-  const getImageSrc = (image) => {
-    if (typeof image === 'string') {
-      return image; // It's already a URL
-    } else if (image instanceof File) {
-      return URL.createObjectURL(image);
-    }
-    return null;
-  };
 
   return (
     <>
