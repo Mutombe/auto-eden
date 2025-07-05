@@ -664,25 +664,6 @@ export default function DashboardPage() {
                             >
                               <Eye size={18} />
                             </IconButton>
-                            {/*{vehicle.listing_type === "marketplace" &&
-                              vehicle.verification_state === "physical" && (
-                                <IconButton
-                                  onClick={() =>
-                                    dispatch(toggleVisibility(vehicle.id))
-                                  }
-                                  sx={{
-                                    color: vehicle.is_visible
-                                      ? "text.secondary"
-                                      : "text.disabled",
-                                  }}
-                                >
-                                  {vehicle.is_visible ? (
-                                    <Eye size={18} />
-                                  ) : (
-                                    <EyeOff size={18} />
-                                  )}
-                                </IconButton>
-)}*/}
                           </Box>
                         </Box>
                       </Paper>
@@ -827,7 +808,6 @@ export default function DashboardPage() {
         </Box>
       </Box>
 
-      {/* Vehicle Dialog Component */}
       <VehicleDialog
         open={showAddModal}
         onClose={handleDialogClose}
