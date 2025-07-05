@@ -1,8 +1,7 @@
 from storages.backends.s3boto3 import S3Boto3Storage
 class MediaStorage(S3Boto3Storage):
-    # location = 'media' # Remove or comment this line out
     file_overwrite = False
-    default_acl = 'private' # You might want this public-read for vehicle_images
+    default_acl = 'public-read' # You might want this public-read for vehicle_images
     custom_domain = 'autoeden.sgp1.cdn.digitaloceanspaces.com'
 
     def _save(self, name, content):
