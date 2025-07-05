@@ -46,7 +46,10 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
 
   // Extract image URLs from the vehicle.images array
   // vehicle.images is an array of objects with 'image' field containing the URL
-  const vehicleImages = vehicle.images?.map((img) => img.image) || [];
+  const vehicleImages = useMemo(
+    () => vehicle.images?.map((img) => formatMediaUrl(img.image)) || [],
+    [vehicle.images]
+  );
 
   // Fallback demo images if no images exist (remove this in production)
   const fallbackImages = [
