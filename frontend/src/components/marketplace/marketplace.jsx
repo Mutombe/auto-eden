@@ -832,7 +832,7 @@ export default function MarketplacePage() {
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Map className="w-4 h-4 mr-1.5 text-gray-500" />
-                        <span>{vehicle.location || "Unknown"}</span>
+                        <span>{vehicle.location || "Auto Eden HQ"}</span>
                       </div>
                       <div className="flex items-center text-sm text-gray-600">
                         <Gauge className="w-4 h-4 mr-1.5 text-gray-500" />

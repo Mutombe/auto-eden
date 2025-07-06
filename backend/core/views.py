@@ -128,73 +128,78 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(owner=self.request.user)
-    
-    @action(detail=True, methods=['patch'], permission_classes=[permissions.IsAdminUser])
+
+    @action(
+        detail=True, methods=["patch"], permission_classes=[permissions.IsAdminUser]
+    )
     def verify(self, request, pk=None):
         vehicle = self.get_object()
-        serializer = VehicleVerificationSerializer(vehicle, data=request.data, partial=True)
-        
+        serializer = VehicleVerificationSerializer(
+            vehicle, data=request.data, partial=True
+        )
+
         if serializer.is_valid():
             # Track verification changes
             verification_data = {}
             new_state = None
-            
-            if serializer.validated_data.get('is_digitally_verified'):
-                verification_data.update({
-                    'verification_state': 'digital',
-                    'digitally_verified_by': request.user,
-                    'digitally_verified_at': timezone.now(),
-                    'is_digitally_verified': True,
-                    'is_rejected': False,
-                    'rejection_reason': ''
-                })
-                new_state = 'digital'
-            if serializer.validated_data.get('is_physically_verified'):
-                verification_data.update({
-                    'verification_state': 'physical',
-                    'physically_verified_by': request.user,
-                    'is_physically_verified': True,
-                    'physically_verified_at': timezone.now(),
-                    'is_rejected': False,
-                    'rejection_reason': ''
-                })
-                new_state = 'physical'
-            if serializer.validated_data.get('is_rejected'):
-                verification_data.update({
-                    'verification_state': 'rejected',
-                    'rejected_by': request.user,
-                    'rejected_at': timezone.now(),
-                    'is_rejected': True,
-                    'rejection_reason': serializer.validated_data.get('rejection_reason', '')
-                })
-                new_state = 'rejected'
+
+            if serializer.validated_data.get("is_digitally_verified"):
+                verification_data.update(
+                    {
+                        "verification_state": "digital",
+                        "digitally_verified_by": request.user,
+                        "digitally_verified_at": timezone.now(),
+                        "is_digitally_verified": True,
+                        "is_rejected": False,
+                        "rejection_reason": "",
+                    }
+                )
+                new_state = "digital"
+            if serializer.validated_data.get("is_physically_verified"):
+                verification_data.update(
+                    {
+                        "verification_state": "physical",
+                        "physically_verified_by": request.user,
+                        "is_physically_verified": True,
+                        "physically_verified_at": timezone.now(),
+                        "is_rejected": False,
+                        "rejection_reason": "",
+                    }
+                )
+                new_state = "physical"
+            if serializer.validated_data.get("is_rejected"):
+                verification_data.update(
+                    {
+                        "verification_state": "rejected",
+                        "rejected_by": request.user,
+                        "rejected_at": timezone.now(),
+                        "is_rejected": True,
+                        "rejection_reason": serializer.validated_data.get(
+                            "rejection_reason", ""
+                        ),
+                    }
+                )
+                new_state = "rejected"
 
             # Update the vehicle
             for field, value in verification_data.items():
                 setattr(vehicle, field, value)
             vehicle.save()
-            
+
             # Send notifications if needed
             self.handle_verification_notifications(vehicle)
-            
+
             return Response(VehicleSerializer(vehicle).data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-    
+
     def handle_verification_notifications(self, vehicle):
-        if vehicle.verification_state == 'physical':
-            send_vehicle_approved_email.delay(
-                vehicle.id,
-                verification_type='physical'
-            )
-        elif vehicle.verification_state == 'digital':
-            send_vehicle_approved_email.delay(
-                vehicle.id,
-                verification_type='digital'
-            )
-        elif vehicle.verification_state == 'rejected':
+        if vehicle.verification_state == "physical":
+            send_vehicle_approved_email.delay(vehicle.id, verification_type="physical")
+        elif vehicle.verification_state == "digital":
+            send_vehicle_approved_email.delay(vehicle.id, verification_type="digital")
+        elif vehicle.verification_state == "rejected":
             send_vehicle_rejected_email.delay(
-                vehicle.id,
-                vehicle.rejection_reason or "No reason provided"
+                vehicle.id, vehicle.rejection_reason or "No reason provided"
             )
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
@@ -239,7 +244,9 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def pending_review(self, request):
-        queryset = self.filter_queryset(self.get_queryset().filter(verification_state="pending"))
+        queryset = self.filter_queryset(
+            self.get_queryset().filter(verification_state="pending")
+        )
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -259,7 +266,10 @@ class VehicleViewSet(viewsets.ModelViewSet):
                     vehicle.id,
                     serializer.validated_data.get("rejection_reason", ""),
                 )
-            elif serializer.validated_data.get("verification_state") == "physically_verified":
+            elif (
+                serializer.validated_data.get("verification_state")
+                == "physically_verified"
+            ):
                 # Send approval notification
                 send_vehicle_approved_email.delay(vehicle.owner.email, vehicle.id)
 
@@ -275,10 +285,13 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
         # Manually set required fields
         serializer.save(
-            owner=request.user, listing_type="instant_sale", verification_state="pending"
+            owner=request.user,
+            listing_type="instant_sale",
+            verification_state="pending",
         )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
 
 class VehicleSearchViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSearchSerializer
@@ -336,8 +349,27 @@ class MarketplaceView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
-        vehicles = Vehicle.objects.filter(
-            verification_state="physical", is_visible=True, listing_type="marketplace"
+
+        # views.py (optimized query)
+        vehicles = (
+            Vehicle.objects.filter(
+                verification_state="physical",
+                is_visible=True,
+                listing_type="marketplace",
+            )
+            .select_related("owner")
+            .prefetch_related("images")
+            .only(
+                "id",
+                "make",
+                "model",
+                "year",
+                "price",
+                "mileage",
+                "location",
+                "created_at",
+                "owner__username",
+            )
         )
 
         # Add filtering logic
@@ -369,7 +401,9 @@ class InstantSaleViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(
-            owner=self.request.user, listing_type="instant_sale", verification_state="pending"
+            owner=self.request.user,
+            listing_type="instant_sale",
+            verification_state="pending",
         )
 
 

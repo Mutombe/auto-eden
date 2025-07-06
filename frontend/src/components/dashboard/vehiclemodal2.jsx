@@ -1,25 +1,21 @@
-// src/pages/VehicleDetailsModal.jsx
-import React, { useState } from "react";
+import React, { useState, useMemo } from "react";
 import { formatMediaUrl } from "../../utils/image";
 import {
   Dialog,
   DialogTitle,
   DialogContent,
   DialogActions,
+
   Button,
   Typography,
   Box,
   Grid,
   Chip,
-  Divider,
-  Avatar,
-  useMediaQuery,
-  IconButton,
-  useTheme,
   Card,
   CardContent,
-  Fade,
-  Backdrop,
+  IconButton,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import {
   Gauge,
@@ -36,33 +32,89 @@ import {
   ImageIcon,
 } from "lucide-react";
 
+import { Skeleton } from "@mui/material";
+
+const VehicleDetailsSkeleton = () => {
+  return (
+    <Box sx={{ p: 3 }}>
+      {/* Header Skeleton */}
+      <Box sx={{ mb: 3 }}>
+        <Skeleton variant="text" width="60%" height={40} />
+        <Skeleton variant="text" width="40%" />
+      </Box>
+
+      {/* Image Gallery Skeleton */}
+      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
+        <Skeleton variant="rectangular" width="100%" height={400} />
+      </Box>
+
+      {/* Details Section Skeleton */}
+      <Box sx={{ mb: 3 }}>
+        <Skeleton variant="text" width="30%" height={30} sx={{ mb: 1 }} />
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <Skeleton variant="rounded" width={80} height={32} />
+          <Skeleton variant="rounded" width={80} height={32} />
+        </Box>
+
+        {/* Price Card Skeleton */}
+        <Skeleton variant="rectangular" width="100%" height={80} sx={{ mb: 3, borderRadius: 1 }} />
+
+        {/* Specs Skeleton */}
+        <Grid container spacing={2} sx={{ mb: 3 }}>
+          {[...Array(4)].map((_, i) => (
+            <Grid item xs={6} key={i}>
+              <Skeleton variant="text" width="40%" />
+              <Skeleton variant="text" width="60%" />
+            </Grid>
+          ))}
+        </Grid>
+
+        {/* VIN Skeleton */}
+        <Skeleton variant="text" width="30%" height={30} sx={{ mb: 1 }} />
+        <Skeleton variant="rectangular" width="100%" height={60} sx={{ borderRadius: 1 }} />
+      </Box>
+    </Box>
+  );
+};
+
+
 const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [showImagePreview, setShowImagePreview] = useState(false);
 
-  if (!vehicle) return null;
-
-  // Extract image URLs from the vehicle.images array
-  // vehicle.images is an array of objects with 'image' field containing the URL
+  // Format all image URLs at once
   const vehicleImages = useMemo(
-    () => vehicle.images?.map((img) => formatMediaUrl(img.image)) || [],
-    [vehicle.images]
+    () => vehicle?.images?.map((img) => formatMediaUrl(img.image)) || [],
+    [vehicle?.images]
   );
 
-  // Fallback demo images if no images exist (remove this in production)
-  const fallbackImages = [
-    "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1494976388531-d1058494cdd8?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b?w=800&h=600&fit=crop",
-    "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7?w=800&h=600&fit=crop",
-  ];
+  console.log("Vehicle Images:", vehicleImages);
 
-  // Use actual images if available, otherwise use fallback for demo
+  // Fallback demo images with formatted URLs
+  const fallbackImages = useMemo(
+    () => [
+      formatMediaUrl(
+        "https://images.unsplash.com/photo-1552519507-da3b142c6e3d"
+      ),
+      formatMediaUrl(
+        "https://images.unsplash.com/photo-1494976388531-d1058494cdd8"
+      ),
+      formatMediaUrl(
+        "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b"
+      ),
+      formatMediaUrl(
+        "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7"
+      ),
+    ],
+    []
+  );
+
   const displayImages =
     vehicleImages.length > 0 ? vehicleImages : fallbackImages;
 
+  // Navigation handlers
   const nextImage = () => {
     setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
   };
@@ -73,16 +125,46 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
     );
   };
 
-  const openImagePreview = () => {
-    setShowImagePreview(true);
-  };
+  const openImagePreview = () => setShowImagePreview(true);
+  const closeImagePreview = () => setShowImagePreview(false);
 
-  const closeImagePreview = () => {
-    setShowImagePreview(false);
+ if (!vehicle) {
+    return (
+      <Dialog
+        open={open}
+        onClose={onClose}
+        fullWidth
+        maxWidth="lg"
+        fullScreen={isMobile}
+      >
+        <VehicleDetailsSkeleton />
+      </Dialog>
+    );
+  }
+  // Image component with better error handling
+  const ImageWithFallback = ({ src, alt, ...props }) => {
+    const [imgSrc, setImgSrc] = useState(formatMediaUrl(src));
+    const [error, setError] = useState(false);
+
+    return (
+      <Box
+        component="img"
+        src={imgSrc}
+        alt={alt}
+        onError={() => {
+          if (!error) {
+            setImgSrc("/placeholder-car.jpg");
+            setError(true);
+          }
+        }}
+        {...props}
+      />
+    );
   };
 
   return (
     <>
+      {/* Main Dialog */}
       <Dialog
         open={open}
         onClose={onClose}
@@ -96,7 +178,7 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
           },
         }}
       >
-        {/* Header with gradient background */}
+        {/* Header */}
         <DialogTitle
           sx={{
             background: "linear-gradient(135deg, #e41c38 0%, #c4102a 100%)",
@@ -141,8 +223,7 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                 {displayImages.length > 0 ? (
                   <>
                     {/* Main Image */}
-                    <Box
-                      component="img"
+                    <ImageWithFallback
                       src={displayImages[currentImageIndex]}
                       alt={`${vehicle.make} ${vehicle.model}`}
                       sx={{
@@ -156,10 +237,6 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                         },
                       }}
                       onClick={openImagePreview}
-                      onError={(e) => {
-                        // Handle broken image links
-                        e.target.style.display = "none";
-                      }}
                     />
 
                     {/* Navigation Arrows */}
@@ -255,9 +332,8 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                         }}
                       >
                         {displayImages.map((image, index) => (
-                          <Box
+                          <ImageWithFallback
                             key={index}
-                            component="img"
                             src={image}
                             alt={`Thumbnail ${index + 1}`}
                             onClick={() => setCurrentImageIndex(index)}
@@ -277,10 +353,6 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
                               "&:hover": {
                                 opacity: 1,
                               },
-                            }}
-                            onError={(e) => {
-                              // Hide broken thumbnail images
-                              e.target.style.display = "none";
                             }}
                           />
                         ))}
@@ -313,7 +385,7 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
             </Grid>
 
             {/* Vehicle Details Section */}
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={5}>
               <Box sx={{ p: 3, height: { md: 500 }, overflowY: "auto" }}>
                 {/* Price Card */}
                 <Card
@@ -564,9 +636,8 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
           )}
 
           {/* Full Size Image */}
-          <Box
-            component="img"
-            src={formatMediaUrl(vehicleImages[currentImageIndex])}
+          <ImageWithFallback
+            src={vehicleImages[currentImageIndex]}
             alt={`${vehicle.make} ${vehicle.model} - Image ${
               currentImageIndex + 1
             }`}
@@ -576,10 +647,8 @@ const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
               objectFit: "contain",
               borderRadius: 1,
             }}
-            onError={(e) => {
-              e.target.src = "/placeholder-car.jpg";
-            }}
           />
+
           {/* Image Counter for Preview */}
           <Box
             sx={{
