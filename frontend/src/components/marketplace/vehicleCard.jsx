@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
+
 import { formatMediaUrl } from './../../utils/image';
 const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
