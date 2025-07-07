@@ -241,6 +241,7 @@ DATABASES = {
         'PASSWORD': '834e99407bfeaf721e0f2a482be7b2f6afad7eab',
         'HOST': 'xs3gi.h.filess.io',
         'PORT': '5434',
+        'CONN_MAX_AGE': 0,  # Moved to top-level (critical fix!)
         'OPTIONS': {
             'options': '-c search_path=django_schema,public',
             'connect_timeout': 5,
@@ -314,13 +315,6 @@ AWS_S3_FILE_OVERWRITE = False
 AWS_QUERYSTRING_AUTH = False # **FIX 3: Ensure pre-signed URLs are generated**
 
 # STATIC FILES CONFIGURATION
-# settings.py
-
-# ... other settings
-
-# STATIC FILES & MEDIA CONFIGURATION
-# This is the base URL that will be used for constructing file URLs in your templates and APIs
- # For local development fallback if needed
 
 STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
