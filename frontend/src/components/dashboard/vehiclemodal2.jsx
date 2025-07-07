@@ -1,679 +1,521 @@
-import React, { useState, useMemo } from "react";
-import { formatMediaUrl } from "../../utils/image";
+import React, { useState, useEffect } from 'react';
 import {
   Dialog,
-  DialogTitle,
   DialogContent,
-  DialogActions,
-
-  Button,
+  DialogTitle,
   Typography,
   Box,
   Grid,
   Chip,
+  IconButton,
+  useTheme,
+  useMediaQuery,
   Card,
   CardContent,
-  IconButton,
-  useMediaQuery,
-  useTheme,
-} from "@mui/material";
+  Divider,
+  Button,
+  Avatar,
+  Stack,
+  Paper,
+  Skeleton,
+  Badge,
+} from '@mui/material';
 import {
-  Gauge,
-  Calendar,
-  DollarSign,
-  Car,
-  Fuel,
-  MapPin,
-  Shield,
   X,
+  Car,
+  Calendar,
+  Gauge,
+  MapPin,
+  DollarSign,
+  Shield,
+  Eye,
+  EyeOff,
+  Fuel,
+  Hash,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
   ChevronLeft,
   ChevronRight,
-  ZoomIn,
+  Maximize2,
+  User,
+  Phone,
+  Mail,
+  Star,
+  Award,
   ImageIcon,
-} from "lucide-react";
+} from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import ImageWithFallback from '../../utils/smartImage';
+// Image Gallery Component
+// --- Example 4: Advanced Image Gallery Component (Full Implementation) ---
+const ImageGallery = ({ images = [] }) => {
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  // These hooks are assumed to be imported from Material-UI
+  // const theme = useTheme(); 
+  // const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isMobile = false; // Mock value for example
 
-import { Skeleton } from "@mui/material";
+  const nextImage = () => {
+    setCurrentIndex((prev) => (prev + 1) % images.length);
+  };
 
-const VehicleDetailsSkeleton = () => {
+  const prevImage = () => {
+    setCurrentIndex((prev) => (prev - 1 + images.length) % images.length);
+  };
+
+  if (!images || images.length === 0) {
+    return (
+      <Box
+        sx={{
+          height: { xs: 250, sm: 300, md: 400 },
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: '#f5f5f5',
+          borderRadius: 2,
+          border: '2px dashed #ccc',
+        }}
+      >
+        {/* <ImageIcon size={48} color="#999" /> */}
+        <Typography variant="body1" color="text.secondary" mt={1}>
+          No images available
+        </Typography>
+      </Box>
+    );
+  }
+
   return (
-    <Box sx={{ p: 3 }}>
-      {/* Header Skeleton */}
-      <Box sx={{ mb: 3 }}>
-        <Skeleton variant="text" width="60%" height={40} />
-        <Skeleton variant="text" width="40%" />
+    <>
+      <Box sx={{ position: 'relative', borderRadius: 2, overflow: 'hidden' }}>
+        <motion.div // Wrap ImageWithFallback with motion.div to apply animations
+          key={currentIndex}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.3 }}
+        >
+          <ImageWithFallback
+            src={images[currentIndex]}
+            alt={`Vehicle image ${currentIndex + 1}`}
+            style={{
+              width: '100%',
+              height: isMobile ? '250px' : '400px',
+              objectFit: 'cover',
+              display: 'block',
+            }}
+          />
+        </motion.div>
+        
+        {/* Navigation Arrows */}
+        {images.length > 1 && (
+          <>
+            <IconButton onClick={prevImage} sx={{ position: 'absolute', left: 8, top: '50%', transform: 'translateY(-50%)', backgroundColor: 'rgba(0, 0, 0, 0.7)', color: 'white', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.8)' } }}>
+              {/* <ChevronLeft /> */}
+            </IconButton>
+            <IconButton onClick={nextImage} sx={{ position: 'absolute', right: 8, top: '50%', transform: 'translateY(-50%)', backgroundColor: 'rgba(0, 0, 0, 0.7)', color: 'white', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.8)' } }}>
+              {/* <ChevronRight /> */}
+            </IconButton>
+          </>
+        )}
+
+        {/* Fullscreen Button */}
+        <IconButton onClick={() => setIsFullscreen(true)} sx={{ position: 'absolute', top: 8, right: 8, backgroundColor: 'rgba(0, 0, 0, 0.7)', color: 'white', '&:hover': { backgroundColor: 'rgba(0, 0, 0, 0.8)' } }}>
+          {/* <Maximize2 size={20} /> */}
+        </IconButton>
+
+        {/* Image Counter */}
+        {images.length > 1 && (
+          <Box sx={{ position: 'absolute', bottom: 8, right: 8, backgroundColor: 'rgba(0, 0, 0, 0.7)', color: 'white', px: 2, py: 0.5, borderRadius: 1, fontSize: '0.875rem' }}>
+            {currentIndex + 1} / {images.length}
+          </Box>
+        )}
       </Box>
 
-      {/* Image Gallery Skeleton */}
-      <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
-        <Skeleton variant="rectangular" width="100%" height={400} />
-      </Box>
-
-      {/* Details Section Skeleton */}
-      <Box sx={{ mb: 3 }}>
-        <Skeleton variant="text" width="30%" height={30} sx={{ mb: 1 }} />
-        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
-          <Skeleton variant="rounded" width={80} height={32} />
-          <Skeleton variant="rounded" width={80} height={32} />
-        </Box>
-
-        {/* Price Card Skeleton */}
-        <Skeleton variant="rectangular" width="100%" height={80} sx={{ mb: 3, borderRadius: 1 }} />
-
-        {/* Specs Skeleton */}
-        <Grid container spacing={2} sx={{ mb: 3 }}>
-          {[...Array(4)].map((_, i) => (
-            <Grid item xs={6} key={i}>
-              <Skeleton variant="text" width="40%" />
-              <Skeleton variant="text" width="60%" />
-            </Grid>
+      {/* Thumbnail Strip */}
+      {images.length > 1 && (
+        <Box sx={{ mt: 2, display: 'flex', gap: 1, overflowX: 'auto', pb: 1 }}>
+          {images.map((image, index) => (
+            <Box
+              key={index}
+              onClick={() => setCurrentIndex(index)}
+              sx={{ minWidth: 80, height: 60, borderRadius: 1, overflow: 'hidden', cursor: 'pointer', border: index === currentIndex ? '2px solid #e41c38' : '2px solid transparent', transition: 'border-color 0.2s' }}
+            >
+              <ImageWithFallback
+                src={image}
+                alt={`Thumbnail ${index + 1}`}
+                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+              />
+            </Box>
           ))}
-        </Grid>
+        </Box>
+      )}
 
-        {/* VIN Skeleton */}
-        <Skeleton variant="text" width="30%" height={30} sx={{ mb: 1 }} />
-        <Skeleton variant="rectangular" width="100%" height={60} sx={{ borderRadius: 1 }} />
-      </Box>
-    </Box>
+      {/* Fullscreen Modal */}
+      <Dialog open={isFullscreen} onClose={() => setIsFullscreen(false)} maxWidth={false} fullScreen sx={{ '& .MuiDialog-paper': { backgroundColor: 'rgba(0, 0, 0, 0.9)' } }}>
+        <Box sx={{ position: 'relative', height: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <IconButton onClick={() => setIsFullscreen(false)} sx={{ position: 'absolute', top: 16, right: 16, color: 'white', zIndex: 1 }}>
+            {/* <X /> */}
+          </IconButton>
+          
+          <motion.div // Wrap ImageWithFallback for animations
+            key={currentIndex}
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.3 }}
+            style={{ width: '90%', height: '90%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+          >
+            <ImageWithFallback
+              src={images[currentIndex]}
+              alt={`Vehicle image ${currentIndex + 1}`}
+              style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+            />
+          </motion.div>
+          
+          {images.length > 1 && (
+            <>
+              <IconButton onClick={prevImage} sx={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' } }}>
+                {/* <ChevronLeft /> */}
+              </IconButton>
+              <IconButton onClick={nextImage} sx={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: 'white', backgroundColor: 'rgba(255, 255, 255, 0.1)', '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.2)' } }}>
+                {/* <ChevronRight /> */}
+              </IconButton>
+            </>
+          )}
+        </Box>
+      </Dialog>
+    </>
   );
 };
 
 
+// Status Badge Component
+const StatusBadge = ({ status, listingType }) => {
+  const getStatusConfig = () => {
+    switch (status) {
+      case 'physical':
+        return {
+          icon: <CheckCircle size={16} />,
+          label: 'Physically Verified',
+          color: 'success',
+          bgcolor: '#e8f5e8',
+          textColor: '#2e7d32',
+        };
+      case 'digital':
+        return {
+          icon: <Shield size={16} />,
+          label: 'Digitally Verified',
+          color: 'info',
+          bgcolor: '#e3f2fd',
+          textColor: '#1976d2',
+        };
+      case 'rejected':
+        return {
+          icon: <XCircle size={16} />,
+          label: 'Rejected',
+          color: 'error',
+          bgcolor: '#ffebee',
+          textColor: '#d32f2f',
+        };
+      default:
+        return {
+          icon: <AlertCircle size={16} />,
+          label: 'Pending Verification',
+          color: 'warning',
+          bgcolor: '#fff3e0',
+          textColor: '#ed6c02',
+        };
+    }
+  };
+
+  const config = getStatusConfig();
+
+  return (
+    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+      <Paper
+        elevation={0}
+        sx={{
+          px: 2,
+          py: 1,
+          borderRadius: 2,
+          backgroundColor: config.bgcolor,
+          border: `1px solid ${config.textColor}20`,
+          display: 'flex',
+          alignItems: 'center',
+          gap: 1,
+        }}
+      >
+        {config.icon}
+        <Typography variant="body2" fontWeight={500} color={config.textColor}>
+          {config.label}
+        </Typography>
+      </Paper>
+      
+      <Chip
+        label={listingType === 'marketplace' ? 'Marketplace' : 'Instant Sale'}
+        variant="outlined"
+        size="small"
+        sx={{ alignSelf: 'center' }}
+      />
+    </Box>
+  );
+};
+
+// Vehicle Details Modal Component
 const VehicleDetailsModal = ({ open, onClose, vehicle }) => {
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
-  const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [showImagePreview, setShowImagePreview] = useState(false);
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Format all image URLs at once
-  const vehicleImages = useMemo(
-    () => vehicle?.images?.map((img) => formatMediaUrl(img.image)) || [],
-    [vehicle?.images]
-  );
+  if (!vehicle) return null;
+  const getImageUrls = (images) => {
+    if (!images || !Array.isArray(images)) {
+      return [];
+    }
+    return images.map(imgObj => imgObj.image).filter(Boolean); // .filter(Boolean) removes any null/undefined entries
+  };
+  
+  const vehicleImageUrls = getImageUrls(vehicle.images);
 
-  console.log("Vehicle Images:", vehicleImages);
-
-  // Fallback demo images with formatted URLs
-  const fallbackImages = useMemo(
-    () => [
-      formatMediaUrl(
-        "https://images.unsplash.com/photo-1552519507-da3b142c6e3d"
-      ),
-      formatMediaUrl(
-        "https://images.unsplash.com/photo-1494976388531-d1058494cdd8"
-      ),
-      formatMediaUrl(
-        "https://images.unsplash.com/photo-1593941707874-ef25b8b4a92b"
-      ),
-      formatMediaUrl(
-        "https://images.unsplash.com/photo-1568605117036-5fe5e7bab0b7"
-      ),
-    ],
-    []
-  );
-
-  const displayImages =
-    vehicleImages.length > 0 ? vehicleImages : fallbackImages;
-
-  // Navigation handlers
-  const nextImage = () => {
-    setCurrentImageIndex((prev) => (prev + 1) % displayImages.length);
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    });
   };
 
-  const prevImage = () => {
-    setCurrentImageIndex((prev) =>
-      prev === 0 ? displayImages.length - 1 : prev - 1
-    );
-  };
-
-  const openImagePreview = () => setShowImagePreview(true);
-  const closeImagePreview = () => setShowImagePreview(false);
-
- if (!vehicle) {
-    return (
-      <Dialog
-        open={open}
-        onClose={onClose}
-        fullWidth
-        maxWidth="lg"
-        fullScreen={isMobile}
-      >
-        <VehicleDetailsSkeleton />
-      </Dialog>
-    );
-  }
-  // Image component with better error handling
-  const ImageWithFallback = ({ src, alt, ...props }) => {
-    const [imgSrc, setImgSrc] = useState(formatMediaUrl(src));
-    const [error, setError] = useState(false);
-
-    return (
-      <Box
-        component="img"
-        src={imgSrc}
-        alt={alt}
-        onError={() => {
-          if (!error) {
-            setImgSrc("/placeholder-car.jpg");
-            setError(true);
-          }
-        }}
-        {...props}
-      />
-    );
+  const formatPrice = (price) => {
+    if (!price) return 'N/A';
+    return `$${Number(price).toLocaleString()}`;
   };
 
   return (
-    <>
-      {/* Main Dialog */}
-      <Dialog
-        open={open}
-        onClose={onClose}
-        fullWidth
-        maxWidth="lg"
-        fullScreen={isMobile}
-        PaperProps={{
-          sx: {
-            borderRadius: isMobile ? 0 : 3,
-            overflow: "hidden",
-          },
+    <Dialog
+      open={open}
+      onClose={onClose}
+      maxWidth="lg"
+      fullWidth
+      fullScreen={isMobile}
+      sx={{
+        '& .MuiDialog-paper': {
+          borderRadius: isMobile ? 0 : 2,
+          maxHeight: '90vh',
+        },
+      }}
+    >
+      <DialogTitle
+        sx={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          pb: 2,
+          borderBottom: '1px solid #eee',
         }}
       >
-        {/* Header */}
-        <DialogTitle
+        <Box>
+          <Typography variant="h5" fontWeight={600}>
+            {vehicle.make} {vehicle.model}
+          </Typography>
+          <Typography variant="subtitle1" color="text.secondary">
+            {vehicle.year} • VIN: {vehicle.vin || 'Not Available'}
+          </Typography>
+        </Box>
+        <IconButton
+          onClick={onClose}
           sx={{
-            background: "linear-gradient(135deg, #e41c38 0%, #c4102a 100%)",
-            color: "white",
-            p: 0,
+            color: 'text.secondary',
+            '&:hover': {
+              backgroundColor: 'rgba(0, 0, 0, 0.04)',
+            },
           }}
         >
-          <Box
-            display="flex"
-            justifyContent="space-between"
-            alignItems="center"
-            p={3}
-          >
-            <Box>
-              <Typography variant="h5" fontWeight={700} mb={0.5}>
-                {vehicle.make} {vehicle.model}
+          <X />
+        </IconButton>
+      </DialogTitle>
+
+      <DialogContent sx={{ p: 0 }}>
+        <Box sx={{ p: { xs: 2, sm: 3 } }}>
+          {/* Status and Pricing Section */}
+          <Box sx={{ mb: 3 }}>
+            <StatusBadge status={vehicle.verification_state} listingType={vehicle.listing_type} />
+            <Box sx={{ mt: 2, display: 'flex', flexDirection: { xs: 'column', sm: 'row' }, gap: 2, alignItems: { xs: 'flex-start', sm: 'center' } }}>
+              <Typography variant="h4" fontWeight={600} color="primary">
+                {formatPrice(vehicle.proposed_price || vehicle.price)}
               </Typography>
-              <Typography variant="body1" sx={{ opacity: 0.9 }}>
-                {vehicle.year} • {vehicle.mileage?.toLocaleString()} km
-              </Typography>
+              {vehicle.listing_type === 'marketplace' && vehicle.is_visible !== undefined && (
+                <Chip
+                  icon={vehicle.is_visible ? <Eye size={16} /> : <EyeOff size={16} />}
+                  label={vehicle.is_visible ? 'Visible to Public' : 'Hidden from Public'}
+                  color={vehicle.is_visible ? 'success' : 'default'}
+                  variant="outlined"
+                />
+              )}
             </Box>
-            <IconButton
-              onClick={onClose}
-              sx={{
-                color: "white",
-                backgroundColor: "rgba(255, 255, 255, 0.1)",
-                "&:hover": {
-                  backgroundColor: "rgba(255, 255, 255, 0.2)",
-                },
-              }}
-            >
-              <X size={24} />
-            </IconButton>
           </Box>
-        </DialogTitle>
 
-        <DialogContent sx={{ p: 0 }}>
-          <Grid container>
-            {/* Image Carousel Section */}
-            <Grid item xs={12} md={7}>
-              <Box sx={{ position: "relative", height: { xs: 300, md: 500 } }}>
-                {displayImages.length > 0 ? (
-                  <>
-                    {/* Main Image */}
-                    <ImageWithFallback
-                      src={displayImages[currentImageIndex]}
-                      alt={`${vehicle.make} ${vehicle.model}`}
-                      sx={{
-                        width: "100%",
-                        height: "100%",
-                        objectFit: "cover",
-                        cursor: "pointer",
-                        transition: "transform 0.3s ease",
-                        "&:hover": {
-                          transform: "scale(1.02)",
-                        },
-                      }}
-                      onClick={openImagePreview}
-                    />
+          {/* Image Gallery */}
+          <Box sx={{ mb: 4 }}>
+            <Typography variant="h6" fontWeight={600} mb={2}>
+              Vehicle Images
+            </Typography>
+            <ImageGallery images={vehicleImageUrls} />
+          </Box>
 
-                    {/* Navigation Arrows */}
-                    {displayImages.length > 1 && (
-                      <>
-                        <IconButton
-                          onClick={prevImage}
-                          sx={{
-                            position: "absolute",
-                            left: 16,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            backgroundColor: "rgba(0, 0, 0, 0.6)",
-                            color: "white",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.8)",
-                            },
-                          }}
-                        >
-                          <ChevronLeft />
-                        </IconButton>
-                        <IconButton
-                          onClick={nextImage}
-                          sx={{
-                            position: "absolute",
-                            right: 16,
-                            top: "50%",
-                            transform: "translateY(-50%)",
-                            backgroundColor: "rgba(0, 0, 0, 0.6)",
-                            color: "white",
-                            "&:hover": {
-                              backgroundColor: "rgba(0, 0, 0, 0.8)",
-                            },
-                          }}
-                        >
-                          <ChevronRight />
-                        </IconButton>
-                      </>
-                    )}
-
-                    {/* Image Counter */}
-                    <Box
-                      sx={{
-                        position: "absolute",
-                        bottom: 16,
-                        right: 16,
-                        backgroundColor: "rgba(0, 0, 0, 0.7)",
-                        color: "white",
-                        px: 2,
-                        py: 1,
-                        borderRadius: 2,
-                        display: "flex",
-                        alignItems: "center",
-                        gap: 1,
-                      }}
-                    >
-                      <ImageIcon size={16} />
-                      <Typography variant="caption" fontWeight={500}>
-                        {currentImageIndex + 1} / {displayImages.length}
+          {/* Vehicle Information Grid */}
+          <Grid container spacing={3}>
+            {/* Basic Information */}
+            <Grid item xs={12} md={6}>
+              <Card elevation={0} sx={{ border: '1px solid #eee', borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600} mb={2} display="flex" alignItems="center" gap={1}>
+                    <Car size={20} />
+                    Vehicle Details
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">Make</Typography>
+                      <Typography variant="body2" fontWeight={500}>{vehicle.make}</Typography>
+                    </Box>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">Model</Typography>
+                      <Typography variant="body2" fontWeight={500}>{vehicle.model}</Typography>
+                    </Box>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">Year</Typography>
+                      <Typography variant="body2" fontWeight={500}>{vehicle.year}</Typography>
+                    </Box>
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">Mileage</Typography>
+                      <Typography variant="body2" fontWeight={500}>
+                        {vehicle.mileage?.toLocaleString() || 'N/A'} km
                       </Typography>
                     </Box>
-
-                    {/* Zoom Icon */}
-                    <IconButton
-                      onClick={openImagePreview}
-                      sx={{
-                        position: "absolute",
-                        top: 16,
-                        right: 16,
-                        backgroundColor: "rgba(0, 0, 0, 0.6)",
-                        color: "white",
-                        "&:hover": {
-                          backgroundColor: "rgba(0, 0, 0, 0.8)",
-                        },
-                      }}
-                    >
-                      <ZoomIn size={20} />
-                    </IconButton>
-
-                    {/* Thumbnail Strip */}
-                    {displayImages.length > 1 && (
-                      <Box
-                        sx={{
-                          position: "absolute",
-                          bottom: 0,
-                          left: 0,
-                          right: 0,
-                          display: "flex",
-                          gap: 1,
-                          p: 2,
-                          backgroundColor: "rgba(0, 0, 0, 0.7)",
-                          overflowX: "auto",
-                        }}
-                      >
-                        {displayImages.map((image, index) => (
-                          <ImageWithFallback
-                            key={index}
-                            src={image}
-                            alt={`Thumbnail ${index + 1}`}
-                            onClick={() => setCurrentImageIndex(index)}
-                            sx={{
-                              width: 60,
-                              height: 40,
-                              objectFit: "cover",
-                              borderRadius: 1,
-                              cursor: "pointer",
-                              border:
-                                index === currentImageIndex
-                                  ? "2px solid #e41c38"
-                                  : "2px solid transparent",
-                              opacity: index === currentImageIndex ? 1 : 0.7,
-                              transition: "all 0.3s ease",
-                              flexShrink: 0,
-                              "&:hover": {
-                                opacity: 1,
-                              },
-                            }}
-                          />
-                        ))}
+                    {vehicle.fuel_type && (
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">Fuel Type</Typography>
+                        <Typography variant="body2" fontWeight={500}>{vehicle.fuel_type}</Typography>
                       </Box>
                     )}
-                  </>
-                ) : (
-                  // No images placeholder
-                  <Box
-                    sx={{
-                      display: "flex",
-                      flexDirection: "column",
-                      justifyContent: "center",
-                      alignItems: "center",
-                      height: "100%",
-                      backgroundColor: "#f8f9fa",
-                      color: "#6c757d",
-                    }}
-                  >
-                    <Car size={64} />
-                    <Typography variant="h6" mt={2} fontWeight={500}>
-                      No Images Available
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Vehicle images not provided
-                    </Typography>
-                  </Box>
-                )}
-              </Box>
+                    {vehicle.location && (
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">Location</Typography>
+                        <Typography variant="body2" fontWeight={500}>{vehicle.location}</Typography>
+                      </Box>
+                    )}
+                  </Stack>
+                </CardContent>
+              </Card>
             </Grid>
 
-            {/* Vehicle Details Section */}
-            <Grid item xs={12} md={5}>
-              <Box sx={{ p: 3, height: { md: 500 }, overflowY: "auto" }}>
-                {/* Price Card */}
-                <Card
-                  elevation={0}
-                  sx={{
-                    mb: 3,
-                    background:
-                      "linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%)",
-                    border: "1px solid #dee2e6",
-                  }}
-                >
-                  <CardContent sx={{ p: 2.5 }}>
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
-                      <DollarSign size={20} color="#e41c38" />
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        fontWeight={500}
-                      >
-                        {vehicle.listing_type === "marketplace"
-                          ? "Listed Price"
-                          : "Proposed Price"}
+            {/* Verification Information */}
+            <Grid item xs={12} md={6}>
+              <Card elevation={0} sx={{ border: '1px solid #eee', borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600} mb={2} display="flex" alignItems="center" gap={1}>
+                    <Shield size={20} />
+                    Verification Status
+                  </Typography>
+                  <Stack spacing={2}>
+                    <Box display="flex" justifyContent="space-between" alignItems="center">
+                      <Typography variant="body2" color="text.secondary">Current Status</Typography>
+                      <Chip
+                        size="small"
+                        label={vehicle.verification_state === 'physical' ? 'Verified' : vehicle.verification_state}
+                        color={
+                          vehicle.verification_state === 'physical' ? 'success' :
+                          vehicle.verification_state === 'digital' ? 'info' :
+                          vehicle.verification_state === 'rejected' ? 'error' : 'warning'
+                        }
+                      />
+                    </Box>
+                    
+                    {vehicle.digitally_verified_at && (
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">Digital Verification</Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {formatDate(vehicle.digitally_verified_at)}
+                        </Typography>
+                      </Box>
+                    )}
+                    
+                    {vehicle.physically_verified_at && (
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">Physical Verification</Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {formatDate(vehicle.physically_verified_at)}
+                        </Typography>
+                      </Box>
+                    )}
+                    
+                    {vehicle.rejection_reason && (
+                      <Box>
+                        <Typography variant="body2" color="text.secondary" mb={1}>Rejection Reason</Typography>
+                        <Paper sx={{ p: 2, backgroundColor: '#ffebee', border: '1px solid #ffcdd2' }}>
+                          <Typography variant="body2" color="error.main">
+                            {vehicle.rejection_reason}
+                          </Typography>
+                        </Paper>
+                      </Box>
+                    )}
+                    
+                    <Box display="flex" justifyContent="space-between">
+                      <Typography variant="body2" color="text.secondary">Listed On</Typography>
+                      <Typography variant="body2" fontWeight={500}>
+                        {formatDate(vehicle.created_at)}
                       </Typography>
                     </Box>
-                    <Typography variant="h4" color="#e41c38" fontWeight={700}>
-                      $
-                      {Number(
-                        vehicle.listing_type === "marketplace"
-                          ? vehicle.price
-                          : vehicle.proposed_price
-                      ).toLocaleString()}
-                    </Typography>
-                  </CardContent>
-                </Card>
+                  </Stack>
+                </CardContent>
+              </Card>
+            </Grid>
 
-                {/* Status Chips */}
-                <Box display="flex" gap={1} mb={3} flexWrap="wrap">
-                  <Chip
-                    label={
-                      vehicle.listing_type === "marketplace"
-                        ? "Marketplace"
-                        : "Instant Sale"
-                    }
-                    color="primary"
-                    variant="filled"
-                  />
-                  <Chip
-                    label={vehicle.verification_state}
-                    color={
-                      vehicle.verification_state === "physical"
-                        ? "success"
-                        : vehicle.verification_state === "rejected"
-                        ? "error"
-                        : "warning"
-                    }
-                    variant="filled"
-                  />
-                </Box>
-
-                {/* Vehicle Specifications */}
-                <Card elevation={0} sx={{ mb: 3, border: "1px solid #e0e0e0" }}>
-                  <CardContent>
-                    <Typography
-                      variant="h6"
-                      fontWeight={600}
-                      mb={2}
-                      color="#333"
-                    >
-                      Vehicle Specifications
-                    </Typography>
-                    <Grid container spacing={2}>
-                      <Grid item xs={6}>
-                        <Box display="flex" alignItems="center" gap={1} mb={1}>
-                          <Calendar size={16} color="#666" />
-                          <Typography variant="body2" color="text.secondary">
-                            Year
-                          </Typography>
-                        </Box>
-                        <Typography fontWeight={600} color="#333">
-                          {vehicle.year}
+            {/* Listing Information */}
+            <Grid item xs={12}>
+              <Card elevation={0} sx={{ border: '1px solid #eee', borderRadius: 2 }}>
+                <CardContent>
+                  <Typography variant="h6" fontWeight={600} mb={2} display="flex" alignItems="center" gap={1}>
+                    <DollarSign size={20} />
+                    Listing Information
+                  </Typography>
+                  <Grid container spacing={2}>
+                    <Grid item xs={12} sm={6}>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">Listing Type</Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {vehicle.listing_type === 'marketplace' ? 'Marketplace' : 'Instant Sale'}
                         </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box display="flex" alignItems="center" gap={1} mb={1}>
-                          <Gauge size={16} color="#666" />
-                          <Typography variant="body2" color="text.secondary">
-                            Mileage
-                          </Typography>
-                        </Box>
-                        <Typography fontWeight={600} color="#333">
-                          {vehicle.mileage?.toLocaleString()} km
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box display="flex" alignItems="center" gap={1} mb={1}>
-                          <Fuel size={16} color="#666" />
-                          <Typography variant="body2" color="text.secondary">
-                            Fuel Type
-                          </Typography>
-                        </Box>
-                        <Typography fontWeight={600} color="#333">
-                          {vehicle.fuel_type || "Not specified"}
-                        </Typography>
-                      </Grid>
-                      <Grid item xs={6}>
-                        <Box display="flex" alignItems="center" gap={1} mb={1}>
-                          <MapPin size={16} color="#666" />
-                          <Typography variant="body2" color="text.secondary">
-                            Location
-                          </Typography>
-                        </Box>
-                        <Typography fontWeight={600} color="#333">
-                          {vehicle.location || "Not specified"}
-                        </Typography>
-                      </Grid>
+                      </Box>
                     </Grid>
-                  </CardContent>
-                </Card>
-
-                {/* VIN Information */}
-                <Card elevation={0} sx={{ border: "1px solid #e0e0e0" }}>
-                  <CardContent>
-                    <Typography
-                      variant="h6"
-                      fontWeight={600}
-                      mb={2}
-                      color="#333"
-                    >
-                      Vehicle Identification
-                    </Typography>
-                    <Box display="flex" alignItems="center" gap={1} mb={1}>
-                      <Shield size={16} color="#666" />
-                      <Typography variant="body2" color="text.secondary">
-                        VIN Number
-                      </Typography>
-                    </Box>
-                    <Typography
-                      fontWeight={600}
-                      color="#333"
-                      sx={{
-                        fontFamily: "monospace",
-                        backgroundColor: "#f8f9fa",
-                        p: 1,
-                        borderRadius: 1,
-                        fontSize: "0.9rem",
-                      }}
-                    >
-                      {vehicle.vin || "Not Available"}
-                    </Typography>
-                  </CardContent>
-                </Card>
-              </Box>
+                    <Grid item xs={12} sm={6}>
+                      <Box display="flex" justifyContent="space-between">
+                        <Typography variant="body2" color="text.secondary">Price</Typography>
+                        <Typography variant="body2" fontWeight={500}>
+                          {formatPrice(vehicle.proposed_price || vehicle.price)}
+                        </Typography>
+                      </Box>
+                    </Grid>
+                    {vehicle.listing_type === 'marketplace' && (
+                      <Grid item xs={12} sm={6}>
+                        <Box display="flex" justifyContent="space-between">
+                          <Typography variant="body2" color="text.secondary">Visibility</Typography>
+                          <Typography variant="body2" fontWeight={500}>
+                            {vehicle.is_visible ? 'Public' : 'Hidden'}
+                          </Typography>
+                        </Box>
+                      </Grid>
+                    )}
+                  </Grid>
+                </CardContent>
+              </Card>
             </Grid>
           </Grid>
-        </DialogContent>
-
-        <DialogActions sx={{ p: 3, backgroundColor: "#f8f9fa" }}>
-          <Button
-            onClick={onClose}
-            variant="outlined"
-            size="large"
-            sx={{ minWidth: 120 }}
-          >
-            Close
-          </Button>
-        </DialogActions>
-      </Dialog>
-
-      {/* Full Screen Image Preview */}
-      <Dialog
-        open={showImagePreview}
-        onClose={closeImagePreview}
-        maxWidth={false}
-        fullWidth
-        sx={{
-          "& .MuiDialog-paper": {
-            backgroundColor: "rgba(0, 0, 0, 0.9)",
-            boxShadow: "none",
-            margin: 0,
-            maxHeight: "100vh",
-            maxWidth: "100vw",
-            borderRadius: 0,
-          },
-        }}
-      >
-        <Box
-          sx={{
-            position: "relative",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            minHeight: "100vh",
-            p: 2,
-          }}
-        >
-          {/* Close Button */}
-          <IconButton
-            onClick={closeImagePreview}
-            sx={{
-              position: "absolute",
-              top: 20,
-              right: 20,
-              color: "white",
-              backgroundColor: "rgba(255, 255, 255, 0.1)",
-              zIndex: 1000,
-              "&:hover": {
-                backgroundColor: "rgba(255, 255, 255, 0.2)",
-              },
-            }}
-          >
-            <X size={24} />
-          </IconButton>
-
-          {/* Navigation Arrows for Preview */}
-          {vehicleImages.length > 1 && (
-            <>
-              <IconButton
-                onClick={prevImage}
-                sx={{
-                  position: "absolute",
-                  left: 20,
-                  color: "white",
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  zIndex: 1000,
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  },
-                }}
-              >
-                <ChevronLeft size={32} />
-              </IconButton>
-              <IconButton
-                onClick={nextImage}
-                sx={{
-                  position: "absolute",
-                  right: 20,
-                  color: "white",
-                  backgroundColor: "rgba(255, 255, 255, 0.1)",
-                  zIndex: 1000,
-                  "&:hover": {
-                    backgroundColor: "rgba(255, 255, 255, 0.2)",
-                  },
-                }}
-              >
-                <ChevronRight size={32} />
-              </IconButton>
-            </>
-          )}
-
-          {/* Full Size Image */}
-          <ImageWithFallback
-            src={vehicleImages[currentImageIndex]}
-            alt={`${vehicle.make} ${vehicle.model} - Image ${
-              currentImageIndex + 1
-            }`}
-            sx={{
-              maxWidth: "95%",
-              maxHeight: "95%",
-              objectFit: "contain",
-              borderRadius: 1,
-            }}
-          />
-
-          {/* Image Counter for Preview */}
-          <Box
-            sx={{
-              position: "absolute",
-              bottom: 30,
-              left: "50%",
-              transform: "translateX(-50%)",
-              backgroundColor: "rgba(0, 0, 0, 0.7)",
-              color: "white",
-              px: 3,
-              py: 1.5,
-              borderRadius: 3,
-              display: "flex",
-              alignItems: "center",
-              gap: 1,
-            }}
-          >
-            <ImageIcon size={18} />
-            <Typography variant="body1" fontWeight={500}>
-              {currentImageIndex + 1} of {vehicleImages.length}
-            </Typography>
-          </Box>
         </Box>
-      </Dialog>
-    </>
+      </DialogContent>
+    </Dialog>
   );
 };
 

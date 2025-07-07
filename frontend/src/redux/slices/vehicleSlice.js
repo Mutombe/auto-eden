@@ -101,7 +101,7 @@ export const createVehicle = createAsyncThunk(
 );
 
 export const updateVehicleStatus = createAsyncThunk(
-  'vehicles/updateStatus',
+  "vehicles/updateStatus",
   async ({ vehicleId, statusData }, { rejectWithValue }) => {
     try {
       const { data } = await api.patch(

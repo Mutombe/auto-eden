@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { placeBid } from "../../redux/slices/bidSlice";
 import { AuthModals } from "../navbar/navbar";
 import { formatMediaUrl } from "../../utils/image";
+import SmartImage from "../../utils/smartImage";
 import {
   Car,
   Search,
@@ -43,6 +44,128 @@ import {
   Badge,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
+
+/**
+ * A resilient image component that tries multiple URL formats before falling back to a placeholder.
+ *
+ * @param {object} props - The component props.
+ * @param {string} props.src - The initial image URL from the API.
+ * @param {string} props.alt - The alt text for the image.
+ * @param {string} props.className - CSS classes for styling the image.
+ * @param {string} [props.placeholder='/placeholder-car.jpg'] - The path to the placeholder image.
+ */
+const ImageWithFallback = ({
+  src: initialSrc,
+  alt,
+  className,
+  placeholder = "/placeholder-car.jpg",
+}) => {
+  const baseUrl = "https://autoeden.sgp1.cdn.digitaloceanspaces.com/";
+  const mediaPrefix = "media/";
+
+  /**
+   * Generates the URL with the '/media/' prefix logic.
+   * This is the first URL we will attempt to load.
+   */
+  const getFormattedUrl = (url) => {
+    if (!url || typeof url !== "string") return placeholder;
+    // If it already has the prefix, return it as is.
+    if (url.includes(`/${mediaPrefix}`)) return url;
+    // If it has the base URL, insert the prefix.
+    if (url.startsWith(baseUrl)) {
+      return url.replace(baseUrl, `${baseUrl}${mediaPrefix}`);
+    }
+    // Fallback for relative paths, though unlikely in this case.
+    return `${baseUrl}${mediaPrefix}${
+      url.startsWith("/") ? url.slice(1) : url
+    }`;
+  };
+
+  // Define the two URLs we will try.
+  const formattedUrl = getFormattedUrl(initialSrc);
+  const originalUrl = initialSrc || placeholder;
+
+  // State to hold the current image source URL. We start with the formatted one.
+  const [imgSrc, setImgSrc] = useState(formattedUrl);
+
+  // Effect to reset the component's state if the initial `src` prop changes.
+  useEffect(() => {
+    setImgSrc(getFormattedUrl(initialSrc));
+  }, [initialSrc]);
+
+  /**
+   * Handles image loading errors.
+   * If the formatted URL fails, it tries the original URL.
+   * If the original URL also fails, it shows the final placeholder.
+   */
+  const handleError = () => {
+    // First error: The formatted URL failed. Let's try the original URL.
+    if (imgSrc === formattedUrl) {
+      setImgSrc(originalUrl);
+    }
+    // Second error: The original URL also failed. Fallback to the placeholder.
+    else {
+      setImgSrc(placeholder);
+    }
+  };
+
+  return (
+    <img src={imgSrc} alt={alt} className={className} onError={handleError} />
+  );
+};
+
+// --- Vehicle Skeleton Component ---
+const VehicleSkeleton = ({ viewMode }) => (
+  <div
+    className={`bg-white rounded-xl shadow-sm overflow-hidden animate-pulse ${
+      viewMode === "list" ? "flex flex-col md:flex-row" : ""
+    }`}
+  >
+    <div
+      className={`relative bg-gray-200 ${
+        viewMode === "list" ? "md:w-1/3 h-56 md:h-full" : "h-52 rounded-t-xl"
+      }`}
+    >
+      {/* Placeholder for image */}
+    </div>
+    <div
+      className={`p-4 flex flex-col ${
+        viewMode === "list" ? "md:w-2/3" : ""
+      }`}
+    >
+      <div className="flex justify-between items-start mb-2">
+        <div className="flex-grow">
+          <div className="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
+          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+        </div>
+        <div className="h-6 bg-gray-300 rounded w-12"></div>
+      </div>
+      <div className="grid grid-cols-2 gap-3 mb-4">
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
+          <div className="h-4 bg-gray-200 rounded w-20"></div>
+        </div>
+      </div>
+      <div className="h-5 bg-gray-300 rounded w-2/3 mb-4"></div>
+      <div className="flex justify-between items-center mt-auto">
+        <div className="h-10 bg-gray-300 rounded w-24"></div>
+        <div className="h-10 bg-gray-300 rounded w-24"></div>
+      </div>
+    </div>
+  </div>
+);
 
 export default function MarketplacePage() {
   const dispatch = useDispatch();
@@ -670,8 +793,16 @@ export default function MarketplacePage() {
 
         {/* Loading State */}
         {isLoading && (
-          <div className="flex justify-center items-center h-64">
-            <CircularProgress sx={{ color: "#dc2626" }} />
+          <div
+            className={
+              viewMode === "grid"
+                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                : "flex flex-col gap-4"
+            }
+          >
+            {Array.from({ length: 6 }).map((_, i) => (
+              <VehicleSkeleton key={i} viewMode={viewMode} />
+            ))}
           </div>
         )}
 
@@ -686,7 +817,7 @@ export default function MarketplacePage() {
             </h3>
             <p className="text-gray-600 mb-6">
               We couldn't find any vehicles matching your criteria. Try
-              adjusting your filters.
+              adjusting your filters or logging in again.
             </p>
             <Button
               variant="outlined"
@@ -730,19 +861,15 @@ export default function MarketplacePage() {
                       viewMode === "list" ? "md:w-1/3" : ""
                     }`}
                   >
-                    <img
-                      src={formatMediaUrl(vehicle.images?.[0]?.image)}
+                    <ImageWithFallback
+                      src={vehicle.images?.[0]?.image}
                       alt={`${vehicle.make} ${vehicle.model}`}
                       className={`w-full object-cover ${
                         viewMode === "list"
                           ? "h-56 md:h-full md:rounded-l-xl"
                           : "h-52 rounded-t-xl"
                       }`}
-                      onError={(e) => {
-                        e.target.src = "/placeholder-car.jpg";
-                      }}
                     />
-
                     {/* Featured Badge */}
                     {vehicle.featured && (
                       <div className="absolute top-4 left-0 bg-yellow-500 text-white px-3 py-1 rounded-r-full shadow-md flex items-center">

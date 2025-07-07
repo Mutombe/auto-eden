@@ -208,6 +208,10 @@ const DashboardHero = ({ onAddVehicle }) => {
 export default function DashboardPage() {
   const dispatch = useDispatch();
   const { userVehicles, status } = useSelector((state) => state.vehicles);
+  const { loading, error: submitError } = useSelector(
+    (state) => state.vehicles
+  );
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const { items: bids, status: bidStatus } = useSelector((state) => state.bids);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -229,19 +233,38 @@ export default function DashboardPage() {
     dispatch(fetchUserSearches());
   }, [dispatch]);
 
-  const handleSubmit = (formData) => {
-    if (editVehicle) {
-      dispatch(updateVehicle({ id: editVehicle.id, data: formData }));
-    } else {
-      dispatch(createVehicle(formData));
+  useEffect(() => {
+    if (showAddModal || loading) {
+      setSubmitSuccess(false);
     }
-    setShowAddModal(false);
-    setEditVehicle(null);
+  }, [showAddModal, loading]);
+
+  const handleSubmit = async (formData) => {
+    try {
+      if (editVehicle) {
+        await dispatch(
+          updateVehicle({ id: editVehicle.id, data: formData })
+        ).unwrap();
+      } else {
+        await dispatch(createVehicle(formData)).unwrap();
+      }
+      // The onSubmissionSuccess prop will be called from VehicleDialog's useEffect
+      // when submitSuccess prop becomes true.
+    } catch (err) {
+      // The error will be handled by the VehicleDialog's useEffect via submitError prop
+      console.error("Submission error:", err);
+    }
   };
 
   const handleDialogClose = () => {
     setShowAddModal(false);
     setEditVehicle(null);
+    setSubmitSuccess(false); // Reset on close
+  };
+
+  const handleSubmissionSuccess = () => {
+    setSubmitSuccess(true);
+    dispatch(fetchUserVehicles()); // Refetch user vehicles on successful submission
   };
 
   const handleEditClick = (vehicle) => {
@@ -577,7 +600,6 @@ export default function DashboardPage() {
                             transform: "translateY(-2px)",
                           },
                         }}
-                        
                       >
                         <Box
                           display="flex"
