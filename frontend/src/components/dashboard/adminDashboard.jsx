@@ -32,8 +32,8 @@ import {
   AlertTriangle,
 } from "lucide-react";
 import VehicleDialog from "./vehiclemodal";
+import ImageWithFallback from "../../utils/smartImage";
 import { Box, Typography, Button } from "@mui/material";
-import { formatMediaUrl } from './../../utils/image';
 
 const DashboardHero = ({ onAddVehicle }) => {
   return (
@@ -119,12 +119,16 @@ export default function AdminDashboard() {
   const { pendingVehicles, allVehicles, items, status, error } = useSelector(
     (state) => state.vehicles
   );
+  const { loading, error: submitError } = useSelector(
+    (state) => state.vehicles
+  );
   const { allBids } = useSelector((state) => state.bids);
 
   const [activeTab, setActiveTab] = useState(0);
   const [rejectionReason, setRejectionReason] = useState("");
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
   const [editVehicle, setEditVehicle] = useState(null);
   const [filterOpen, setFilterOpen] = useState(false);
@@ -147,6 +151,12 @@ export default function AdminDashboard() {
     dispatch(fetchBids());
   }, [dispatch]);
 
+  useEffect(() => {
+    if (showAddModal || loading) {
+      setSubmitSuccess(false);
+    }
+  }, [showAddModal, loading]);
+
   const handleReview = (action) => {
     dispatch(
       reviewVehicle({
@@ -165,19 +175,32 @@ export default function AdminDashboard() {
 
   console.log("all vehicles component", allVehicles);
 
-  const handleSubmit = (formData) => {
-    if (editVehicle) {
-      dispatch(updateVehicle({ id: editVehicle.id, data: formData }));
-    } else {
-      dispatch(createVehicle(formData));
+  const handleSubmit = async (formData) => {
+    try {
+      if (editVehicle) {
+        await dispatch(
+          updateVehicle({ id: editVehicle.id, data: formData })
+        ).unwrap();
+      } else {
+        await dispatch(createVehicle(formData)).unwrap();
+      }
+      // The onSubmissionSuccess prop will be called from VehicleDialog's useEffect
+      // when submitSuccess prop becomes true.
+    } catch (err) {
+      // The error will be handled by the VehicleDialog's useEffect via submitError prop
+      console.error("Submission error:", err);
     }
-    setShowAddModal(false);
-    setEditVehicle(null);
   };
 
   const handleDialogClose = () => {
     setShowAddModal(false);
     setEditVehicle(null);
+    setSubmitSuccess(false); // Reset on close
+  };
+
+  const handleSubmissionSuccess = () => {
+    setSubmitSuccess(true);
+    dispatch(fetchAllVehicles()); // Refetch user vehicles on successful submission
   };
 
   const handleEditClick = (vehicle) => {
@@ -444,19 +467,18 @@ export default function AdminDashboard() {
                       key={index}
                       className="rounded-lg overflow-hidden border"
                     >
-                      <img
-                        src={formatMediaUrl(image.image)}
+                      <ImageWithFallback
+                        src={image.image}
                         alt={`Vehicle ${index + 1}`}
                         className="w-full h-48 object-cover"
-                        onError={(e) => {
-                          e.target.src = "/placeholder-car.jpg";
-                        }}
+                        loading="lazy"
                       />
                     </div>
                   ))
                 ) : (
                   <div className="col-span-3 py-10 text-center text-gray-500">
-                    <Car className="mx-auto mb-2" size={32} />
+                    {/* Assuming you have a Car icon component */}
+                    {/* <Car className="mx-auto mb-2" size={32} /> */}
                     <p>No images available</p>
                   </div>
                 )}

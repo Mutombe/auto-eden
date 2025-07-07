@@ -5,6 +5,7 @@ import { fetchMarketplace } from "../../redux/slices/vehicleSlice";
 import { placeBid } from "../../redux/slices/bidSlice";
 import { requestQuote } from "../../redux/slices/quoteSlice";
 import { AuthModals } from "../navbar/navbar";
+import ImageWithFallback from "../../utils/smartImage";
 import {
   Car,
   DollarSign,
@@ -36,7 +37,6 @@ import {
   MenuItem,
 } from "@mui/material";
 import { motion } from "framer-motion";
-import { formatMediaUrl } from "../../utils/image";
 import { useMemo } from "react";
 import VehicleCard from "./vehicleCard"; // Reuse your existing card component
 
@@ -167,33 +167,25 @@ export default function CarDetailsPage() {
             <div className="space-y-4">
               <div>
                 {/* Main vehicle image */}
-                <img
-                  src={formatMediaUrl(vehicle.images?.[0]?.image)}
+                <ImageWithFallback
+                  src={vehicle.images?.[0]?.image}
                   className="w-full h-96 object-cover rounded-xl"
                   alt={`${vehicle.make} ${vehicle.model}`}
-                  onError={(e) => {
-                    e.target.src = "/placeholder-car.jpg";
-                  }}
                   loading="eager" // Important image loads first
+                  fetchpriority="high"
                 />
 
                 {/* Thumbnail gallery */}
                 <div className="grid grid-cols-3 gap-2 mt-2">
-                  {vehicle.images.slice(0, 3).map((img, index) => {
-                    const formattedUrl = formatMediaUrl(img.image);
-                    return (
-                      <img
-                        key={index}
-                        src={formattedUrl}
-                        className="h-32 w-full object-cover rounded-md hover:opacity-90 transition-opacity"
-                        alt={`Preview ${index + 1}`}
-                        onError={(e) => {
-                          e.target.src = "/placeholder-car.jpg";
-                        }}
-                        loading="lazy"
-                      />
-                    );
-                  })}
+                  {vehicle.images.slice(0, 3).map((img, index) => (
+                    <ImageWithFallback
+                      key={index}
+                      src={img.image}
+                      className="h-32 w-full object-cover rounded-md hover:opacity-90 transition-opacity"
+                      alt={`Preview ${index + 1}`}
+                      loading="lazy" // Thumbnails can load later
+                    />
+                  ))}
                 </div>
               </div>
             </div>
@@ -236,7 +228,7 @@ export default function CarDetailsPage() {
                 </div>
                 <div className="flex items-center">
                   <Map className="mr-2" />
-                  <span>{vehicle.location}</span>
+                  <span>{vehicle.location || "Auto Eden HQ"} </span>
                 </div>
                 <div className="flex items-center">
                   <Shield className="mr-2" />

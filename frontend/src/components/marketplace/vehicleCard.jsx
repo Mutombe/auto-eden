@@ -20,8 +20,8 @@ import {
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
+import ImageWithFallback from "../../utils/smartImage";
 
-import { formatMediaUrl } from './../../utils/image';
 const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
   const isMobile = useMediaQuery("(max-width:768px)");
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -34,17 +34,14 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
       whileHover={{ y: -5 }}
     >
       <div className={`relative ${viewMode === "list" ? "md:w-1/3" : ""}`}>
-        <img
-          src={formatMediaUrl(vehicle.images?.[0]?.image)}
+        <ImageWithFallback
+          src={vehicle.images?.[0]?.image}
           alt={`${vehicle.make} ${vehicle.model}`}
           className={`w-full object-cover ${
             viewMode === "list"
               ? "h-56 md:h-full md:rounded-l-xl"
               : "h-52 rounded-t-xl"
           }`}
-          onError={(e) => {
-            e.target.src = "/placeholder-car.jpg";
-          }}
           loading={viewMode === "list" ? "eager" : "lazy"}
           fetchpriority={viewMode === "list" ? "high" : "auto"}
         />
