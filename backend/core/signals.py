@@ -1,6 +1,5 @@
 from django.dispatch import receiver
 from .models import Notification, Profile, QuoteRequest, User, Vehicle, VehicleSearch, Bid
-from django.db.models.signals import post_save
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
 from django.conf import settings
@@ -8,9 +7,15 @@ from django.contrib.auth import get_user_model
 from django.utils import timezone
 from django.utils.html import strip_tags
 from django.db import models
+from django.db.models.signals import post_save, post_delete
+from django.core.cache import cache
+from .models import Vehicle
 
+@receiver([post_save, post_delete], sender=Vehicle)
+def invalidate_vehicle_cache(sender, instance, **kwargs):
+    keys = cache.keys('marketplace_*')
+    cache.delete_many(keys)
 
-# New Vehicle Notification
 @receiver(post_save, sender=Vehicle)
 def handle_new_vehicle(sender, instance, created, **kwargs):
     if created:

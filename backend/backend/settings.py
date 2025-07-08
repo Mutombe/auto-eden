@@ -1,87 +1,10 @@
 from pathlib import Path
 from datetime import timedelta
 import os
-from decouple import config
  
-
-# Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
-# SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = "django-insecure-rg5$^x0nm)lmj0v6-2^x#nhk9uewd&k=lc@%jsu3^f^y3##34)"
 
-# SECURITY WARNING: don't run with debug turned on in production!
-
-# Add this to your settings.py temporarily for debugging
-import logging
-
-# Enable detailed logging for storage operations
-LOGGING = {
-    'version': 1,
-    'disable_existing_loggers': False,
-    'handlers': {
-        'console': {
-            'level': 'DEBUG',
-            'class': 'logging.StreamHandler',
-        },
-    },
-    'loggers': {
-        'storages': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'boto3': {
-            'handlers': ['console'],
-            'level': 'DEBUG',
-            'propagate': True,
-        },
-        'botocore': {
-            'handlers': ['console'],
-            'level': 'DEBUG', 
-            'propagate': True,
-        },
-        'django': {
-            'handlers': ['console'],
-            'level': 'INFO',
-            'propagate': True,
-        },
-    },
-}
-
-# Test your S3 connection in Django shell
-# python manage.py shell
-"""
-from django.core.files.storage import default_storage
-from django.core.files.base import ContentFile
-
-# Test basic S3 connection
-try:
-    # Test writing a file
-    test_file = ContentFile(b'Hello S3!')
-    file_path = default_storage.save('test/hello.txt', test_file)
-    print(f"File saved to: {file_path}")
-    print(f"File URL: {default_storage.url(file_path)}")
-    
-    # Test if file exists
-    exists = default_storage.exists(file_path)
-    print(f"File exists: {exists}")
-    
-    # Test reading the file back
-    if exists:
-        with default_storage.open(file_path, 'rb') as f:
-            content = f.read()
-            print(f"File content: {content}")
-    
-    # Clean up
-    default_storage.delete(file_path)
-    print("Test file deleted")
-    
-except Exception as e:
-    print(f"S3 Error: {e}")
-    import traceback
-    traceback.print_exc()
-"""
 DEBUG = False
 
 ALLOWED_HOSTS = [
@@ -92,9 +15,6 @@ ALLOWED_HOSTS = [
     'http://127.0.0.1:8000/',
     '127.0.0.1'
 ]
-
-
-# Application definition
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -174,8 +94,6 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'UTC'
-# For RabbitMQ:
-# CELERY_BROKER_URL = 'amqp://guest:guest@localhost:5672//'
 
 SIMPLE_JWT = {
     'ACCESS_TOKEN_LIFETIME': timedelta(minutes=60),
@@ -229,10 +147,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = "backend.wsgi.application"
 
-
-# Database
-# https://docs.djangoproject.com/en/5.1/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
@@ -241,16 +155,13 @@ DATABASES = {
         'PASSWORD': '834e99407bfeaf721e0f2a482be7b2f6afad7eab',
         'HOST': 'xs3gi.h.filess.io',
         'PORT': '5434',
-        'CONN_MAX_AGE': 0,  # Moved to top-level (critical fix!)
+        'CONN_MAX_AGE': 300,
         'OPTIONS': {
             'options': '-c search_path=django_schema,public',
             'connect_timeout': 5,
         }
     }
 }
-
-# Password validation
-# https://docs.djangoproject.com/en/5.1/ref/settings/#auth-password-validators
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [
@@ -284,10 +195,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
-# Internationalization
-# https://docs.djangoproject.com/en/5.1/topics/i18n/
-
 LANGUAGE_CODE = "en-us"
 
 TIME_ZONE = "UTC"
@@ -296,31 +203,24 @@ USE_I18N = True
 
 USE_TZ = True
 
-
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.1/howto/static-files/
-
 # DIGITALOCEAN SPACES / S3 CONFIGURATION
 AWS_ACCESS_KEY_ID = 'DO8013WV2RVKZMWWT8NJ'
 AWS_SECRET_ACCESS_KEY = 'u4GevFPGgAyxV4XXZxk2FrQuiogf3FeXLqKP/0v2d84'
 AWS_STORAGE_BUCKET_NAME = 'autoeden'
-AWS_S3_REGION_NAME = 'sgp1'  # **FIX 1: Explicitly set the correct region**
-AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_REGION_NAME}.digitaloceanspaces.com' # **FIX 2: Use the correct regional endpoint**
+AWS_S3_REGION_NAME = 'sgp1' 
+AWS_S3_ENDPOINT_URL = f'https://{AWS_S3_REGION_NAME}.digitaloceanspaces.com' 
 AWS_S3_CUSTOM_DOMAIN = f'{AWS_STORAGE_BUCKET_NAME}.{AWS_S3_REGION_NAME}.cdn.digitaloceanspaces.com'
 AWS_S3_OBJECT_PARAMETERS = {
     'CacheControl': 'max-age=86400',
 }
-AWS_DEFAULT_ACL = 'public-read'  # Keep files private and use pre-signed URLs
+AWS_DEFAULT_ACL = 'public-read' 
 AWS_S3_FILE_OVERWRITE = False
-AWS_QUERYSTRING_AUTH = False # **FIX 3: Ensure pre-signed URLs are generated**
-
-# STATIC FILES CONFIGURATION
+AWS_QUERYSTRING_AUTH = False 
 
 STATIC_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
 MEDIA_ROOT = BASE_DIR / 'media'
 MEDIA_URL = f'https://{AWS_S3_CUSTOM_DOMAIN}/media/'
-
 
 print(f"S3 Configuration:")
 print(f"AWS_ACCESS_KEY_ID: {AWS_ACCESS_KEY_ID[:10]}..." if AWS_ACCESS_KEY_ID else "Not set")

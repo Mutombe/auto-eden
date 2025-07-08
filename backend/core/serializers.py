@@ -1,5 +1,7 @@
 from rest_framework import serializers
 from .models import QuoteRequest, Vehicle, VehicleImage, Bid, Profile, User, VehicleSearch
+from django.db.models import Q
+from django.contrib.auth.models import User
 from django.conf import settings
 
 class UserSerializer(serializers.ModelSerializer):
@@ -104,6 +106,25 @@ class VehicleSerializer(serializers.ModelSerializer):
             VehicleImage.objects.create(vehicle=vehicle, image=image_file)
             
         return vehicle
+    
+class VehicleListSerializer(serializers.ModelSerializer):
+    main_image = serializers.SerializerMethodField()
+    owner_username = serializers.CharField(source='owner.username')
+
+    class Meta:
+        model = Vehicle
+        fields = ('id', 'make', 'model', 'year', 'price', 'mileage', 
+                 'location', 'created_at', 'main_image', 'owner_username')
+
+    def get_main_image(self, obj):
+        images = obj.images.all()
+        if images:
+            first_image = images[0].image
+            request = self.context.get('request')
+            if request:
+                return request.build_absolute_uri(first_image.url)
+            return first_image.url
+        return None
 
 class VehicleVerificationSerializer(serializers.ModelSerializer):
     class Meta:
@@ -154,18 +175,45 @@ class BidSerializer(serializers.ModelSerializer):
         read_only_fields = ['status']
 
 class PublicVehicleSerializer(serializers.ModelSerializer):
+    bids = BidSerializer(many=True, read_only=True)
     class Meta:
         model = Vehicle
         fields = ['id', 'make', 'model', 'year', 'price', 'mileage', 'verification_state', 'bids']
 
-class VehicleDetailSerializer(PublicVehicleSerializer):
-    owner = serializers.StringRelatedField()
-    bids = BidSerializer(many=True, read_only=True)
+class SimpleBidSerializer(serializers.ModelSerializer):
+    bidder = serializers.StringRelatedField()
     
-    class Meta(PublicVehicleSerializer.Meta):
-        fields = PublicVehicleSerializer.Meta.fields + [
-            'vin', 'owner', 'bids'
+    class Meta:
+        model = Bid
+        fields = ['id', 'amount', 'bidder', 'created_at', 'message', 'status']
+        
+class VehicleDetailSerializer(serializers.ModelSerializer):
+    owner = serializers.StringRelatedField()
+    bids = SimpleBidSerializer(many=True, read_only=True)
+    images = VehicleImageSerializer(many=True, read_only=True)
+    bid_count = serializers.SerializerMethodField()  # Change this line
+    similar_vehicles = serializers.SerializerMethodField()
+    
+    class Meta:
+        model = Vehicle
+        fields = [
+            'id', 'make', 'model', 'year', 'price', 'mileage', 
+            'verification_state', 'vin', 'location', 'description',
+            'body_type', 'transmission', 'fuel_type', 'color', 'features',
+            'listing_type', 'proposed_price', 'is_visible', 'created_at',
+            'owner', 'bids', 'images', 'bid_count', 'similar_vehicles'
         ]
+        depth = 1
+    
+    def get_bid_count(self, obj):  # Add this method
+        return obj.bids.count()
+    
+    def get_similar_vehicles(self, obj):
+        # Get 3 similar vehicles (same make or body type)
+        similar = Vehicle.objects.filter(
+            Q(make=obj.make) | Q(body_type=obj.body_type)
+        ).exclude(id=obj.id)[:3]
+        return VehicleSerializer(similar, many=True).data
         
 class VehicleSearchSerializer(serializers.ModelSerializer):
     class Meta:
@@ -173,7 +221,6 @@ class VehicleSearchSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ('user', 'created_at', 'last_matched', 'match_count')
 
-# Add to vehicles/serializers.py
 class QuoteRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = QuoteRequest
