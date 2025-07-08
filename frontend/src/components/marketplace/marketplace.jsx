@@ -129,9 +129,7 @@ const VehicleSkeleton = ({ viewMode }) => (
       {/* Placeholder for image */}
     </div>
     <div
-      className={`p-4 flex flex-col ${
-        viewMode === "list" ? "md:w-2/3" : ""
-      }`}
+      className={`p-4 flex flex-col ${viewMode === "list" ? "md:w-2/3" : ""}`}
     >
       <div className="flex justify-between items-start mb-2">
         <div className="flex-grow">
@@ -213,6 +211,25 @@ export default function MarketplacePage() {
 
   // Fuel types
   const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"];
+
+  useEffect(() => {
+    const lazyImages = [...document.querySelectorAll(".lazyload")];
+
+    if ("IntersectionObserver" in window) {
+      const imageObserver = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const img = entry.target;
+            img.src = img.dataset.src;
+            img.classList.remove("lazyload");
+            imageObserver.unobserve(img);
+          }
+        });
+      });
+
+      lazyImages.forEach((img) => imageObserver.observe(img));
+    }
+  }, []);
 
   useEffect(() => {
     setIsLoading(true);
