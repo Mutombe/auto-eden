@@ -155,7 +155,7 @@ DATABASES = {
         'PASSWORD': '834e99407bfeaf721e0f2a482be7b2f6afad7eab',
         'HOST': 'xs3gi.h.filess.io',
         'PORT': '5434',
-        'CONN_MAX_AGE': 300,
+        'CONN_MAX_AGE': 0,
         'OPTIONS': {
             'options': '-c search_path=django_schema,public',
             'connect_timeout': 5,
