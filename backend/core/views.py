@@ -1,4 +1,6 @@
 # vehicles/views.py
+from urllib.parse import urlencode
+from django.core.cache import cache
 from rest_framework import viewsets, permissions
 from .models import Vehicle, Bid, Profile, User, VehicleSearch
 from rest_framework.permissions import AllowAny
@@ -7,6 +9,7 @@ from .serializers import (
     PublicVehicleSerializer,
     QuoteRequestSerializer,
     VehicleDetailSerializer,
+    VehicleListSerializer,
     VehicleReviewSerializer,
     VehicleSearchSerializer,
     VehicleImageSerializer,
@@ -34,6 +37,9 @@ from django.utils import timezone
 from .tasks import send_vehicle_approved_email, send_vehicle_rejected_email
 from xhtml2pdf import pisa
 from io import BytesIO
+import logging
+
+logger = logging.getLogger(__name__)
 
 
 class RegisterView(APIView):
@@ -102,19 +108,12 @@ class ProfileView(APIView):
         serializer = ProfileSerializer(profile)
         return Response(serializer.data)
 
-
 class PublicVehicleViewSet(viewsets.ReadOnlyModelViewSet):
-    serializer_class = PublicVehicleSerializer
-    permission_classes = [
-        permissions.AllowAny
-    ]  # Or IsAuthenticated for logged-in users
-    queryset = Vehicle.objects.all()
-
-    def get_serializer_class(self):
-        if self.action == "retrieve":
-            return VehicleDetailSerializer
-        return super().get_serializer_class()
-
+    serializer_class = VehicleSerializer
+    permission_classes = [permissions.AllowAny]
+    
+    def get_queryset(self):
+        return Vehicle.objects.select_related('owner').prefetch_related('images', 'bids__bidder')
 
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
@@ -122,6 +121,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, JSONParser]
 
     def get_queryset(self):
+        
         if self.request.user.is_staff:
             return Vehicle.objects.all()
         return Vehicle.objects.filter(owner=self.request.user)
@@ -214,7 +214,7 @@ class VehicleViewSet(viewsets.ModelViewSet):
         detail=True, methods=["patch"], permission_classes=[permissions.IsAdminUser]
     )
     def review(self, request, pk=None):
-        return self.verify(request, pk)  # Now uses the same verify endpoint
+        return self.verify(request, pk) 
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def pending_verification(self, request):
@@ -343,41 +343,50 @@ class BidViewSet(viewsets.ModelViewSet):
         queryset = Bid.objects.all()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+    
+from rest_framework.pagination import PageNumberPagination
 
+class MarketplacePagination(PageNumberPagination):
+    page_size = 12
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 class MarketplaceView(APIView):
     permission_classes = [permissions.AllowAny]
+    pagination_class = MarketplacePagination
 
     def get(self, request):
+        # Create consistent cache key with sorted query parameters
+        query_params = request.query_params.dict()
+        sorted_params = sorted(query_params.items())
+        canonical_query = urlencode(sorted_params)
+        cache_key = f"marketplace_{canonical_query}"
+        
+        # Try to get cached response
+        cached_data = cache.get(cache_key)
+        if cached_data is not None:
+            return Response(cached_data)
 
-        # views.py (optimized query)
-        vehicles = (
-            Vehicle.objects.filter(
-                verification_state="physical",
-                is_visible=True,
-                listing_type="marketplace",
-            )
-            .select_related("owner")
-            .prefetch_related("images")
-            .only(
-                "id",
-                "make",
-                "model",
-                "year",
-                "price",
-                "mileage",
-                "location",
-                "created_at",
-                "owner__username",
-            )
+        # Build and filter queryset
+        vehicles = Vehicle.objects.filter(
+            verification_state="physical", 
+            is_visible=True, 
+            listing_type="marketplace"
+        ).select_related('owner').prefetch_related('images').only(
+            'id', 'make', 'model', 'year', 'price', 'mileage', 
+            'location', 'created_at', 'owner__username'
         )
 
-        # Add filtering logic
+        # Apply filters
         min_price = request.query_params.get("minPrice")
         if min_price:
             vehicles = vehicles.filter(price__gte=min_price)
 
-        # Add sorting
+        max_price = request.query_params.get("maxPrice")
+        if max_price:
+            vehicles = vehicles.filter(price__lte=max_price)
+
+        # Sorting
         sort_by = request.query_params.get("sortBy")
         if sort_by == "priceLowHigh":
             vehicles = vehicles.order_by("price")
@@ -386,9 +395,20 @@ class MarketplaceView(APIView):
         else:
             vehicles = vehicles.order_by("-created_at")
 
-        serializer = VehicleSerializer(vehicles, many=True)
-        return Response(serializer.data)
-
+        # Paginate results
+        paginator = self.pagination_class()
+        paginated_vehicles = paginator.paginate_queryset(vehicles, request)
+        serializer = VehicleListSerializer(paginated_vehicles, many=True, context={'request': request})
+        
+        # Create custom response with pagination metadata
+        response = paginator.get_paginated_response(serializer.data)
+        response_data = response.data
+        response_data['current_page'] = request.query_params.get('page', 1)
+        response_data['page_size'] = paginator.get_page_size(request)
+        
+        # Cache and return
+        cache.set(cache_key, response_data, timeout=300)
+        return Response(response_data)
 
 class InstantSaleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
@@ -405,7 +425,6 @@ class InstantSaleViewSet(viewsets.ModelViewSet):
             listing_type="instant_sale",
             verification_state="pending",
         )
-
 
 class QuoteRequestView(APIView):
     permission_classes = [permissions.AllowAny]
