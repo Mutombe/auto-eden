@@ -1,11 +1,15 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchMarketplace } from "../../redux/slices/vehicleSlice";
+import {
+  fetchMarketplace,
+  fetchVehicleDetails,
+} from "../../redux/slices/vehicleSlice";
 import { placeBid } from "../../redux/slices/bidSlice";
 import { requestQuote } from "../../redux/slices/quoteSlice";
 import { AuthModals } from "../navbar/navbar";
 import ImageWithFallback from "../../utils/smartImage";
+import { FaXTwitter } from "react-icons/fa6";
 import {
   Car,
   DollarSign,
@@ -74,7 +78,7 @@ import {
   List,
   ListItem,
   ListItemIcon,
-  ListItemText
+  ListItemText,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
@@ -84,38 +88,47 @@ import VehicleCard from "./vehicleCard";
 // Mock data for enhanced features
 const mockVehicleDetails = {
   features: [
-    'Air Conditioning', 'Power Steering', 'ABS Brakes', 'Airbags',
-    'Electric Windows', 'Central Locking', 'Alloy Wheels', 'Bluetooth',
-    'Backup Camera', 'Cruise Control', 'Leather Seats', 'Sunroof'
+    "Air Conditioning",
+    "Power Steering",
+    "ABS Brakes",
+    "Airbags",
+    "Electric Windows",
+    "Central Locking",
+    "Alloy Wheels",
+    "Bluetooth",
+    "Backup Camera",
+    "Cruise Control",
+    "Leather Seats",
+    "Sunroof",
   ],
   specifications: {
-    engine: '2.0L Turbo',
-    transmission: 'Automatic',
-    drivetrain: 'Front-wheel drive',
+    engine: "2.0L Turbo",
+    transmission: "Automatic",
+    drivetrain: "Front-wheel drive",
     doors: 4,
     seats: 5,
-    color: 'Midnight Blue',
-    interiorColor: 'Black Leather',
-    fuelEconomy: '8.5L/100km',
-    tankCapacity: '60L',
-    weight: '1,450 kg',
-    dimensions: '4.5m x 1.8m x 1.4m'
+    color: "Midnight Blue",
+    interiorColor: "Black Leather",
+    fuelEconomy: "8.5L/100km",
+    tankCapacity: "60L",
+    weight: "1,450 kg",
+    dimensions: "4.5m x 1.8m x 1.4m",
   },
   seller: {
-    name: 'Auto Eden Motors',
+    name: "Auto Eden Motors",
     rating: 4.8,
     reviewCount: 247,
     verified: true,
-    location: 'Harare, Zimbabwe',
-    phone: '+263 77 123 4567',
-    email: 'contact@autoeden.co.zw'
+    location: "Harare, Zimbabwe",
+    phone: "+263 77 123 4567",
+    email: "contact@autoeden.co.zw",
   },
   history: [
-    { date: '2024-01-15', event: 'Listed for sale', status: 'info' },
-    { date: '2024-01-10', event: 'Physically verified', status: 'success' },
-    { date: '2024-01-05', event: 'Digitally verified', status: 'success' },
-    { date: '2024-01-01', event: 'Vehicle uploaded', status: 'info' }
-  ]
+    { date: "2024-01-15", event: "Listed for sale", status: "info" },
+    { date: "2024-01-10", event: "Physically verified", status: "success" },
+    { date: "2024-01-05", event: "Digitally verified", status: "success" },
+    { date: "2024-01-01", event: "Vehicle uploaded", status: "info" },
+  ],
 };
 
 function TabPanel({ children, value, index, ...other }) {
@@ -136,10 +149,16 @@ export default function CarDetailsPage() {
   const { vehicleId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  const { items: vehicles } = useSelector((state) => state.vehicles);
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
-  
-  const [vehicle, setVehicle] = useState(null);
+
+  // Get state from Redux
+  const {
+    currentVehicle,
+    loadingDetails,
+    marketplace: { results: marketplaceVehicles = [] },
+  } = useSelector((state) => state.vehicles);
+
+  const { isAuthenticated } = useSelector((state) => state.auth);
+
   const [bidAmount, setBidAmount] = useState("");
   const [bidMessage, setBidMessage] = useState("");
   const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -150,7 +169,7 @@ export default function CarDetailsPage() {
   const [tabValue, setTabValue] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [viewCount, setViewCount] = useState(1247);
-  
+
   const [quoteForm, setQuoteForm] = useState({
     fullName: "",
     email: "",
@@ -160,7 +179,7 @@ export default function CarDetailsPage() {
     telephone: "",
     note: "",
   });
-  
+
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -169,43 +188,56 @@ export default function CarDetailsPage() {
 
   // Mock images for demo
   const mockImages = [
-    { image: 'https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=800&h=600&fit=crop' },
-    { image: 'https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&h=600&fit=crop' },
-    { image: 'https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop' },
-    { image: 'https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop' },
-    { image: 'https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=800&h=600&fit=crop' }
+    {
+      image:
+        "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=800&h=600&fit=crop",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&h=600&fit=crop",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop",
+    },
+    {
+      image:
+        "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=800&h=600&fit=crop",
+    },
   ];
 
   // Get recommendations (similar vehicles)
   const recommendations = useMemo(() => {
-    if (!vehicle) return [];
-    return vehicles
+    if (!currentVehicle) return [];
+    return marketplaceVehicles
       .filter(
         (v) =>
-          v.id !== vehicle.id &&
-          (v.make === vehicle.make || v.body_type === vehicle.body_type)
+          v.id !== currentVehicle.id &&
+          (v.make === currentVehicle.make ||
+            v.body_type === currentVehicle.body_type)
       )
       .slice(0, 4);
-  }, [vehicles, vehicle]);
+  }, [marketplaceVehicles, currentVehicle]);
 
   useEffect(() => {
-    const foundVehicle = vehicles.find((v) => v.id === parseInt(vehicleId));
-    if (foundVehicle) {
-      setVehicle({ ...foundVehicle, images: foundVehicle.images || mockImages });
-    } else {
-      dispatch(fetchMarketplace()).then(() => {
-        const v = vehicles.find((v) => v.id === parseInt(vehicleId));
-        if (v) setVehicle({ ...v, images: v.images || mockImages });
-        else navigate("/marketplace");
-      });
+    if (vehicleId) {
+      dispatch(fetchVehicleDetails(vehicleId));
     }
-  }, [vehicleId, vehicles]);
+  }, [vehicleId, dispatch]);
+
+  useEffect(() => {
+    dispatch(fetchMarketplace());
+  }, [dispatch]);
 
   const handleSubmitQuote = () => {
-    if (vehicle) {
+    if (currentVehicle) {
       dispatch(
         requestQuote({
-          vehicleId: vehicle.id,
+          vehicleId: currentVehicle.id,
           ...quoteForm,
         })
       )
@@ -228,10 +260,10 @@ export default function CarDetailsPage() {
   };
 
   const handlePlaceBid = () => {
-    if (vehicle && bidAmount) {
+    if (currentVehicle && bidAmount) {
       dispatch(
         placeBid({
-          vehicleId: vehicle.id,
+          vehicleId: currentVehicle.id,
           amount: parseFloat(bidAmount),
           message: bidMessage || "No message provided",
         })
@@ -253,21 +285,28 @@ export default function CarDetailsPage() {
     }
   };
 
+  const vehicle = currentVehicle;
   const handleShare = (platform) => {
     const url = window.location.href;
     const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
-    
-    switch(platform) {
-      case 'facebook':
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+
+    switch (platform) {
+      case "facebook":
+        window.open(
+          `https://www.facebook.com/sharer/sharer.php?u=${url}`,
+          "_blank"
+        );
         break;
-      case 'twitter':
-        window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, '_blank');
+      case "twitter":
+        window.open(
+          `https://twitter.com/intent/tweet?url=${url}&text=${title}`,
+          "_blank"
+        );
         break;
-      case 'whatsapp':
-        window.open(`https://wa.me/?text=${title} - ${url}`, '_blank');
+      case "whatsapp":
+        window.open(`https://wa.me/?text=${title} - ${url}`, "_blank");
         break;
-      case 'copy':
+      case "copy":
         navigator.clipboard.writeText(url);
         setSnackbar({
           open: true,
@@ -297,8 +336,7 @@ export default function CarDetailsPage() {
     return "Verification Pending";
   };
 
-
-    if (!vehicle) {
+  if (!vehicle || loadingDetails) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <CircularProgress sx={{ color: "#dc2626" }} />
@@ -308,7 +346,7 @@ export default function CarDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div style={{ background: 'red', color: 'white', padding: '10px' }}>
+      <div style={{ background: "red", color: "white", padding: "10px" }}>
         TEST: Component is rendering
       </div>
       {/* Header */}
@@ -322,20 +360,22 @@ export default function CarDetailsPage() {
             >
               Back to Marketplace
             </Button>
-            
+
             <div className="flex items-center space-x-3">
               <div className="flex items-center text-gray-600">
                 <Eye size={16} className="mr-1" />
-                <span className="text-sm">{viewCount.toLocaleString()} views</span>
+                <span className="text-sm">
+                  {viewCount.toLocaleString()} views
+                </span>
               </div>
-              
+
               <IconButton
                 onClick={() => setIsWishlisted(!isWishlisted)}
                 sx={{ color: isWishlisted ? "#dc2626" : "#6b7280" }}
               >
                 <Heart fill={isWishlisted ? "currentColor" : "none"} />
               </IconButton>
-              
+
               <Button
                 startIcon={<Share2 />}
                 onClick={() => setShowShareModal(true)}
@@ -367,12 +407,12 @@ export default function CarDetailsPage() {
                   alt={`${vehicle.make} ${vehicle.model}`}
                   onClick={() => setShowCarousel(true)}
                 />
-                
+
                 {/* Image counter */}
                 <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
                   {currentImageIndex + 1} / {vehicle.images?.length || 1}
                 </div>
-                
+
                 {/* Camera icon */}
                 <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded-full">
                   <Camera size={20} />
@@ -386,7 +426,7 @@ export default function CarDetailsPage() {
                     <motion.div
                       key={index}
                       className={`flex-shrink-0 relative cursor-pointer ${
-                        currentImageIndex === index ? 'ring-2 ring-red-500' : ''
+                        currentImageIndex === index ? "ring-2 ring-red-500" : ""
                       }`}
                       whileHover={{ scale: 1.05 }}
                       onClick={() => setCurrentImageIndex(index)}
@@ -418,26 +458,26 @@ export default function CarDetailsPage() {
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-4 mb-4">
                     <Chip
-                      label={`$${vehicle.price?.toLocaleString() || '0'}`}
-                      sx={{ 
-                        backgroundColor: "#dc2626", 
+                      label={`$${vehicle.price?.toLocaleString() || "0"}`}
+                      sx={{
+                        backgroundColor: "#dc2626",
                         color: "white",
                         fontSize: "1.125rem",
                         fontWeight: "bold",
-                        padding: "0.5rem"
+                        padding: "0.5rem",
                       }}
                     />
-                    
+
                     {vehicle.listing_type === "marketplace" && (
                       <div className="flex items-center text-red-500 bg-red-50 px-3 py-1 rounded-full">
                         <TrendingUp className="mr-1" size={16} />
                         <span className="text-sm font-medium">Marketplace</span>
                       </div>
                     )}
-                    
+
                     <Badge badgeContent={vehicle.bid_count || 0} color="error">
                       <div className="flex items-center text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
                         <MessageCircle className="mr-1" size={16} />
@@ -453,31 +493,39 @@ export default function CarDetailsPage() {
                     <Gauge className="text-blue-500" size={20} />
                     <div>
                       <p className="text-sm text-gray-600">Mileage</p>
-                      <p className="font-semibold">{vehicle.mileage?.toLocaleString() || '0'} km</p>
+                      <p className="font-semibold">
+                        {vehicle.mileage?.toLocaleString() || "0"} km
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <Tag className="text-green-500" size={20} />
                     <div>
                       <p className="text-sm text-gray-600">Body Type</p>
-                      <p className="font-semibold">{vehicle.body_type || "Sedan"}</p>
+                      <p className="font-semibold">
+                        {vehicle.body_type || "Sedan"}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <MapPin className="text-purple-500" size={20} />
                     <div>
                       <p className="text-sm text-gray-600">Location</p>
-                      <p className="font-semibold">{vehicle.location || "Auto Eden HQ"}</p>
+                      <p className="font-semibold">
+                        {vehicle.location || "Auto Eden HQ"}
+                      </p>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
                     <Fuel className="text-orange-500" size={20} />
                     <div>
                       <p className="text-sm text-gray-600">Fuel Type</p>
-                      <p className="font-semibold">{vehicle.fuel_type || "Petrol"}</p>
+                      <p className="font-semibold">
+                        {vehicle.fuel_type || "Petrol"}
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -490,7 +538,7 @@ export default function CarDetailsPage() {
                         <DollarSign className="mr-2 text-red-500" />
                         Make an Offer
                       </h3>
-                      
+
                       {isAuthenticated ? (
                         <>
                           <TextField
@@ -501,10 +549,13 @@ export default function CarDetailsPage() {
                             onChange={(e) => setBidAmount(e.target.value)}
                             variant="outlined"
                             InputProps={{
-                              startAdornment: <DollarSign className="mr-2 text-gray-400" />,
+                              startAdornment: (
+                                <DollarSign className="mr-2 text-gray-400" />
+                              ),
                             }}
                           />
-                          
+                           <Divider className="p-1" />
+
                           <TextField
                             fullWidth
                             multiline
@@ -515,16 +566,18 @@ export default function CarDetailsPage() {
                             placeholder="Tell the seller why you're interested..."
                             variant="outlined"
                           />
-                          
+
+                           <Divider className="p-1"/>
+
                           <Button
                             fullWidth
                             variant="contained"
                             onClick={handlePlaceBid}
                             size="large"
-                            sx={{ 
+                            sx={{
                               backgroundColor: "#dc2626",
                               "&:hover": { backgroundColor: "#b91c1c" },
-                              py: 1.5
+                              py: 1.5,
                             }}
                           >
                             Submit Offer
@@ -537,17 +590,17 @@ export default function CarDetailsPage() {
                             variant="contained"
                             onClick={() => setAuthModal("login")}
                             size="large"
-                            sx={{ 
+                            sx={{
                               backgroundColor: "#dc2626",
                               "&:hover": { backgroundColor: "#b91c1c" },
-                              py: 1.5
+                              py: 1.5,
                             }}
                           >
                             Login to Make an Offer
                           </Button>
-                          
+
                           <Divider>or</Divider>
-                          
+
                           <Button
                             fullWidth
                             variant="outlined"
@@ -565,10 +618,10 @@ export default function CarDetailsPage() {
                       fullWidth
                       variant="contained"
                       size="large"
-                      sx={{ 
+                      sx={{
                         backgroundColor: "#dc2626",
                         "&:hover": { backgroundColor: "#b91c1c" },
-                        py: 1.5
+                        py: 1.5,
                       }}
                     >
                       <Zap className="mr-2" />
@@ -588,10 +641,10 @@ export default function CarDetailsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Tabs 
-            value={tabValue} 
+          <Tabs
+            value={tabValue}
             onChange={(e, newValue) => setTabValue(newValue)}
-            sx={{ borderBottom: 1, borderColor: 'divider' }}
+            sx={{ borderBottom: 1, borderColor: "divider" }}
           >
             <Tab label="Specifications" />
             <Tab label="Features" />
@@ -601,20 +654,26 @@ export default function CarDetailsPage() {
 
           <TabPanel value={tabValue} index={0}>
             <Grid container spacing={3}>
-              {Object.entries(mockVehicleDetails.specifications).map(([key, value]) => (
-                <Grid item xs={12} sm={6} md={4} key={key}>
-                  <Card variant="outlined" sx={{ height: '100%' }}>
-                    <CardContent>
-                      <Typography variant="h6" component="div" sx={{ textTransform: 'capitalize', mb: 1 }}>
-                        {key.replace(/([A-Z])/g, ' $1').trim()}
-                      </Typography>
-                      <Typography variant="body1" color="text.secondary">
-                        {value}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
+              {Object.entries(mockVehicleDetails.specifications).map(
+                ([key, value]) => (
+                  <Grid item xs={12} sm={6} md={4} key={key}>
+                    <Card variant="outlined" sx={{ height: "100%" }}>
+                      <CardContent>
+                        <Typography
+                          variant="h6"
+                          component="div"
+                          sx={{ textTransform: "capitalize", mb: 1 }}
+                        >
+                          {key.replace(/([A-Z])/g, " $1").trim()}
+                        </Typography>
+                        <Typography variant="body1" color="text.secondary">
+                          {value}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Grid>
+                )
+              )}
             </Grid>
           </TabPanel>
 
@@ -634,12 +693,14 @@ export default function CarDetailsPage() {
           <TabPanel value={tabValue} index={2}>
             <div className="space-y-6">
               <div className="flex items-center space-x-4">
-                <Avatar sx={{ width: 64, height: 64, bgcolor: '#dc2626' }}>
+                <Avatar sx={{ width: 64, height: 64, bgcolor: "#dc2626" }}>
                   {mockVehicleDetails.seller.name.charAt(0)}
                 </Avatar>
                 <div>
                   <div className="flex items-center space-x-2">
-                    <h3 className="text-xl font-bold">{mockVehicleDetails.seller.name}</h3>
+                    <h3 className="text-xl font-bold">
+                      {mockVehicleDetails.seller.name}
+                    </h3>
                     {mockVehicleDetails.seller.verified && (
                       <CheckCircle className="text-green-500" size={20} />
                     )}
@@ -647,7 +708,9 @@ export default function CarDetailsPage() {
                   <div className="flex items-center space-x-2 text-gray-600">
                     <Star className="text-yellow-400" size={16} />
                     <span>{mockVehicleDetails.seller.rating}</span>
-                    <span>({mockVehicleDetails.seller.reviewCount} reviews)</span>
+                    <span>
+                      ({mockVehicleDetails.seller.reviewCount} reviews)
+                    </span>
                   </div>
                   <div className="flex items-center text-gray-600">
                     <MapPin size={16} className="mr-1" />
@@ -655,7 +718,7 @@ export default function CarDetailsPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <Button
                   variant="outlined"
@@ -682,7 +745,7 @@ export default function CarDetailsPage() {
               {mockVehicleDetails.history.map((item, index) => (
                 <ListItem key={index} divider>
                   <ListItemIcon>
-                    {item.status === 'success' ? (
+                    {item.status === "success" ? (
                       <CheckCircle className="text-green-500" />
                     ) : (
                       <Info className="text-blue-500" />
@@ -704,7 +767,9 @@ export default function CarDetailsPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.4 }}
         >
-          <h2 className="text-2xl font-bold mb-6 text-gray-900">Similar Vehicles</h2>
+          <h2 className="text-2xl font-bold mb-6 text-gray-900">
+            Similar Vehicles
+          </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {recommendations.map((vehicle) => (
               <VehicleCard
@@ -724,42 +789,66 @@ export default function CarDetailsPage() {
         maxWidth="lg"
         fullWidth
         PaperProps={{
-          sx: { bgcolor: 'black', color: 'white' }
+          sx: { bgcolor: "black", color: "white" },
         }}
       >
         <div className="relative">
           <IconButton
             onClick={() => setShowCarousel(false)}
-            sx={{ position: 'absolute', top: 16, right: 16, color: 'white', zIndex: 1 }}
+            sx={{
+              position: "absolute",
+              top: 16,
+              right: 16,
+              color: "white",
+              zIndex: 1,
+            }}
           >
             <X />
           </IconButton>
-          
+
           <div className="relative">
             <img
               src={vehicle.images?.[currentImageIndex]?.image}
               alt={`${vehicle.make} ${vehicle.model}`}
               className="w-full h-96 object-contain"
             />
-            
+
             {/* Navigation arrows */}
             <IconButton
-              onClick={() => setCurrentImageIndex(Math.max(0, currentImageIndex - 1))}
+              onClick={() =>
+                setCurrentImageIndex(Math.max(0, currentImageIndex - 1))
+              }
               disabled={currentImageIndex === 0}
-              sx={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'white' }}
+              sx={{
+                position: "absolute",
+                left: 16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "white",
+              }}
             >
               <ChevronLeft />
             </IconButton>
-            
+
             <IconButton
-              onClick={() => setCurrentImageIndex(Math.min(vehicle.images.length - 1, currentImageIndex + 1))}
-              disabled={currentImageIndex === vehicle.images.length - 1}
-              sx={{ position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)', color: 'white' }}
+              onClick={() =>
+                setCurrentImageIndex(
+                  Math.min(vehicle.images?.length - 1, currentImageIndex + 1)
+                )
+              }
+              disabled={currentImageIndex === vehicle.images?.length - 1}
+              sx={{
+                position: "absolute",
+                right: 16,
+                top: "50%",
+                transform: "translateY(-50%)",
+                color: "white",
+              }}
             >
               <ChevronRight />
             </IconButton>
           </div>
-          
+
           {/* Image indicators */}
           <div className="flex justify-center space-x-2 p-4">
             {vehicle.images?.map((_, index) => (
@@ -767,7 +856,7 @@ export default function CarDetailsPage() {
                 key={index}
                 onClick={() => setCurrentImageIndex(index)}
                 className={`w-3 h-3 rounded-full ${
-                  currentImageIndex === index ? 'bg-white' : 'bg-gray-400'
+                  currentImageIndex === index ? "bg-white" : "bg-gray-400"
                 }`}
               />
             ))}
@@ -784,36 +873,34 @@ export default function CarDetailsPage() {
               <X />
             </IconButton>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <Button
               variant="outlined"
               startIcon={<Facebook />}
-              onClick={() => handleShare('facebook')}
-              sx={{ color: '#1877f2' }}
+              onClick={() => handleShare("facebook")}
+              sx={{ color: "#1877f2" }}
             >
               Facebook
             </Button>
             <Button
               variant="outlined"
-              startIcon={<Twitter />}
-              onClick={() => handleShare('twitter')}
-              sx={{ color: '#1da1f2' }}
-            >
-              Twitter
-            </Button>
+              startIcon={<FaXTwitter />}
+              onClick={() => handleShare("twitter")}
+              sx={{ color: "#1da1f2" }}
+            ></Button>
             <Button
               variant="outlined"
               startIcon={<FaWhatsapp />}
-              onClick={() => handleShare('whatsapp')}
-              sx={{ color: '#25d366' }}
+              onClick={() => handleShare("whatsapp")}
+              sx={{ color: "#25d366" }}
             >
               WhatsApp
             </Button>
             <Button
               variant="outlined"
               startIcon={<Copy />}
-              onClick={() => handleShare('copy')}
+              onClick={() => handleShare("copy")}
             >
               Copy Link
             </Button>
@@ -822,13 +909,21 @@ export default function CarDetailsPage() {
       </Dialog>
 
       {/* Quote Modal */}
-      <Dialog open={showQuoteModal} onClose={() => setShowQuoteModal(false)} maxWidth="md" fullWidth>
+      <Dialog
+        open={showQuoteModal}
+        onClose={() => setShowQuoteModal(false)}
+        maxWidth="md"
+        fullWidth
+      >
         <div className="p-6">
           <div className="flex justify-between items-center mb-6">
             <div>
-              <h3 className="text-2xl font-bold text-gray-900">Get Vehicle Quote</h3>
+              <h3 className="text-2xl font-bold text-gray-900">
+                Get Vehicle Quote
+              </h3>
               <p className="text-gray-600 mt-1">
-                Get a personalized quote for this {vehicle.year} {vehicle.make} {vehicle.model}
+                Get a personalized quote for this {vehicle.year} {vehicle.make}{" "}
+                {vehicle.model}
               </p>
             </div>
             <IconButton onClick={() => setShowQuoteModal(false)}>
@@ -939,7 +1034,9 @@ export default function CarDetailsPage() {
               <div className="bg-blue-50 p-4 rounded-lg">
                 <div className="flex items-center space-x-2 mb-2">
                   <Info className="text-blue-500" size={20} />
-                  <span className="font-medium text-blue-900">What happens next?</span>
+                  <span className="font-medium text-blue-900">
+                    What happens next?
+                  </span>
                 </div>
                 <ul className="text-sm text-blue-800 space-y-1">
                   <li>• Our team will review your request within 24 hours</li>
@@ -958,7 +1055,7 @@ export default function CarDetailsPage() {
                   backgroundColor: "#3b82f6",
                   "&:hover": { backgroundColor: "#2563eb" },
                   py: 1.5,
-                  mt: 3
+                  mt: 3,
                 }}
               >
                 Submit Quote Request
@@ -970,18 +1067,18 @@ export default function CarDetailsPage() {
 
       {/* Auth Modals */}
       <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
-      
+
       {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={6000}
         onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
       >
-        <Alert 
+        <Alert
           severity={snackbar.severity}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
-          sx={{ width: '100%' }}
+          sx={{ width: "100%" }}
         >
           {snackbar.message}
         </Alert>

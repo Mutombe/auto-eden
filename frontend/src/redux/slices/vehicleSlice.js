@@ -41,9 +41,17 @@ export const fetchAllVehicles = createAsyncThunk(
 
 export const fetchVehicleDetails = createAsyncThunk(
   "vehicles/fetchDetails",
-  async (vehicleId) => {
-    const response = await api.get(`/core/all-vehicles/${vehicleId}/`);
-    return response.data;
+  async (vehicleId, { rejectWithValue }) => {
+    try {
+      const response = await api.get(`/core/all-vehicles/${vehicleId}/`);
+      return response.data;
+    } catch (err) {
+      // Handle 500 errors specifically
+      if (err.response?.status === 500) {
+        return rejectWithValue("Server error loading vehicle details");
+      }
+      return rejectWithValue(err.response?.data || 'Vehicle not found');
+    }
   }
 );
 
@@ -63,11 +71,21 @@ export const fetchMarketplace = createAsyncThunk(
   "vehicles/fetchMarketplace",
   async (filters, { rejectWithValue }) => {
     try {
-      const params = new URLSearchParams(filters);
+      const params = new URLSearchParams();
+      
+      // Add all filters
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value) params.append(key, value);
+      });
+      
+      // Set default pagination if missing
+      if (!params.has('page')) params.append('page', '1');
+      if (!params.has('page_size')) params.append('page_size', '12');
+      
       const { data } = await api.get(`/core/marketplace/?${params}`);
       return data;
     } catch (err) {
-      return rejectWithValue(err.response.data);
+      return rejectWithValue(err.response?.data || 'Unknown error');
     }
   }
 );
@@ -175,6 +193,15 @@ const vehicleSlice = createSlice({
     pendingVehicles: [],
     loading: false,
     error: null,
+    marketplace: {  // Add this marketplace object
+      results: [],
+      count: 0,
+      currentPage: 1,
+      totalPages: 1,
+      pageSize: 12,
+    },
+    currentVehicle: null,
+    loadingDetails: false,
   },
   reducers: {
     setAllVehicles: (state, action) => {
@@ -197,16 +224,34 @@ const vehicleSlice = createSlice({
         state.loading = false;
         state.error = action.payload;
       })
+      .addCase(fetchVehicleDetails.pending, (state) => {
+        state.loadingDetails = true;
+        state.currentVehicle = null;
+      })
       .addCase(fetchVehicleDetails.fulfilled, (state, action) => {
-        const index = state.items.findIndex((v) => v.id === action.payload.id);
-        if (index === -1) {
-          state.items.push(action.payload);
-        } else {
-          state.items[index] = action.payload;
-        }
+        state.loadingDetails = false;
+        state.currentVehicle = action.payload;
+      })
+      .addCase(fetchVehicleDetails.rejected, (state, action) => {
+        state.loadingDetails = false;
+        state.error = action.payload;
+      })
+      .addCase(fetchMarketplace.pending, (state) => {
+        state.loading = true;
       })
       .addCase(fetchMarketplace.fulfilled, (state, action) => {
-        state.items = action.payload;
+        state.loading = false;
+        state.marketplace = {
+          results: action.payload.results,
+          count: action.payload.count,
+          currentPage: action.payload.current_page || 1,
+          totalPages: Math.ceil(action.payload.count / (action.payload.page_size || 12)),
+          pageSize: action.payload.page_size || 12,
+        };
+      })
+      .addCase(fetchMarketplace.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.payload;
       })
       .addCase(fetchInstantSaleVehicles.fulfilled, (state, action) => {
         state.instantSaleVehicles = action.payload;

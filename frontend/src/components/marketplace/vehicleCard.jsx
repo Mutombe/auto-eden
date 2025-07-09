@@ -35,7 +35,7 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
     >
       <div className={`relative ${viewMode === "list" ? "md:w-1/3" : ""}`}>
         <ImageWithFallback
-          src={vehicle.images?.[0]?.image}
+          src={vehicle.main_image}
           alt={`${vehicle.make} ${vehicle.model}`}
           className={`w-full object-cover ${
             viewMode === "list"
@@ -126,7 +126,7 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
           </div>
           <div className="flex items-center text-sm text-gray-600">
             <Map className="w-4 h-4 mr-1.5 text-gray-500" />
-            <span>{vehicle.location || "Unknown"}</span>
+            <span>{vehicle.location || "Auto Eden HQ"}</span>
           </div>
           <div className="flex items-center text-sm text-gray-600">
             <Gauge className="w-4 h-4 mr-1.5 text-gray-500" />
