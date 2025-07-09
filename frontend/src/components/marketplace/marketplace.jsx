@@ -167,7 +167,14 @@ const VehicleSkeleton = ({ viewMode }) => (
 
 export default function MarketplacePage() {
   const dispatch = useDispatch();
-  const { items: vehicles, status } = useSelector((state) => state.vehicles);
+  const { marketplace, loading } = useSelector((state) => state.vehicles);
+  const {
+    results: vehicles = [],
+    count: totalVehicles = 0,
+    currentPage = 1,
+    totalPages = 1,
+    pageSize = 12,
+  } = marketplace || {};
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [filters, setFilters] = useState({
     minPrice: "",
@@ -178,6 +185,8 @@ export default function MarketplacePage() {
     bodyType: "",
     fuelType: "",
     searchTerm: "",
+    page: 1, // Add this
+    page_size: 12, // Add this
   });
   const [authModal, setAuthModal] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -213,41 +222,47 @@ export default function MarketplacePage() {
   const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"];
 
   useEffect(() => {
-    const lazyImages = [...document.querySelectorAll(".lazyload")];
-
-    if ("IntersectionObserver" in window) {
-      const imageObserver = new IntersectionObserver((entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            const img = entry.target;
-            img.src = img.dataset.src;
-            img.classList.remove("lazyload");
-            imageObserver.unobserve(img);
-          }
-        });
-      });
-
-      lazyImages.forEach((img) => imageObserver.observe(img));
-    }
-  }, []);
-
-  useEffect(() => {
     setIsLoading(true);
-    dispatch(fetchMarketplace())
+    // Pass filters to fetchMarketplace
+    dispatch(fetchMarketplace(filters))
       .then(() => setIsLoading(false))
       .catch(() => setIsLoading(false));
-  }, [dispatch]);
+  }, [dispatch, filters]);
 
-  const handleFilterChange = (e) => {
-    setFilters({ ...filters, [e.target.name]: e.target.value });
+  const handlePageChange = (newPage) => {
+    setFilters((prev) => ({
+      ...prev,
+      page: newPage,
+    }));
+
+    // Scroll to top when changing pages
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
+  // Handle filter change - reset to page 1 when filters change
+  const handleFilterChange = (e) => {
+    setFilters({
+      ...filters,
+      [e.target.name]: e.target.value,
+      page: 1, // Reset to first page when filters change
+    });
+  };
+
+  // Similarly update other filter handlers to reset page to 1
   const handleQuickFilterMake = (make) => {
-    setFilters({ ...filters, make });
+    setFilters({
+      ...filters,
+      make,
+      page: 1,
+    });
   };
 
   const handleQuickFilterBodyType = (bodyType) => {
-    setFilters({ ...filters, bodyType });
+    setFilters({
+      ...filters,
+      bodyType,
+      page: 1,
+    });
   };
 
   const handleClearFilters = () => {
@@ -259,6 +274,8 @@ export default function MarketplacePage() {
       sortBy: "newest",
       bodyType: "",
       fuelType: "",
+      searchTerm: "",
+      page: 1,
     });
   };
 
@@ -290,57 +307,18 @@ export default function MarketplacePage() {
     }
   };
 
-  // Filter and sort vehicles
-  const filteredVehicles = useMemo(() => {
-    return vehicles
-      .filter((vehicle) => {
-        if (filters.minPrice && vehicle.price < parseFloat(filters.minPrice))
-          return false;
-        if (filters.maxPrice && vehicle.price > parseFloat(filters.maxPrice))
-          return false;
-        if (
-          filters.make &&
-          !vehicle.make.toLowerCase().includes(filters.make.toLowerCase())
-        )
-          return false;
-        if (filters.year && vehicle.year.toString() !== filters.year.toString())
-          return false;
-        if (filters.bodyType && vehicle.body_type !== filters.bodyType)
-          return false;
-        if (filters.fuelType && vehicle.fuel_type !== filters.fuelType)
-          return false;
-        if (
-          filters.searchTerm &&
-          !`${vehicle.make} ${vehicle.model} ${vehicle.description}`
-            .toLowerCase()
-            .includes(filters.searchTerm.toLowerCase())
-        )
-          return false;
-        return true;
-      })
-      .sort((a, b) => {
-        switch (filters.sortBy) {
-          case "newest":
-            return new Date(b.created_at) - new Date(a.created_at);
-          case "priceLowHigh":
-            return a.price - b.price;
-          case "priceHighLow":
-            return b.price - a.price;
-          default:
-            return 0;
-        }
-      });
-  }, [vehicles, filters]);
+  // Filter and sort vehicle
 
-  // Inside your component
-  const formattedImages = useMemo(
-    () =>
-      filteredVehicles.images?.map((img) => ({
-        ...img,
-        formattedUrl: formatMediaUrl(img.image),
-      })),
-    [filteredVehicles.images]
-  );
+  const getPageRange = () => {
+    const range = [];
+    const start = Math.max(1, currentPage - 2);
+    const end = Math.min(totalPages, start + 4);
+
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+    return range;
+  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -768,8 +746,14 @@ export default function MarketplacePage() {
         <div className="flex justify-between items-center mb-4">
           <div className="text-gray-600">
             Showing{" "}
-            <span className="font-semibold">{filteredVehicles.length}</span>{" "}
-            vehicles
+            <span className="font-semibold">
+              {(currentPage - 1) * pageSize + 1}
+            </span>{" "}
+            to{" "}
+            <span className="font-semibold">
+              {Math.min(currentPage * pageSize, totalVehicles)}
+            </span>{" "}
+            of <span className="font-semibold">{totalVehicles}</span> vehicles
             {filters.make && (
               <span>
                 {" "}
@@ -824,7 +808,7 @@ export default function MarketplacePage() {
         )}
 
         {/* Empty State */}
-        {!isLoading && filteredVehicles.length === 0 && (
+        {!isLoading && vehicles.length === 0 && (
           <div className="bg-white rounded-xl shadow-md p-10 text-center">
             <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-4">
               <Car className="w-8 h-8 text-red-600" />
@@ -854,7 +838,7 @@ export default function MarketplacePage() {
         )}
 
         {/* Vehicle Grid */}
-        {!isLoading && filteredVehicles.length > 0 && (
+        {!isLoading && vehicles.length > 0 && (
           <div
             className={
               viewMode === "grid"
@@ -862,7 +846,7 @@ export default function MarketplacePage() {
                 : "flex flex-col gap-4"
             }
           >
-            {filteredVehicles.map((vehicle, index) => (
+            {vehicles.map((vehicle, index) => (
               <Link to={`/vehicles/${vehicle.id}`} key={vehicle.id}>
                 <motion.div
                   key={vehicle.id}
@@ -879,7 +863,7 @@ export default function MarketplacePage() {
                     }`}
                   >
                     <ImageWithFallback
-                      src={vehicle.images?.[0]?.image}
+                      src={vehicle.main_image}
                       alt={`${vehicle.make} ${vehicle.model}`}
                       className={`w-full object-cover ${
                         viewMode === "list"
@@ -1061,12 +1045,14 @@ export default function MarketplacePage() {
         )}
 
         {/* Pagination */}
-        {!isLoading && filteredVehicles.length > 0 && (
+        {!isLoading && totalPages > 1 && (
           <div className="mt-10 flex justify-center">
             <div className="flex items-center space-x-2">
               <Button
                 variant="outlined"
                 size="small"
+                disabled={currentPage === 1}
+                onClick={() => handlePageChange(currentPage - 1)}
                 sx={{
                   color: "#6b7280",
                   borderColor: "#d1d5db",
@@ -1074,17 +1060,23 @@ export default function MarketplacePage() {
                     borderColor: "#9ca3af",
                     backgroundColor: "rgba(156, 163, 175, 0.04)",
                   },
+                  "&.Mui-disabled": {
+                    borderColor: "#e5e7eb",
+                    color: "#9ca3af",
+                  },
                 }}
               >
                 Previous
               </Button>
-              {[1, 2, 3, 4, 5].map((page) => (
+
+              {getPageRange().map((page) => (
                 <Button
                   key={page}
-                  variant={page === 1 ? "contained" : "outlined"}
+                  variant={page === currentPage ? "contained" : "outlined"}
                   size="small"
+                  onClick={() => handlePageChange(page)}
                   sx={
-                    page === 1
+                    page === currentPage
                       ? {
                           backgroundColor: "#dc2626",
                           "&:hover": {
@@ -1104,15 +1096,22 @@ export default function MarketplacePage() {
                   {page}
                 </Button>
               ))}
+
               <Button
                 variant="outlined"
                 size="small"
+                disabled={currentPage === totalPages}
+                onClick={() => handlePageChange(currentPage + 1)}
                 sx={{
                   color: "#6b7280",
                   borderColor: "#d1d5db",
                   "&:hover": {
                     borderColor: "#9ca3af",
                     backgroundColor: "rgba(156, 163, 175, 0.04)",
+                  },
+                  "&.Mui-disabled": {
+                    borderColor: "#e5e7eb",
+                    color: "#9ca3af",
                   },
                 }}
               >
@@ -1121,424 +1120,423 @@ export default function MarketplacePage() {
             </div>
           </div>
         )}
-      </div>
-
-      {/* Bid Dialog */}
-      <Dialog
-        open={!!selectedVehicle}
-        onClose={() => setSelectedVehicle(null)}
-        PaperProps={{
-          sx: {
-            borderRadius: "12px",
-            maxWidth: "450px",
-            width: "100%",
-          },
-        }}
-      >
-        {selectedVehicle && (
-          <div className="p-6">
-            {/* Add image gallery section */}
-            <div className="grid grid-cols-3 gap-2 mb-4">
-              {selectedVehicle.images?.map((image, index) => {
-                const formattedUrl = formatMediaUrl(image.image);
-                return (
-                  <div
-                    key={index}
-                    className="cursor-pointer relative aspect-square group"
-                    onClick={() => setSelectedImage(formattedUrl)}
-                  >
-                    <img
-                      src={formattedUrl}
-                      className="w-full h-full object-cover rounded-md transition-opacity group-hover:opacity-90"
-                      alt={`Preview ${index + 1}`}
-                      loading="lazy"
-                      onError={(e) => {
-                        e.target.src = "/placeholder-car.jpg";
-                      }}
-                    />
-                    {index === 0 && (
-                      <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                        Click to preview
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* Add more vehicle details */}
-            <Divider className="my-4" />
-            <div className="grid grid-cols-2 gap-4 mb-6">
-              <div className="flex items-center">
-                <Gauge className="w-5 h-5 mr-2 text-gray-600" />
-                <span>
-                  Mileage: {selectedVehicle.mileage?.toLocaleString()} km
-                </span>
+        {/* Bid Dialog */}
+        <Dialog
+          open={!!selectedVehicle}
+          onClose={() => setSelectedVehicle(null)}
+          PaperProps={{
+            sx: {
+              borderRadius: "12px",
+              maxWidth: "450px",
+              width: "100%",
+            },
+          }}
+        >
+          {selectedVehicle && (
+            <div className="p-6">
+              {/* Add image gallery section */}
+              <div className="grid grid-cols-3 gap-2 mb-4">
+                {selectedVehicle.images?.map((image, index) => {
+                  const formattedUrl = formatMediaUrl(image.image);
+                  return (
+                    <div
+                      key={index}
+                      className="cursor-pointer relative aspect-square group"
+                      onClick={() => setSelectedImage(formattedUrl)}
+                    >
+                      <img
+                        src={formattedUrl}
+                        className="w-full h-full object-cover rounded-md transition-opacity group-hover:opacity-90"
+                        alt={`Preview ${index + 1}`}
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.src = "/placeholder-car.jpg";
+                        }}
+                      />
+                      {index === 0 && (
+                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                          Click to preview
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
               </div>
-              <div className="flex items-center">
-                <Shield className="w-5 h-5 mr-2 text-gray-600" />
-                <span>VIN: {selectedVehicle.vin || "N/A"}</span>
-              </div>
-              {/* Add more details as needed */}
-            </div>
 
-            <div className="flex justify-between items-start mb-4">
-              <h3 className="text-xl font-bold text-gray-900">
-                Place Bid on {selectedVehicle.make} {selectedVehicle.model}
-              </h3>
-              <IconButton
-                size="small"
-                onClick={() => setSelectedVehicle(null)}
-                sx={{ color: "#6b7280" }}
-              >
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  className="h-5 w-5"
-                  viewBox="0 0 20 20"
-                  fill="currentColor"
+              {/* Add more vehicle details */}
+              <Divider className="my-4" />
+              <div className="grid grid-cols-2 gap-4 mb-6">
+                <div className="flex items-center">
+                  <Gauge className="w-5 h-5 mr-2 text-gray-600" />
+                  <span>
+                    Mileage: {selectedVehicle.mileage?.toLocaleString()} km
+                  </span>
+                </div>
+                <div className="flex items-center">
+                  <Shield className="w-5 h-5 mr-2 text-gray-600" />
+                  <span>VIN: {selectedVehicle.vin || "N/A"}</span>
+                </div>
+                {/* Add more details as needed */}
+              </div>
+
+              <div className="flex justify-between items-start mb-4">
+                <h3 className="text-xl font-bold text-gray-900">
+                  Place Bid on {selectedVehicle.make} {selectedVehicle.model}
+                </h3>
+                <IconButton
+                  size="small"
+                  onClick={() => setSelectedVehicle(null)}
+                  sx={{ color: "#6b7280" }}
                 >
-                  <path
-                    fillRule="evenodd"
-                    d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </IconButton>
-            </div>
-
-            <div className="flex items-center mb-6">
-              <img
-                src={
-                  selectedVehicle.images?.[0]?.image
-                    ? selectedVehicle.images[0].image
-                    : selectedVehicle.images[0].image
-                }
-                alt={`${selectedVehicle.make} ${selectedVehicle.model}`}
-                className="w-20 h-20 object-cover rounded-md mr-4"
-              />
-              <div>
-                <h4 className="text-gray-900 font-medium">
-                  {selectedVehicle.year} {selectedVehicle.make}{" "}
-                  {selectedVehicle.model}
-                </h4>
-                <p className="text-gray-600 text-sm">
-                  {selectedVehicle.mileage?.toLocaleString() || "0"} km •{" "}
-                  {selectedVehicle.location || "Unknown location"}
-                </p>
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="h-5 w-5"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </IconButton>
               </div>
-            </div>
 
-            <Divider className="mb-6" />
-
-            <div className="mb-6">
-              <div className="flex justify-between mb-1">
-                <span className="text-gray-600">Current Highest Bid:</span>
-                <span className="text-gray-900 font-bold">
-                  ${selectedVehicle.price?.toLocaleString()}
-                </span>
+              <div className="flex items-center mb-6">
+                <img
+                  src={
+                    selectedVehicle.images?.[0]?.image
+                      ? selectedVehicle.images[0].image
+                      : selectedVehicle.images[0].image
+                  }
+                  alt={`${selectedVehicle.make} ${selectedVehicle.model}`}
+                  className="w-20 h-20 object-cover rounded-md mr-4"
+                />
+                <div>
+                  <h4 className="text-gray-900 font-medium">
+                    {selectedVehicle.year} {selectedVehicle.make}{" "}
+                    {selectedVehicle.model}
+                  </h4>
+                  <p className="text-gray-600 text-sm">
+                    {selectedVehicle.mileage?.toLocaleString() || "0"} km •{" "}
+                    {selectedVehicle.location || "Unknown location"}
+                  </p>
+                </div>
               </div>
-              <div className="flex justify-between mb-4">
-                <span className="text-gray-600">Minimum Bid Increment:</span>
-                <span className="text-gray-900 font-medium">$100</span>
+
+              <Divider className="mb-6" />
+
+              <div className="mb-6">
+                <div className="flex justify-between mb-1">
+                  <span className="text-gray-600">Current Highest Bid:</span>
+                  <span className="text-gray-900 font-bold">
+                    ${selectedVehicle.price?.toLocaleString()}
+                  </span>
+                </div>
+                <div className="flex justify-between mb-4">
+                  <span className="text-gray-600">Minimum Bid Increment:</span>
+                  <span className="text-gray-900 font-medium">$100</span>
+                </div>
+                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+                  <span className="font-medium">Note:</span> Your bid must be at
+                  least ${(selectedVehicle.price + 100).toLocaleString()}
+                </div>
               </div>
-              <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                <span className="font-medium">Note:</span> Your bid must be at
-                least ${(selectedVehicle.price + 100).toLocaleString()}
-              </div>
-            </div>
 
-            <TextField
-              fullWidth
-              type="number"
-              label="Your Bid Amount"
-              value={bidAmount}
-              onChange={(e) => setBidAmount(e.target.value)}
-              InputProps={{
-                startAdornment: (
-                  <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
-                ),
-              }}
-              sx={{
-                marginBottom: "24px",
-                "& .MuiOutlinedInput-root": {
-                  "&.Mui-focused fieldset": {
-                    borderColor: "#dc2626",
-                  },
-                },
-                "& .MuiFormLabel-root.Mui-focused": {
-                  color: "#dc2626",
-                },
-              }}
-            />
-
-            {/* In the bid dialog, before the bid amount field */}
-            <TextField
-              fullWidth
-              label="Message to seller (optional)"
-              multiline
-              rows={3}
-              value={bidMessage}
-              onChange={(e) => setBidMessage(e.target.value)}
-              sx={{
-                mb: 2,
-                "& .MuiOutlinedInput-root": {
-                  "&.Mui-focused fieldset": { borderColor: "#dc2626" },
-                },
-              }}
-              inputProps={{ maxLength: 200 }}
-              helperText={`${bidMessage.length}/200 characters`}
-            />
-
-            {isAuthenticated ? (
-              <Button
+              <TextField
                 fullWidth
-                variant="contained"
-                onClick={handlePlaceBid}
-                disabled={
-                  !bidAmount || parseFloat(bidAmount) <= selectedVehicle.price
-                }
-                sx={{
-                  backgroundColor: "#dc2626",
-                  "&:hover": { backgroundColor: "#b91c1c" },
-                  "&.Mui-disabled": {
-                    backgroundColor: "#f3f4f6",
-                    color: "#9ca3af",
-                  },
-                  padding: "12px",
-                  fontWeight: 600,
-                  fontSize: "1rem",
-                  boxShadow:
-                    "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+                type="number"
+                label="Your Bid Amount"
+                value={bidAmount}
+                onChange={(e) => setBidAmount(e.target.value)}
+                InputProps={{
+                  startAdornment: (
+                    <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
+                  ),
                 }}
-              >
-                Place Bid
-              </Button>
-            ) : (
-              <>
+                sx={{
+                  marginBottom: "24px",
+                  "& .MuiOutlinedInput-root": {
+                    "&.Mui-focused fieldset": {
+                      borderColor: "#dc2626",
+                    },
+                  },
+                  "& .MuiFormLabel-root.Mui-focused": {
+                    color: "#dc2626",
+                  },
+                }}
+              />
+
+              {/* In the bid dialog, before the bid amount field */}
+              <TextField
+                fullWidth
+                label="Message to seller (optional)"
+                multiline
+                rows={3}
+                value={bidMessage}
+                onChange={(e) => setBidMessage(e.target.value)}
+                sx={{
+                  mb: 2,
+                  "& .MuiOutlinedInput-root": {
+                    "&.Mui-focused fieldset": { borderColor: "#dc2626" },
+                  },
+                }}
+                inputProps={{ maxLength: 200 }}
+                helperText={`${bidMessage.length}/200 characters`}
+              />
+
+              {isAuthenticated ? (
                 <Button
                   fullWidth
                   variant="contained"
-                  onClick={() => {
-                    setSelectedVehicle(null);
-                    setAuthModal("login");
-                  }}
+                  onClick={handlePlaceBid}
+                  disabled={
+                    !bidAmount || parseFloat(bidAmount) <= selectedVehicle.price
+                  }
                   sx={{
                     backgroundColor: "#dc2626",
                     "&:hover": { backgroundColor: "#b91c1c" },
+                    "&.Mui-disabled": {
+                      backgroundColor: "#f3f4f6",
+                      color: "#9ca3af",
+                    },
                     padding: "12px",
-                    paddingBottom: "0.5rem",
                     fontWeight: 600,
                     fontSize: "1rem",
                     boxShadow:
                       "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
                   }}
                 >
-                  Log In to Place Bid
+                  Place Bid
                 </Button>
+              ) : (
+                <>
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={() => {
+                      setSelectedVehicle(null);
+                      setAuthModal("login");
+                    }}
+                    sx={{
+                      backgroundColor: "#dc2626",
+                      "&:hover": { backgroundColor: "#b91c1c" },
+                      padding: "12px",
+                      paddingBottom: "0.5rem",
+                      fontWeight: 600,
+                      fontSize: "1rem",
+                      boxShadow:
+                        "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
+                    }}
+                  >
+                    Log In to Place Bid
+                  </Button>
 
-                <Divider className="my-7" />
+                  <Divider className="my-7" />
+                  <Button
+                    fullWidth
+                    variant="contained"
+                    onClick={() => {
+                      setSelectedVehicle(null);
+                      setShowQuoteModal(true);
+                    }}
+                    sx={{
+                      backgroundColor: "#3b82f6",
+                      "&:hover": { backgroundColor: "#2563eb" },
+                      padding: "12px",
+                    }}
+                  >
+                    Get a Quote
+                  </Button>
+                </>
+              )}
+              {/* Terms of Service */}
+
+              <p className="text-xs text-gray-500 text-center mt-4">
+                By placing a bid, you agree to our Terms of Service and M Rules
+              </p>
+            </div>
+          )}
+        </Dialog>
+
+        {/* Image Preview Dialog */}
+        <Dialog
+          open={!!selectedImage}
+          onClose={() => setSelectedImage(null)}
+          maxWidth="lg"
+        >
+          {selectedImage && (
+            <div className="p-2">
+              <img
+                src={
+                  selectedVehicle.images?.[0]?.image
+                    ? `${import.meta.env.VITE_API_BASE_URL_LOCAL}${
+                        selectedVehicle.images[0].image
+                      }`
+                    : `${import.meta.env.VITE_API_BASE_URL_DEPLOY}${
+                        selectedVehicle.images[0].image
+                      }`
+                }
+                className="w-full h-full max-h-[80vh] object-contain"
+                alt="Enlarged preview"
+              />
+            </div>
+          )}
+        </Dialog>
+
+        {/* Quote Request Dialog */}
+        <Dialog
+          open={showQuoteModal}
+          onClose={() => setShowQuoteModal(false)}
+          PaperProps={{ sx: { borderRadius: "12px", maxWidth: "500px" } }}
+        >
+          <div className="p-6">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold">Get Vehicle Quote</h3>
+              <IconButton onClick={() => setShowQuoteModal(false)}>
+                {/* Close icon */}
+              </IconButton>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                // Handle quote submission
+                setShowQuoteModal(false);
+                setSnackbar({
+                  open: true,
+                  message: "Quote request submitted successfully!",
+                  severity: "success",
+                });
+              }}
+            >
+              <div className="space-y-4">
+                <TextField
+                  fullWidth
+                  label="Full Name"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  required
+                  value={quoteForm.fullName}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, fullName: e.target.value })
+                  }
+                />
+
+                <TextField
+                  fullWidth
+                  label="Email Address"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  type="email"
+                  required
+                  value={quoteForm.email}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, email: e.target.value })
+                  }
+                />
+
+                <FormControl fullWidth sx={{ paddingBottom: "0.5rem" }}>
+                  <InputLabel>Country</InputLabel>
+                  <Select
+                    value={quoteForm.country}
+                    label="Country"
+                    sx={{ paddingBottom: "0.5rem" }}
+                    onChange={(e) =>
+                      setQuoteForm({ ...quoteForm, country: e.target.value })
+                    }
+                    required
+                  >
+                    {/* Add countries list - you might want to import a full list */}
+                    <MenuItem value="USA">United States</MenuItem>
+                    <MenuItem value="UK">United Kingdom</MenuItem>
+                    <MenuItem value="Germany">Germany</MenuItem>
+                    {/* ... more countries */}
+                  </Select>
+                </FormControl>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <TextField
+                    fullWidth
+                    label="City"
+                    sx={{ paddingBottom: "0.5rem" }}
+                    required
+                    value={quoteForm.city}
+                    onChange={(e) =>
+                      setQuoteForm({ ...quoteForm, city: e.target.value })
+                    }
+                  />
+                  <TextField
+                    fullWidth
+                    label="Telephone"
+                    sx={{ paddingBottom: "0.5rem" }}
+                    type="tel"
+                    required
+                    value={quoteForm.telephone}
+                    onChange={(e) =>
+                      setQuoteForm({ ...quoteForm, telephone: e.target.value })
+                    }
+                  />
+                </div>
+
+                <TextField
+                  fullWidth
+                  label="Address"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  multiline
+                  rows={2}
+                  value={quoteForm.address}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, address: e.target.value })
+                  }
+                />
+
+                <TextField
+                  fullWidth
+                  label="Additional Notes"
+                  sx={{ paddingBottom: "0.5rem" }}
+                  placeholder="Any specific requirements or details?"
+                  multiline
+                  rows={3}
+                  value={quoteForm.note}
+                  onChange={(e) =>
+                    setQuoteForm({ ...quoteForm, note: e.target.value })
+                  }
+                />
+
                 <Button
+                  type="submit"
                   fullWidth
                   variant="contained"
-                  onClick={() => {
-                    setSelectedVehicle(null);
-                    setShowQuoteModal(true);
-                  }}
                   sx={{
                     backgroundColor: "#3b82f6",
                     "&:hover": { backgroundColor: "#2563eb" },
-                    padding: "12px",
                   }}
                 >
-                  Get a Quote
+                  Submit Quote Request
                 </Button>
-              </>
-            )}
-            {/* Terms of Service */}
-
-            <p className="text-xs text-gray-500 text-center mt-4">
-              By placing a bid, you agree to our Terms of Service and M Rules
-            </p>
-          </div>
-        )}
-      </Dialog>
-
-      {/* Image Preview Dialog */}
-      <Dialog
-        open={!!selectedImage}
-        onClose={() => setSelectedImage(null)}
-        maxWidth="lg"
-      >
-        {selectedImage && (
-          <div className="p-2">
-            <img
-              src={
-                selectedVehicle.images?.[0]?.image
-                  ? `${import.meta.env.VITE_API_BASE_URL_LOCAL}${
-                      selectedVehicle.images[0].image
-                    }`
-                  : `${import.meta.env.VITE_API_BASE_URL_DEPLOY}${
-                      selectedVehicle.images[0].image
-                    }`
-              }
-              className="w-full h-full max-h-[80vh] object-contain"
-              alt="Enlarged preview"
-            />
-          </div>
-        )}
-      </Dialog>
-
-      {/* Quote Request Dialog */}
-      <Dialog
-        open={showQuoteModal}
-        onClose={() => setShowQuoteModal(false)}
-        PaperProps={{ sx: { borderRadius: "12px", maxWidth: "500px" } }}
-      >
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Get Vehicle Quote</h3>
-            <IconButton onClick={() => setShowQuoteModal(false)}>
-              {/* Close icon */}
-            </IconButton>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              // Handle quote submission
-              setShowQuoteModal(false);
-              setSnackbar({
-                open: true,
-                message: "Quote request submitted successfully!",
-                severity: "success",
-              });
-            }}
-          >
-            <div className="space-y-4">
-              <TextField
-                fullWidth
-                label="Full Name"
-                sx={{ paddingBottom: "0.5rem" }}
-                required
-                value={quoteForm.fullName}
-                onChange={(e) =>
-                  setQuoteForm({ ...quoteForm, fullName: e.target.value })
-                }
-              />
-
-              <TextField
-                fullWidth
-                label="Email Address"
-                sx={{ paddingBottom: "0.5rem" }}
-                type="email"
-                required
-                value={quoteForm.email}
-                onChange={(e) =>
-                  setQuoteForm({ ...quoteForm, email: e.target.value })
-                }
-              />
-
-              <FormControl fullWidth sx={{ paddingBottom: "0.5rem" }}>
-                <InputLabel>Country</InputLabel>
-                <Select
-                  value={quoteForm.country}
-                  label="Country"
-                  sx={{ paddingBottom: "0.5rem" }}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, country: e.target.value })
-                  }
-                  required
-                >
-                  {/* Add countries list - you might want to import a full list */}
-                  <MenuItem value="USA">United States</MenuItem>
-                  <MenuItem value="UK">United Kingdom</MenuItem>
-                  <MenuItem value="Germany">Germany</MenuItem>
-                  {/* ... more countries */}
-                </Select>
-              </FormControl>
-
-              <div className="grid grid-cols-2 gap-4">
-                <TextField
-                  fullWidth
-                  label="City"
-                  sx={{ paddingBottom: "0.5rem" }}
-                  required
-                  value={quoteForm.city}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, city: e.target.value })
-                  }
-                />
-                <TextField
-                  fullWidth
-                  label="Telephone"
-                  sx={{ paddingBottom: "0.5rem" }}
-                  type="tel"
-                  required
-                  value={quoteForm.telephone}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, telephone: e.target.value })
-                  }
-                />
               </div>
+            </form>
+          </div>
+        </Dialog>
 
-              <TextField
-                fullWidth
-                label="Address"
-                sx={{ paddingBottom: "0.5rem" }}
-                multiline
-                rows={2}
-                value={quoteForm.address}
-                onChange={(e) =>
-                  setQuoteForm({ ...quoteForm, address: e.target.value })
-                }
-              />
+        <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
 
-              <TextField
-                fullWidth
-                label="Additional Notes"
-                sx={{ paddingBottom: "0.5rem" }}
-                placeholder="Any specific requirements or details?"
-                multiline
-                rows={3}
-                value={quoteForm.note}
-                onChange={(e) =>
-                  setQuoteForm({ ...quoteForm, note: e.target.value })
-                }
-              />
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                sx={{
-                  backgroundColor: "#3b82f6",
-                  "&:hover": { backgroundColor: "#2563eb" },
-                }}
-              >
-                Submit Quote Request
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Dialog>
-
-      <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
-
-      {/* Snackbar for notifications */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
+        {/* Snackbar for notifications */}
+        <Snackbar
+          open={snackbar.open}
+          autoHideDuration={6000}
           onClose={() => setSnackbar({ ...snackbar, open: false })}
-          severity={snackbar.severity}
-          sx={{ width: "100%" }}
+          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
         >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+          <Alert
+            onClose={() => setSnackbar({ ...snackbar, open: false })}
+            severity={snackbar.severity}
+            sx={{ width: "100%" }}
+          >
+            {snackbar.message}
+          </Alert>
+        </Snackbar>
+      </div>
     </div>
   );
 }
