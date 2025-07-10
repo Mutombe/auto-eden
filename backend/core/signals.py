@@ -12,9 +12,14 @@ from django.core.cache import cache
 from .models import Vehicle
 
 @receiver([post_save, post_delete], sender=Vehicle)
-def invalidate_vehicle_cache(sender, instance, **kwargs):
-    keys = cache.keys('marketplace_*')
-    cache.delete_many(keys)
+def increment_marketplace_cache_version(sender, instance, **kwargs):
+    try:
+        # Increment cache version to bust all marketplace caches
+        version = cache.get('marketplace_cache_version', 1)
+        cache.set('marketplace_cache_version', version + 1)
+    except:
+        # Fallback in case cache is unavailable
+        pass
 
 @receiver(post_save, sender=Vehicle)
 def handle_new_vehicle(sender, instance, created, **kwargs):
