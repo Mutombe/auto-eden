@@ -113,7 +113,25 @@ export const createVehicle = createAsyncThunk(
       });
       return data;
     } catch (err) {
-      return rejectWithValue(err.response.data);
+            const errorData = err.response?.data;
+      let errorMessage = "Failed to create vehicle";
+      
+      if (typeof errorData === 'string') {
+        errorMessage = errorData;
+      } else if (errorData?.detail) {
+        errorMessage = errorData.detail;
+      } else if (errorData?.non_field_errors) {
+        errorMessage = errorData.non_field_errors.join(', ');
+      } else if (errorData) {
+        // Handle field-specific errors
+        const fieldErrors = Object.entries(errorData)
+          .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
+          .join('; ');
+        
+        errorMessage = `Validation errors: ${fieldErrors}`;
+      }
+      
+      return rejectWithValue(errorMessage);
     }
   }
 );
@@ -189,6 +207,7 @@ const vehicleSlice = createSlice({
   initialState: {
     items: [],
     userVehicles: [],
+    userVehiclesLoading: false,
     allVehicles: [],
     pendingVehicles: [],
     loading: false,
@@ -292,12 +311,18 @@ const vehicleSlice = createSlice({
           }
         }
       })
-
-      // User vehicles
+      .addCase(fetchUserVehicles.pending, (state) => {
+        state.userVehiclesLoading = true;
+      })
       .addCase(fetchUserVehicles.fulfilled, (state, action) => {
         state.userVehicles = action.payload;
+        state.userVehiclesLoading = false;
       })
-
+      .addCase(fetchUserVehicles.rejected, (state, action) => {
+        state.loading = false;
+        state.userVehiclesLoading = false;
+        state.error = action.payload;
+      })
       // Delete vehicle
       .addCase(deleteVehicle.fulfilled, (state, action) => {
         state.items = state.items.filter((v) => v.id !== action.payload);

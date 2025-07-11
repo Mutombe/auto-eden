@@ -116,7 +116,7 @@ const DashboardHero = ({ onAddVehicle }) => {
 export default function AdminDashboard() {
   const dispatch = useDispatch();
   const [selectedDetailsVehicle, setSelectedDetailsVehicle] = useState(null);
-  const { pendingVehicles, allVehicles, items, status, error } = useSelector(
+  const { pendingVehicles, allVehicles, items, error } = useSelector(
     (state) => state.vehicles
   );
   const { loading, error: submitError } = useSelector(
@@ -125,6 +125,9 @@ export default function AdminDashboard() {
   const { allBids } = useSelector((state) => state.bids);
 
   const [activeTab, setActiveTab] = useState(0);
+  const [verificationLoading, setVerificationLoading] = useState(false);
+  const [verificationSuccess, setVerificationSuccess] = useState(false);
+  const [verificationError, setVerificationError] = useState(null);
   const [rejectionReason, setRejectionReason] = useState("");
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
@@ -152,25 +155,43 @@ export default function AdminDashboard() {
   }, [dispatch]);
 
   useEffect(() => {
-    if (showAddModal || loading) {
+    if (!showAddModal) {
       setSubmitSuccess(false);
     }
-  }, [showAddModal, loading]);
+  }, [showAddModal]);
 
-  const handleReview = (action) => {
-    dispatch(
-      reviewVehicle({
-        id: selectedVehicle.id,
-        data: {
-          verification_state:
-            action === "approve" ? "physically_verified" : "rejected",
-          rejection_reason: action === "reject" ? rejectionReason : null,
-        },
-      })
-    ).then(() => {
-      setSelectedVehicle(null);
-      setRejectionReason("");
-    });
+  const handleReview = async (action) => {
+    setVerificationLoading(true);
+    setVerificationError(null);
+
+    try {
+      await dispatch(
+        reviewVehicle({
+          id: selectedVehicle.id,
+          data: {
+            verification_state:
+              action === "approve" ? "physically_verified" : "rejected",
+            rejection_reason: action === "reject" ? rejectionReason : null,
+          },
+        })
+      ).unwrap(); // Add this to catch rejections
+
+      setVerificationSuccess(true);
+
+      // Refresh data
+      dispatch(fetchPendingReview());
+      dispatch(fetchAllVehicles());
+
+      setTimeout(() => {
+        setSelectedVehicle(null);
+        setRejectionReason("");
+        setVerificationSuccess(false);
+      }, 2000);
+    } catch (error) {
+      setVerificationError(error.message || "Failed to review vehicle");
+    } finally {
+      setVerificationLoading(false);
+    }
   };
 
   console.log("all vehicles component", allVehicles);
@@ -184,11 +205,13 @@ export default function AdminDashboard() {
       } else {
         await dispatch(createVehicle(formData)).unwrap();
       }
-      // The onSubmissionSuccess prop will be called from VehicleDialog's useEffect
-      // when submitSuccess prop becomes true.
+
+      setSubmitSuccess(true); // ADD THIS
+      dispatch(fetchAllVehicles()); // Refetch vehicles
+      dispatch(fetchPendingReview()); // Refetch pending vehicles
     } catch (err) {
-      // The error will be handled by the VehicleDialog's useEffect via submitError prop
       console.error("Submission error:", err);
+      // Error is already handled by Redux state
     }
   };
 
@@ -196,16 +219,6 @@ export default function AdminDashboard() {
     setShowAddModal(false);
     setEditVehicle(null);
     setSubmitSuccess(false); // Reset on close
-  };
-
-  const handleSubmissionSuccess = () => {
-    setSubmitSuccess(true);
-    dispatch(fetchAllVehicles()); // Refetch user vehicles on successful submission
-  };
-
-  const handleEditClick = (vehicle) => {
-    setEditVehicle(vehicle);
-    setShowAddModal(true);
   };
 
   const handleStatusClass = (verification_state) => {
@@ -310,6 +323,9 @@ export default function AdminDashboard() {
   };
 
   const VerificationModal = ({ vehicle, onClose }) => {
+    const [verificationLoading, setVerificationLoading] = useState(false);
+    const [verificationSuccess, setVerificationSuccess] = useState(false);
+    const [verificationError, setVerificationError] = useState(null);
     const [verificationState, setVerificationState] = useState(
       vehicle.verification_state === "physically_verified"
         ? "physical"
@@ -321,7 +337,10 @@ export default function AdminDashboard() {
       vehicle.rejection_reason || ""
     );
 
-    const handleSave = () => {
+    const handleSave = async () => {
+      setVerificationLoading(true);
+      setVerificationError(null);
+
       let statusUpdate = {
         verification_state: verificationState, // Use the state directly since they now match
         rejection_reason:
@@ -333,14 +352,28 @@ export default function AdminDashboard() {
         is_rejected: verificationState === "rejected",
       };
 
-      dispatch(
-        updateVehicleStatus({
-          vehicleId: vehicle.id,
-          statusData: statusUpdate,
-        })
-      ).then(() => {
-        onClose();
-      });
+      try {
+        await dispatch(
+          updateVehicleStatus({
+            vehicleId: vehicle.id,
+            statusData: statusUpdate,
+          })
+        ).unwrap(); // Add .unwrap() to catch rejections
+
+        setVerificationSuccess(true);
+        dispatch(fetchPendingReview());
+        dispatch(fetchAllVehicles());
+        setTimeout(() => {
+          setVerificationSuccess(false);
+          onClose();
+        }, 2000);
+      } catch (error) {
+        setVerificationError(
+          error.message || "Failed to update vehicle status"
+        );
+      } finally {
+        setVerificationLoading(false);
+      }
     };
 
     return (
@@ -411,25 +444,58 @@ export default function AdminDashboard() {
                   />
                 </div>
               )}
+
+              {verificationSuccess && (
+                <div className="bg-green-50 border border-green-200 rounded-md p-3 mb-4">
+                  <div className="flex items-center">
+                    <CheckCircle className="text-green-600 mr-2" size={16} />
+                    <p className="text-green-800">
+                      Vehicle status updated successfully!
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {verificationError && (
+                <div className="bg-red-50 border border-red-200 rounded-md p-3 mb-4">
+                  <div className="flex items-center">
+                    <AlertCircle className="text-red-600 mr-2" size={16} />
+                    <p className="text-red-800">{verificationError}</p>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3">
               <button
-                onClick={onClose}
-                className="px-4 py-2 border border-gray-300 rounded-md"
-              >
-                Cancel
-              </button>
-              <button
                 onClick={handleSave}
-                disabled={verificationState === "rejected" && !rejectionReason}
-                className={`px-4 py-2 bg-red-600 text-white rounded-md ${
-                  verificationState === "rejected" && !rejectionReason
+                disabled={
+                  verificationLoading ||
+                  (verificationState === "rejected" && !rejectionReason)
+                }
+                className={`px-4 py-2 bg-red-600 text-white rounded-md flex items-center gap-2 ${
+                  verificationLoading ||
+                  (verificationState === "rejected" && !rejectionReason)
                     ? "opacity-50 cursor-not-allowed"
-                    : ""
+                    : "hover:bg-red-700"
                 }`}
               >
-                Save Changes
+                {verificationLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    Updating...
+                  </>
+                ) : verificationSuccess ? (
+                  <>
+                    <Check size={16} />
+                    Updated!
+                  </>
+                ) : (
+                  <>
+                    <Check size={16} />
+                    Save Changes
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -831,7 +897,7 @@ export default function AdminDashboard() {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {status === "loading" ? (
+                {loading ? (
                   <tr>
                     <td
                       colSpan={6}
@@ -1262,15 +1328,19 @@ export default function AdminDashboard() {
                 </button>
                 <button
                   onClick={() => handleReview("reject")}
-                  disabled={!rejectionReason}
+                  disabled={!rejectionReason || verificationLoading}
                   className={`px-4 py-2 rounded-md flex items-center gap-2 ${
-                    !rejectionReason
+                    !rejectionReason || verificationLoading
                       ? "bg-gray-300 text-gray-500 cursor-not-allowed"
                       : "bg-red-600 text-white hover:bg-red-700"
                   }`}
                 >
-                  <XCircle size={16} />
-                  Reject
+                  {verificationLoading ? (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  ) : (
+                    <XCircle size={16} />
+                  )}
+                  {verificationLoading ? "Processing..." : "Reject"}
                 </button>
                 <button
                   onClick={() => handleReview("approve")}
@@ -1311,7 +1381,9 @@ export default function AdminDashboard() {
         onClose={handleDialogClose}
         onSubmit={handleSubmit}
         editVehicle={editVehicle}
-        isSubmitting={status === "loading"}
+        isSubmitting={loading}
+        submitError={submitError} // ADD THIS
+        submitSuccess={submitSuccess} // ADD THIS
       />
     </div>
   );

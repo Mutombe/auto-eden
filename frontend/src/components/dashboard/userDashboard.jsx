@@ -205,13 +205,137 @@ const DashboardHero = ({ onAddVehicle }) => {
   );
 };
 
+// Vehicle Card Skeleton Component
+const VehicleCardSkeleton = () => (
+  <Grid item xs={12}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        borderRadius: 2,
+        border: "1px solid #eee",
+      }}
+    >
+      <Box
+        display="flex"
+        flexDirection={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+      >
+        <Box flex={1}>
+          <Skeleton variant="text" width={250} height={32} sx={{ mb: 1 }} />
+          <Skeleton variant="text" width={100} height={28} sx={{ mb: 2 }} />
+          <Box display="flex" gap={1} flexWrap="wrap">
+            <Skeleton variant="rounded" width={80} height={24} />
+            <Skeleton variant="rounded" width={120} height={24} />
+            <Skeleton variant="rounded" width={90} height={24} />
+          </Box>
+        </Box>
+        <Box display="flex" gap={1} mt={{ xs: 2, sm: 0 }}>
+          <Skeleton variant="circular" width={40} height={40} />
+          <Skeleton variant="circular" width={40} height={40} />
+          <Skeleton variant="circular" width={40} height={40} />
+        </Box>
+      </Box>
+    </Paper>
+  </Grid>
+);
+
+// Bid Card Skeleton Component
+const BidCardSkeleton = () => (
+  <Grid item xs={12}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        borderRadius: 2,
+        border: "1px solid #eee",
+      }}
+    >
+      <Box
+        display="flex"
+        flexDirection={{ xs: "column", sm: "row" }}
+        justifyContent="space-between"
+        alignItems={{ xs: "flex-start", sm: "center" }}
+      >
+        <Box flex={1} mr={2}>
+          <Box display="flex" alignItems="center" gap={2} mb={1.5}>
+            <Skeleton variant="text" width={200} height={30} />
+          </Box>
+          <Box display="flex" gap={1}>
+            <Skeleton variant="rounded" width={140} height={24} />
+            <Skeleton variant="rounded" width={120} height={24} />
+          </Box>
+        </Box>
+        <Box minWidth={200} mt={{ xs: 2, sm: 0 }}>
+          <Box display="flex" alignItems="center" gap={1} mb={1}>
+            <Skeleton variant="circular" width={32} height={32} />
+            <Skeleton variant="text" width={100} height={20} />
+          </Box>
+          <Box display="flex" justifyContent="space-between" alignItems="center">
+            <Skeleton variant="text" width={80} height={24} />
+            <Skeleton variant="rounded" width={60} height={24} />
+          </Box>
+          <Skeleton variant="text" width={120} height={16} />
+        </Box>
+      </Box>
+    </Paper>
+  </Grid>
+);
+
+// Search Card Skeleton Component
+const SearchCardSkeleton = () => (
+  <Grid item xs={12}>
+    <Paper
+      elevation={0}
+      sx={{
+        p: 3,
+        borderRadius: 2,
+        border: "1px solid #eee",
+      }}
+    >
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
+      >
+        <Box flex={1}>
+          <Skeleton variant="text" width={280} height={32} sx={{ mb: 1 }} />
+          <Box display="flex" gap={1} flexWrap="wrap">
+            <Skeleton variant="rounded" width={120} height={24} />
+            <Skeleton variant="rounded" width={140} height={24} />
+            <Skeleton variant="rounded" width={80} height={24} />
+            <Skeleton variant="rounded" width={90} height={24} />
+          </Box>
+        </Box>
+        <Box display="flex" gap={1}>
+          <Skeleton variant="circular" width={40} height={40} />
+          <Skeleton variant="circular" width={40} height={40} />
+        </Box>
+      </Box>
+    </Paper>
+  </Grid>
+);
+
+// Multiple Skeleton Loaders Component
+const SkeletonList = ({ count = 3, type = "vehicle" }) => {
+  const SkeletonComponent = 
+    type === "vehicle" ? VehicleCardSkeleton :
+    type === "bid" ? BidCardSkeleton :
+    SearchCardSkeleton;
+
+  return (
+    <Grid container spacing={3}>
+      {Array.from({ length: count }).map((_, index) => (
+        <SkeletonComponent key={index} />
+      ))}
+    </Grid>
+  );
+};
+
 export default function DashboardPage() {
   const dispatch = useDispatch();
-  const { userVehicles, status } = useSelector((state) => state.vehicles);
-  const { loading, error: submitError } = useSelector(
-    (state) => state.vehicles
-  );
-  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const { userVehicles, userVehiclesLoading, loading, error } = useSelector((state) => state.vehicles);
   const { items: bids, status: bidStatus } = useSelector((state) => state.bids);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showSearchModal, setShowSearchModal] = useState(false);
@@ -222,6 +346,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState(0);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editVehicle, setEditVehicle] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
 
   // For responsive design
   const theme = useTheme();
@@ -233,11 +358,12 @@ export default function DashboardPage() {
     dispatch(fetchUserSearches());
   }, [dispatch]);
 
+  // Reset submitSuccess when modal opens
   useEffect(() => {
-    if (showAddModal || loading) {
+    if (showAddModal) {
       setSubmitSuccess(false);
     }
-  }, [showAddModal, loading]);
+  }, [showAddModal]);
 
   const handleSubmit = async (formData) => {
     try {
@@ -248,23 +374,20 @@ export default function DashboardPage() {
       } else {
         await dispatch(createVehicle(formData)).unwrap();
       }
-      // The onSubmissionSuccess prop will be called from VehicleDialog's useEffect
-      // when submitSuccess prop becomes true.
+      // Set success state
+      setSubmitSuccess(true);
+      // Refetch vehicles
+      dispatch(fetchUserVehicles());
     } catch (err) {
-      // The error will be handled by the VehicleDialog's useEffect via submitError prop
       console.error("Submission error:", err);
+      // Error will be handled via the error prop
     }
   };
 
   const handleDialogClose = () => {
     setShowAddModal(false);
     setEditVehicle(null);
-    setSubmitSuccess(false); // Reset on close
-  };
-
-  const handleSubmissionSuccess = () => {
-    setSubmitSuccess(true);
-    dispatch(fetchUserVehicles()); // Refetch user vehicles on successful submission
+    setSubmitSuccess(false);
   };
 
   const handleEditClick = (vehicle) => {
@@ -363,6 +486,7 @@ export default function DashboardPage() {
       )}
     </Paper>
   );
+
   const BidItem = ({ bid }) => {
     const dispatch = useDispatch();
     const { user } = useSelector((state) => state.auth);
@@ -434,12 +558,6 @@ export default function DashboardPage() {
                     size="small"
                     icon={<Gauge size={14} />}
                   />
-                  {/*<Chip
-                  label={`VIN: ${vehicle.vin || 'Not Available'}`}
-                  variant="outlined"
-                  size="small"
-                  icon={<Shield size={14} />}
-                />*/}
                 </Box>
               ) : (
                 <Box display="flex" gap={1}>
@@ -573,15 +691,14 @@ export default function DashboardPage() {
                   startIcon={<Plus size={16} />}
                   onClick={() => setShowAddModal(true)}
                   size={isMobile ? "small" : "medium"}
+                  disabled={userVehiclesLoading}
                 >
                   Add Car
                 </Button>
               </Box>
 
-              {status === "loading" ? (
-                <Box display="flex" justifyContent="center" p={4}>
-                  <CircularProgress color="primary" />
-                </Box>
+              {userVehiclesLoading ? (
+                <SkeletonList count={3} type="vehicle" />
               ) : userVehicles?.length === 0 ? (
                 <EmptyState type="vehicles" />
               ) : (
@@ -694,16 +811,14 @@ export default function DashboardPage() {
                 </Grid>
               )}
             </Box>
-          ) : (
+          ) : activeTab === 1 ? (
             <Box>
               <Typography variant="h6" component="h2" mb={3}>
                 Your Bids
               </Typography>
 
               {bidStatus === "loading" ? (
-                <Box display="flex" justifyContent="center" p={4}>
-                  <CircularProgress color="primary" />
-                </Box>
+                <SkeletonList count={3} type="bid" />
               ) : bids?.length === 0 ? (
                 <EmptyState type="bids" />
               ) : (
@@ -714,9 +829,7 @@ export default function DashboardPage() {
                 </Grid>
               )}
             </Box>
-          )}
-
-          {activeTab === 2 && (
+          ) : (
             <Box>
               <Box
                 display="flex"
@@ -732,15 +845,14 @@ export default function DashboardPage() {
                   startIcon={<Plus size={16} />}
                   onClick={() => setShowSearchModal(true)}
                   size={isMobile ? "small" : "medium"}
+                  disabled={searchStatus === "loading"}
                 >
                   New Search
                 </Button>
               </Box>
 
               {searchStatus === "loading" ? (
-                <Box display="flex" justifyContent="center" p={4}>
-                  <CircularProgress color="primary" />
-                </Box>
+                <SkeletonList count={3} type="search" />
               ) : searches?.length === 0 ? (
                 <EmptyState type="searches" />
               ) : (
@@ -835,7 +947,9 @@ export default function DashboardPage() {
         onClose={handleDialogClose}
         onSubmit={handleSubmit}
         editVehicle={editVehicle}
-        isSubmitting={status === "loading"}
+        isSubmitting={loading}
+        submitError={error}
+        submitSuccess={submitSuccess}
       />
 
       <VehicleDetailsModal
@@ -848,7 +962,9 @@ export default function DashboardPage() {
         open={showSearchModal}
         onClose={handleSearchModalClose}
         editSearch={editSearch}
+        createSearch={createSearch}
       />
     </ThemeProvider>
   );
 }
+
