@@ -3,6 +3,8 @@ from .models import QuoteRequest, Vehicle, VehicleImage, Bid, Profile, User, Veh
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.conf import settings
+import logging
+logger = logging.getLogger(__name__)
 
 class UserSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -84,7 +86,8 @@ class VehicleSerializer(serializers.ModelSerializer):
             'mileage': {'required': True},
             'listing_type': {'required': False},
             'price': {'required': False},  # Not required for instant sale
-            'proposed_price': {'required': False} 
+            'proposed_price': {'required': False},
+            'description': {'required': False},
         }
 
     def validate(self, data):
@@ -98,13 +101,18 @@ class VehicleSerializer(serializers.ModelSerializer):
             )
         return data
 
+    
     def create(self, validated_data):
-        image_files = validated_data.pop('image_files')
+        image_files = validated_data.pop('image_files', [])  # Handle missing images gracefully
         vehicle = super().create(validated_data)
         
         for image_file in image_files:
-            VehicleImage.objects.create(vehicle=vehicle, image=image_file)
-            
+            # Add error handling for image creation
+            try:
+                VehicleImage.objects.create(vehicle=vehicle, image=image_file)
+            except Exception as e:
+                logger.error(f"Error creating VehicleImage: {str(e)}")
+
         return vehicle
     
 class VehicleListSerializer(serializers.ModelSerializer):
@@ -187,33 +195,6 @@ class SimpleBidSerializer(serializers.ModelSerializer):
         model = Bid
         fields = ['id', 'amount', 'bidder', 'created_at', 'message', 'status']
         
-class VehicleDetailSerializer(serializers.ModelSerializer):
-    owner = serializers.StringRelatedField()
-    bids = SimpleBidSerializer(many=True, read_only=True)
-    images = VehicleImageSerializer(many=True, read_only=True)
-    bid_count = serializers.SerializerMethodField()  # Change this line
-    similar_vehicles = serializers.SerializerMethodField()
-    
-    class Meta:
-        model = Vehicle
-        fields = [
-            'id', 'make', 'model', 'year', 'price', 'mileage', 
-            'verification_state', 'vin', 'location', 'description',
-            'body_type', 'transmission', 'fuel_type', 'color', 'features',
-            'listing_type', 'proposed_price', 'is_visible', 'created_at',
-            'owner', 'bids', 'images', 'bid_count', 'similar_vehicles'
-        ]
-        depth = 1
-    
-    def get_bid_count(self, obj):  # Add this method
-        return obj.bids.count()
-    
-    def get_similar_vehicles(self, obj):
-        # Get 3 similar vehicles (same make or body type)
-        similar = Vehicle.objects.filter(
-            Q(make=obj.make) | Q(body_type=obj.body_type)
-        ).exclude(id=obj.id)[:3]
-        return VehicleSerializer(similar, many=True).data
         
 class VehicleSearchSerializer(serializers.ModelSerializer):
     class Meta:

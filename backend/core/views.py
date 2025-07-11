@@ -6,9 +6,7 @@ from .models import Vehicle, Bid, Profile, User, VehicleSearch
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from .serializers import (
-    PublicVehicleSerializer,
     QuoteRequestSerializer,
-    VehicleDetailSerializer,
     VehicleListSerializer,
     VehicleReviewSerializer,
     VehicleSearchSerializer,
@@ -117,7 +115,7 @@ class PublicVehicleViewSet(viewsets.ReadOnlyModelViewSet):
 
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
-    permission_classes = [permissions.IsAuthenticated, IsOwnerOrAdmin]
+    permission_classes = [permissions.AllowAny]
     parser_classes = [MultiPartParser, JSONParser]
 
     def get_queryset(self):
@@ -291,6 +289,19 @@ class VehicleViewSet(viewsets.ModelViewSet):
         )
 
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+    
+    def create(self, request, *args, **kwargs):
+        logger.info(f"Vehicle creation request by {request.user}")
+        logger.debug(f"Request data: {request.data}")
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Vehicle creation failed: {str(e)}")
+            logger.exception("Full traceback:")
+            return Response(
+                {"detail": "Internal server error"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
 
 class VehicleSearchViewSet(viewsets.ModelViewSet):
