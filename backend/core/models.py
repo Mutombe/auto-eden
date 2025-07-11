@@ -83,6 +83,11 @@ class Vehicle(models.Model):
     )
     physically_verified_at = models.DateTimeField(null=True, blank=True)
     rejected_at = models.DateTimeField(null=True, blank=True)
+    description = models.TextField(
+        blank=True,
+        null=True,
+        default="No description provided"
+    )
     owner = models.ForeignKey(User, on_delete=models.CASCADE)
     make = models.CharField(max_length=100)
     model = models.CharField(max_length=100)

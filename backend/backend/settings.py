@@ -150,10 +150,10 @@ WSGI_APPLICATION = "backend.wsgi.application"
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'autoeden_weatherfat',
-        'USER': 'autoeden_weatherfat',
-        'PASSWORD': '834e99407bfeaf721e0f2a482be7b2f6afad7eab',
-        'HOST': 'xs3gi.h.filess.io',
+        'NAME': 'autoeden_dinnercoat',
+        'USER': 'autoeden_dinnercoat',
+        'PASSWORD': 'e28eab23b29b3f0de748c00e8bf58f0c57f33cd0',
+        'HOST': '9q7a1c.h.filess.io',
         'PORT': '5434',
         'CONN_MAX_AGE': 0,
         'OPTIONS': {
