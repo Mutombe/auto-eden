@@ -33,6 +33,7 @@ const VehicleDialog = ({
     mileage: "",
     fuel_type: "petrol",
     vin: "",
+    description: "", 
     listingType: "marketplace",
     images: [],
   });
@@ -42,8 +43,13 @@ const VehicleDialog = ({
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
   const [snackbarSeverity, setSnackbarSeverity] = useState("success");
+  const [formError, setFormError] = useState(null);
 
   // Initialize form with editVehicle data when it changes
+  useEffect(() => {
+    if (open) setFormError(null);
+  }, [open]);
+
   useEffect(() => {
     if (editVehicle) {
       setFormData({
@@ -54,20 +60,23 @@ const VehicleDialog = ({
         mileage: editVehicle.mileage || "",
         fuel_type: editVehicle.fuel_type || "petrol",
         vin: editVehicle.vin || "",
+        description: editVehicle.description || "", 
         listingType: editVehicle.listing_type || "marketplace",
         images: editVehicle.images || [],
       });
 
       // If editVehicle has images, set them as preview URLs
       if (editVehicle.images && editVehicle.images.length > 0) {
-        const urls = editVehicle.images.map(image => {
-          if (typeof image === 'string') {
-            return image; // It's already a URL
-          } else if (image instanceof File) {
-            return URL.createObjectURL(image);
-          }
-          return null;
-        }).filter(Boolean);
+        const urls = editVehicle.images
+          .map((image) => {
+            if (typeof image === "string") {
+              return image; // It's already a URL
+            } else if (image instanceof File) {
+              return URL.createObjectURL(image);
+            }
+            return null;
+          })
+          .filter(Boolean);
         setPreviewUrls(urls);
       }
     } else {
@@ -80,6 +89,7 @@ const VehicleDialog = ({
         mileage: "",
         fuel_type: "petrol",
         vin: "",
+        description: "", 
         listingType: "marketplace",
         images: [],
       });
@@ -87,21 +97,6 @@ const VehicleDialog = ({
       setImageFiles([]);
     }
   }, [editVehicle]);
-
-  // Show snackbar when there's a success or error from parent
-  useEffect(() => {
-    if (submitError) {
-      setSnackbarMessage(submitError);
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
-    } else if (submitSuccess) {
-      setSnackbarMessage(
-        editVehicle ? "Vehicle updated successfully!" : "Vehicle added successfully!"
-      );
-      setSnackbarSeverity("success");
-      setSnackbarOpen(true);
-    }
-  }, [submitError, submitSuccess, editVehicle]);
 
   const validateForm = () => {
     const errors = {};
@@ -131,13 +126,15 @@ const VehicleDialog = ({
       setImageFiles([...imageFiles, ...files]);
 
       // Create preview URLs for display - only for File objects
-      const newPreviewUrls = files.map((file) => {
-        if (file instanceof File) {
-          return URL.createObjectURL(file);
-        }
-        return null;
-      }).filter(Boolean);
-      
+      const newPreviewUrls = files
+        .map((file) => {
+          if (file instanceof File) {
+            return URL.createObjectURL(file);
+          }
+          return null;
+        })
+        .filter(Boolean);
+
       setPreviewUrls([...previewUrls, ...newPreviewUrls]);
 
       // Update form data with file objects
@@ -173,7 +170,7 @@ const VehicleDialog = ({
 
       const updatedPreviews = [...previewUrls];
       // Find the index in previewUrls (after existing images)
-      const newImageIndex = (formData.images.length - imageFiles.length) + index;
+      const newImageIndex = formData.images.length - imageFiles.length + index;
       if (updatedPreviews[newImageIndex]) {
         URL.revokeObjectURL(updatedPreviews[newImageIndex]);
       }
@@ -194,9 +191,7 @@ const VehicleDialog = ({
   const handleSubmit = () => {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
-      setSnackbarMessage("Please fill all required fields");
-      setSnackbarSeverity("error");
-      setSnackbarOpen(true);
+      setFormError("Please fill all required fields"); // Set form-level error
       return;
     }
 
@@ -209,6 +204,7 @@ const VehicleDialog = ({
     formDataObj.append("mileage", formData.mileage);
     formDataObj.append("fuel_type", formData.fuel_type);
     formDataObj.append("vin", formData.vin);
+    formDataObj.append("description", formData.description); 
     formDataObj.append("listing_type", formData.listingType);
 
     // Append price based on listing type
@@ -226,7 +222,8 @@ const VehicleDialog = ({
     // If editing, include the remaining existing images
     if (editVehicle) {
       formData.images.forEach((image, index) => {
-        if (typeof image === 'string') { // It's an existing image URL
+        if (typeof image === "string") {
+          // It's an existing image URL
           formDataObj.append(`existing_images[${index}]`, image);
         }
       });
@@ -235,17 +232,56 @@ const VehicleDialog = ({
     onSubmit(formDataObj);
   };
 
-  const handleClose = () => {
+    const handleClose = () => {
     // Clean up preview URLs to prevent memory leaks
     previewUrls.forEach((url) => {
       if (url) {
         URL.revokeObjectURL(url);
       }
     });
+
+    // Reset form state
     setPreviewUrls([]);
     setImageFiles([]);
+    setFormData({
+      make: "",
+      model: "",
+      year: new Date().getFullYear(),
+      price: "",
+      mileage: "",
+      fuel_type: "petrol",
+      vin: "",
+      listingType: "marketplace",
+      images: [],
+    });
+    setFormError(null);
+
+    // Close the dialog
     onClose();
   };
+  // Inside VehicleDialog component
+  useEffect(() => {
+    if (submitSuccess) {
+      setSnackbarMessage(
+        editVehicle
+          ? "Vehicle updated successfully!"
+          : "Vehicle added successfully!"
+      );
+      setSnackbarSeverity("success");
+      setSnackbarOpen(true);
+
+      // Close dialog after success
+      setTimeout(() => {
+        handleClose();
+      }, 2000);
+    }
+  }, [submitSuccess, editVehicle, handleClose]);
+
+  useEffect(() => {
+    if (submitError) {
+      setFormError(submitError);
+    }
+  }, [submitError]);
 
   const handleSnackbarClose = (event, reason) => {
     if (reason === "clickaway") {
@@ -265,6 +301,11 @@ const VehicleDialog = ({
           </Typography>
         </DialogTitle>
         <DialogContent>
+          {formError && (
+            <Alert severity="error" sx={{ mb: 2 }}>
+              {formError}
+            </Alert>
+          )}
           <Box
             component="form"
             sx={{ mt: 2, display: "flex", flexDirection: "column", gap: 3 }}
@@ -349,6 +390,16 @@ const VehicleDialog = ({
               variant="outlined"
               InputProps={{ inputProps: { min: 0 } }}
             />
+          <TextField
+          fullWidth
+          label="Description"
+          name="description"
+          value={formData.description}
+          onChange={handleInputChange}
+          multiline
+          rows={4}
+          variant="outlined"
+        />
 
             <Select
               fullWidth
@@ -380,7 +431,9 @@ const VehicleDialog = ({
                     backgroundColor: "rgba(0,0,0,0.02)",
                   },
                 }}
-                onClick={() => document.getElementById("vehicle-images").click()}
+                onClick={() =>
+                  document.getElementById("vehicle-images").click()
+                }
               >
                 <Upload size={24} color="#666" />
                 <Typography variant="body2" color="text.secondary" mt={1}>
@@ -389,7 +442,7 @@ const VehicleDialog = ({
                 <input
                   id="vehicle-images"
                   type="file"
-                  accept="image/jpeg,image/png"
+                  accept="image/jpeg,image/png,image/jpg,image/gif,image/webp,image/svg+xml"
                   multiple
                   onChange={handleFileChange}
                   style={{ display: "none" }}
@@ -397,7 +450,7 @@ const VehicleDialog = ({
               </Box>
 
               {/* Image Previews */}
-              {(previewUrls.length > 0) && (
+              {previewUrls.length > 0 && (
                 <Grid container spacing={1} sx={{ mt: 1 }}>
                   {previewUrls.map((url, index) => (
                     <Grid item xs={4} sm={3} key={`image-${index}`}>
@@ -419,12 +472,17 @@ const VehicleDialog = ({
                           }}
                           onError={(e) => {
                             console.error("Failed to load image:", url);
-                            e.target.style.display = 'none';
+                            e.target.style.display = "none";
                           }}
                         />
                         <IconButton
                           size="small"
-                          onClick={() => removeImage(index, typeof formData.images[index] === 'string')}
+                          onClick={() =>
+                            removeImage(
+                              index,
+                              typeof formData.images[index] === "string"
+                            )
+                          }
                           sx={{
                             position: "absolute",
                             top: 0,
