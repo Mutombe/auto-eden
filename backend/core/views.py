@@ -3,6 +3,7 @@ from urllib.parse import urlencode
 from django.core.cache import cache
 from rest_framework import viewsets, permissions
 from .models import Vehicle, Bid, Profile, User, VehicleSearch
+
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from .serializers import (
@@ -17,6 +18,7 @@ from .serializers import (
     ProfileSerializer,
     UserSerializer,
 )
+
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .permissions import IsOwnerOrAdmin
@@ -36,6 +38,8 @@ from .tasks import send_vehicle_approved_email, send_vehicle_rejected_email
 from xhtml2pdf import pisa
 from io import BytesIO
 import logging
+from django.contrib.postgres.search import SearchVector
+
 
 logger = logging.getLogger(__name__)
 
@@ -396,6 +400,25 @@ class MarketplaceView(APIView):
         max_price = request.query_params.get("maxPrice")
         if max_price:
             vehicles = vehicles.filter(price__lte=max_price)
+        make = request.query_params.get("make")
+        if make:
+            vehicles = vehicles.filter(make__iexact=make)
+        model = request.query_params.get("model")
+        if model:
+            vehicles = vehicles.filter(model__iexact=model)
+        year = request.query_params.get("year")
+        if year:
+            vehicles = vehicles.filter(year=year)
+        
+        body_type = request.query_params.get("body_type")
+        if body_type:
+            vehicles = vehicles.filter(body_type__iexact=body_type)
+        search_term = request.query_params.get("search_term")
+        if search_term:
+            # Use PostgreSQL full-text search if available
+            vehicles = vehicles.annotate(
+                search=SearchVector('make', 'model', 'description')
+            ).filter(search=search_term)
 
         # Sorting
         sort_by = request.query_params.get("sortBy")

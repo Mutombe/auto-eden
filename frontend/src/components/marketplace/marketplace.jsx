@@ -188,6 +188,21 @@ export default function MarketplacePage() {
     page: 1, // Add this
     page_size: 12, // Add this
   });
+  // In MarketplacePage.jsx
+// Convert filter names to snake_case before sending
+const backendFilters = {
+  min_price: filters.minPrice,
+  max_price: filters.maxPrice,
+  make: filters.make,
+  year: filters.year,
+  sort_by: filters.sortBy,
+  body_type: filters.bodyType,
+  fuel_type: filters.fuelType,
+  search_term: filters.searchTerm,
+  page: filters.page,
+  page_size: filters.page_size
+};
+
   const [authModal, setAuthModal] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [bidAmount, setBidAmount] = useState("");
@@ -221,13 +236,28 @@ export default function MarketplacePage() {
   // Fuel types
   const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"];
 
-  useEffect(() => {
+useEffect(() => {
     setIsLoading(true);
-    // Pass filters to fetchMarketplace
-    dispatch(fetchMarketplace(filters))
+    
+    // Convert frontend filters to backend format
+    const backendFilters = {
+      min_price: filters.minPrice,
+      max_price: filters.maxPrice,
+      make: filters.make,
+      year: filters.year,
+      sort_by: filters.sortBy,
+      body_type: filters.bodyType,
+      fuel_type: filters.fuelType,
+      search_term: filters.searchTerm,
+      page: filters.page,
+      page_size: filters.page_size
+    };
+
+    dispatch(fetchMarketplace(backendFilters))
       .then(() => setIsLoading(false))
       .catch(() => setIsLoading(false));
   }, [dispatch, filters]);
+
 
   const handlePageChange = (newPage) => {
     setFilters((prev) => ({
