@@ -111,18 +111,28 @@ SIMPLE_JWT = {
 }
 
 # Email Configuration (Development)
-#EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
 # settings.py
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-EMAIL_HOST = 'smtp.hostinger.com'  # Hostinger's SMTP server
-EMAIL_PORT = 587  # 465 for SSL
-EMAIL_USE_TLS = True  # Use False if using port 465
-EMAIL_USE_SSL = False  # Use True if using port 465
-EMAIL_HOST_USER = 'admin@autoeden.co.zw'
-EMAIL_HOST_PASSWORD = 'Admin@AutoEden2060'  # Password you set in Hostinger email account
-DEFAULT_FROM_EMAIL = 'Auto Eden <admin@autoeden.co.zw>'
-SERVER_EMAIL = 'admin@autoeden.co.zw'  # For error notifications
-ADMIN_EMAIL = []  # Admin email for notifications
+
+EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
+EMAIL_HOST = 'smtp.gmail.com'
+EMAIL_PORT = 587
+EMAIL_HOST_USER = 'simbamtombe@gmail.com'  # Your Gmail address
+EMAIL_HOST_PASSWORD = 'itzh jjkc hdmv csih'
+DEFAULT_FROM_EMAIL = 'noreply@hospital.com'
+EMAIL_USE_TLS = True
+EMAIL_USE_SSL = False
+
+#EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+#EMAIL_HOST = 'smtp.hostinger.com'  # Hostinger's SMTP server
+#EMAIL_PORT = 587  # 465 for SSL
+#EMAIL_USE_TLS = True  # Use False if using port 465
+#EMAIL_USE_SSL = False  # Use True if using port 465
+#EMAIL_HOST_USER = 'admin@autoeden.co.zw'
+#EMAIL_HOST_PASSWORD = 'Admin@AutoEden2060'  # Password you set in Hostinger email account
+#DEFAULT_FROM_EMAIL = 'Auto Eden <admin@autoeden.co.zw>'
+
+SERVER_EMAIL = 'admin@autoeden.co.zw'  
+ADMIN_EMAIL = ['simbamtombe@gmail.com', 'simbarashemutombe1@gmail.com', 'admin@autoeden.co.zw'] 
 AUTHENTICATION_BACKENDS = [
    'django.contrib.auth.backends.ModelBackend',
 ]
