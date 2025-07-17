@@ -146,6 +146,99 @@ function TabPanel({ children, value, index, ...other }) {
   );
 }
 
+function VehicleMetaTags({ vehicle }) {
+  if (!vehicle) return null;
+
+  const title = `${vehicle.year} ${vehicle.make} ${vehicle.model} - Auto Eden`;
+  const description = `${vehicle.year} ${vehicle.make} ${vehicle.model} for $${vehicle.price?.toLocaleString()} - ${vehicle.body_type || 'Sedan'} with ${vehicle.mileage?.toLocaleString()}km. ${vehicle.is_physically_verified ? 'Physically verified' : 'Digitally verified'} vehicle on Auto Eden.`;
+  const image = vehicle.images?.[0]?.image || 'https://autoeden.co.zw/default-car-image.jpg';
+  const url = `https://autoeden.co.zw/vehicles/${vehicle.id}`;
+
+  return (
+    <Helmet>
+      {/* Basic Meta Tags */}
+      <title>{title}</title>
+      <meta name="description" content={description} />
+      <meta name="keywords" content={`${vehicle.make}, ${vehicle.model}, ${vehicle.year}, car, vehicle, auto, zimbabwe, harare, for sale`} />
+      
+      {/* Open Graph Meta Tags */}
+      <meta property="og:type" content="product" />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={image} />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+      <meta property="og:url" content={url} />
+      <meta property="og:site_name" content="Auto Eden" />
+      <meta property="og:locale" content="en_US" />
+      
+      {/* Product specific Open Graph tags */}
+      <meta property="product:price:amount" content={vehicle.price} />
+      <meta property="product:price:currency" content="USD" />
+      <meta property="product:condition" content="used" />
+      <meta property="product:availability" content="in stock" />
+      <meta property="product:brand" content={vehicle.make} />
+      <meta property="product:category" content="Vehicles" />
+      
+      {/* Twitter Card Meta Tags */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:site" content="@AutoEdenZW" />
+      <meta name="twitter:creator" content="@AutoEdenZW" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={image} />
+      
+      {/* Additional Meta Tags */}
+      <meta name="robots" content="index, follow" />
+      <meta name="author" content="Auto Eden Motors" />
+      <link rel="canonical" href={url} />
+      
+      {/* Structured Data for better SEO */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org/",
+          "@type": "Car",
+          "name": `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+          "description": description,
+          "image": image,
+          "brand": {
+            "@type": "Brand",
+            "name": vehicle.make
+          },
+          "model": vehicle.model,
+          "vehicleModelDate": vehicle.year,
+          "mileageFromOdometer": {
+            "@type": "QuantitativeValue",
+            "value": vehicle.mileage,
+            "unitCode": "KMT"
+          },
+          "offers": {
+            "@type": "Offer",
+            "url": url,
+            "priceCurrency": "USD",
+            "price": vehicle.price,
+            "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+            "itemCondition": "https://schema.org/UsedCondition",
+            "availability": "https://schema.org/InStock",
+            "seller": {
+              "@type": "Organization",
+              "name": "Auto Eden Motors",
+              "url": "https://autoeden.co.zw"
+            }
+          },
+          "manufacturer": {
+            "@type": "Organization",
+            "name": vehicle.make
+          },
+          "vehicleConfiguration": vehicle.body_type,
+          "fuelType": vehicle.fuel_type || "Gasoline",
+          "url": url
+        })}
+      </script>
+    </Helmet>
+  );
+}
+
 export default function CarDetailsPage() {
   const { vehicleId } = useParams();
   const navigate = useNavigate();
@@ -159,13 +252,6 @@ export default function CarDetailsPage() {
   } = useSelector((state) => state.vehicles);
 
   const { isAuthenticated } = useSelector((state) => state.auth);
-
-  const previewImage = useMemo(() => {
-    if (currentVehicle?.images?.length > 0) {
-      return currentVehicle.images[0].image;
-    }
-    return "https://autoeden.co.zw/1.png"; // Fallback image
-  }, [currentVehicle]);
 
   const [bidAmount, setBidAmount] = useState("");
   const [bidMessage, setBidMessage] = useState("");
@@ -192,31 +278,7 @@ export default function CarDetailsPage() {
     open: false,
     message: "",
     severity: "success",
-  });
-
-  // Mock images for demo
-  const mockImages = [
-    {
-      image:
-        "https://images.unsplash.com/photo-1605559424843-9e4c228bf1c2?w=800&h=600&fit=crop",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1549317661-bd32c8ce0db2?w=800&h=600&fit=crop",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1552519507-da3b142c6e3d?w=800&h=600&fit=crop",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1606664515524-ed2f786a0bd6?w=800&h=600&fit=crop",
-    },
-    {
-      image:
-        "https://images.unsplash.com/photo-1544636331-e26879cd4d9b?w=800&h=600&fit=crop",
-    },
-  ];
+  })
 
   // Get recommendations (similar vehicles)
   const recommendations = useMemo(() => {
@@ -354,16 +416,11 @@ export default function CarDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-          <Helmet>
-        <meta property="og:title" content={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} />
-        <meta property="og:description" content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`} />
-        <meta property="og:image" content={previewImage} />
-        <meta property="og:url" content={window.location.href} />
-        <meta name="twitter:card" content="summary_large_image" />
-      </Helmet>
       <div style={{ background: "red", color: "white", padding: "10px" }}>
         TEST: Component is rendering
       </div>
+      {/* Meta Tags */}
+      <VehicleMetaTags vehicle={vehicle} />
       {/* Header */}
       <div className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
