@@ -151,8 +151,25 @@ function VehicleMetaTags({ vehicle }) {
 
   const title = `${vehicle.year} ${vehicle.make} ${vehicle.model} - Auto Eden`;
   const description = `${vehicle.year} ${vehicle.make} ${vehicle.model} for $${vehicle.price?.toLocaleString()} - ${vehicle.body_type || 'Sedan'} with ${vehicle.mileage?.toLocaleString()}km. ${vehicle.is_physically_verified ? 'Physically verified' : 'Digitally verified'} vehicle on Auto Eden.`;
-  const image = vehicle.images?.[0]?.image || 'https://autoeden.co.zw/default-car-image.jpg';
-  const url = `https://autoeden.co.zw/vehicles/${vehicle.id}`;
+  
+  // Fix 1: Ensure absolute URL for images
+  const baseUrl = 'https://autoeden.co.zw';
+  const defaultImage = `${baseUrl}/default-car-image.jpg`;
+  
+  // Fix 2: Get the first valid image or use default
+  const getImageUrl = () => {
+    if (vehicle.images && vehicle.images.length > 0) {
+      const firstImage = vehicle.images[0]?.image;
+      if (firstImage) {
+        // If it's already absolute, use it; otherwise make it absolute
+        return firstImage.startsWith('http') ? firstImage : `${baseUrl}${firstImage}`;
+      }
+    }
+    return defaultImage;
+  };
+  
+  const image = getImageUrl();
+  const url = `${baseUrl}/vehicles/${vehicle.id}`;
 
   return (
     <Helmet>
@@ -161,32 +178,30 @@ function VehicleMetaTags({ vehicle }) {
       <meta name="description" content={description} />
       <meta name="keywords" content={`${vehicle.make}, ${vehicle.model}, ${vehicle.year}, car, vehicle, auto, zimbabwe, harare, for sale`} />
       
-      {/* Open Graph Meta Tags */}
-      <meta property="og:type" content="product" />
+      {/* Open Graph Meta Tags - Fixed */}
+      <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
       <meta property="og:image" content={image} />
+      <meta property="og:image:secure_url" content={image} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
+      <meta property="og:image:alt" content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`} />
       <meta property="og:url" content={url} />
       <meta property="og:site_name" content="Auto Eden" />
       <meta property="og:locale" content="en_US" />
       
-      {/* Product specific Open Graph tags */}
-      <meta property="product:price:amount" content={vehicle.price} />
-      <meta property="product:price:currency" content="USD" />
-      <meta property="product:condition" content="used" />
-      <meta property="product:availability" content="in stock" />
-      <meta property="product:brand" content={vehicle.make} />
-      <meta property="product:category" content="Vehicles" />
-      
-      {/* Twitter Card Meta Tags */}
+      {/* Twitter Card Meta Tags - Fixed */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@AutoEdenZW" />
       <meta name="twitter:creator" content="@AutoEdenZW" />
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
+      <meta name="twitter:image:alt" content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`} />
+      
+      {/* WhatsApp specific (uses Open Graph) */}
+      <meta property="og:image:type" content="image/jpeg" />
       
       {/* Additional Meta Tags */}
       <meta name="robots" content="index, follow" />
@@ -200,7 +215,7 @@ function VehicleMetaTags({ vehicle }) {
           "@type": "Car",
           "name": `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
           "description": description,
-          "image": image,
+          "image": [image], // Array format is preferred
           "brand": {
             "@type": "Brand",
             "name": vehicle.make
