@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
+import { Helmet } from "react-helmet";
 import {
   fetchMarketplace,
   fetchVehicleDetails,
@@ -158,6 +159,13 @@ export default function CarDetailsPage() {
   } = useSelector((state) => state.vehicles);
 
   const { isAuthenticated } = useSelector((state) => state.auth);
+
+  const previewImage = useMemo(() => {
+    if (currentVehicle?.images?.length > 0) {
+      return currentVehicle.images[0].image;
+    }
+    return "https://autoeden.co.zw/1.png"; // Fallback image
+  }, [currentVehicle]);
 
   const [bidAmount, setBidAmount] = useState("");
   const [bidMessage, setBidMessage] = useState("");
@@ -346,6 +354,13 @@ export default function CarDetailsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+          <Helmet>
+        <meta property="og:title" content={`${vehicle.year} ${vehicle.make} ${vehicle.model}`} />
+        <meta property="og:description" content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`} />
+        <meta property="og:image" content={previewImage} />
+        <meta property="og:url" content={window.location.href} />
+        <meta name="twitter:card" content="summary_large_image" />
+      </Helmet>
       <div style={{ background: "red", color: "white", padding: "10px" }}>
         TEST: Component is rendering
       </div>
