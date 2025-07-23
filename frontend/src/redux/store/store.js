@@ -6,6 +6,7 @@ import bidReducer from '../slices/bidSlice';
 import profileReducer from '../slices/profileSlice';
 import searchReducer from '../slices/searchSlice';
 import quoteReducer from '../slices/quoteSlice';
+import analyticsReducer from '../slices/analyticsSlice';
 
 export default configureStore({
   reducer: {
@@ -15,5 +16,6 @@ export default configureStore({
     profile: profileReducer,
     searches: searchReducer,
     quotes: quoteReducer,
+    analytics: analyticsReducer
   },
 });

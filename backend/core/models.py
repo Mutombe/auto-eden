@@ -166,6 +166,25 @@ class Vehicle(models.Model):
 
     def __str__(self):
         return self.make
+    
+class WebsiteVisit(models.Model):
+    timestamp = models.DateTimeField(auto_now_add=True)
+    session_key = models.CharField(max_length=40, db_index=True)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    path = models.CharField(max_length=255)
+    ip_address = models.GenericIPAddressField()
+
+class VehicleView(models.Model):
+    vehicle = models.ForeignKey(Vehicle, on_delete=models.CASCADE, related_name='views')
+    timestamp = models.DateTimeField(auto_now_add=True)
+    session_key = models.CharField(max_length=40, db_index=True)
+    user = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL)
+    ip_address = models.GenericIPAddressField()
+    view_count = models.PositiveIntegerField(default=0)
+    
+    def increment_view_count(self):
+        self.view_count = models.F('view_count') + 1
+        self.save(update_fields=['view_count'])
 
 import logging
 

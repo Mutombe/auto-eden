@@ -44,6 +44,7 @@ import {
   Badge,
 } from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
+import useTracking from "../../hooks/useTracking";
 
 /**
  * A resilient image component that tries multiple URL formats before falling back to a placeholder.
@@ -167,6 +168,7 @@ const VehicleSkeleton = ({ viewMode }) => (
 
 export default function MarketplacePage() {
   const dispatch = useDispatch();
+  useTracking(window.location.pathname);
   const { marketplace, loading } = useSelector((state) => state.vehicles);
   const {
     results: vehicles = [],

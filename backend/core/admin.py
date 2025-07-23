@@ -1,6 +1,6 @@
 from django.contrib import admin
 from .models import User, Vehicle, Bid, Profile, VehicleImage, Notification, VehicleSearch
-
+from .models import WebsiteVisit, VehicleView
 class AdminProfileOverview(admin.ModelAdmin):
     list_display = (
         "id",
@@ -52,6 +52,21 @@ class AdminVehicleSearchOverview(admin.ModelAdmin):
     )
     search_fields = ("user",)
     list_filter = ("created_at",)
+
+
+
+
+@admin.register(WebsiteVisit)
+class WebsiteVisitAdmin(admin.ModelAdmin):
+    list_display = ('timestamp', 'user', 'path', 'ip_address')
+    list_filter = ('timestamp',)
+    search_fields = ('user__username', 'path', 'ip_address')
+
+@admin.register(VehicleView)
+class VehicleViewAdmin(admin.ModelAdmin):
+    list_display = ('vehicle', 'timestamp', 'user', 'ip_address')
+    list_filter = ('timestamp', 'vehicle')
+    search_fields = ('vehicle__make', 'user__username', 'ip_address')
 
 admin.site.register(Vehicle, AdminVehicleOverview)
 admin.site.register(Bid, AdminBidOverview)
