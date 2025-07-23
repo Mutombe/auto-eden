@@ -30,12 +30,22 @@ import {
   Info,
   Check,
   AlertTriangle,
+  TrendingUp,
 } from "lucide-react";
 import VehicleDialog from "./vehiclemodal";
 import ImageWithFallback from "../../utils/smartImage";
 import { Box, Typography, Button } from "@mui/material";
+import { fetchMarketplaceStats } from "../../redux/slices/analyticsSlice";
+import { fetchVehicleViews } from "../../redux/slices/analyticsSlice";
 
 const DashboardHero = ({ onAddVehicle }) => {
+  const dispatch = useDispatch();
+  const { marketplaceStats } = useSelector((state) => state.analytics);
+
+  useEffect(() => {
+    dispatch(fetchMarketplaceStats());
+  }, [dispatch]);
+
   return (
     <Box
       sx={{
@@ -106,6 +116,40 @@ const DashboardHero = ({ onAddVehicle }) => {
                 Add New Vehicle
               </Button>
             </motion.div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-8">
+              <StatCard1
+                title="Marketplace Visits"
+                value={marketplaceStats?.marketplace_visits || 0}
+                description="Last 30 days"
+                icon={<Eye size={20} />}
+                trend="up"
+                trendValue="12%"
+              />
+
+              <StatCard1
+                title="Vehicle Views"
+                value={marketplaceStats?.vehicle_views || 0}
+                description="Last 30 days"
+                icon={<Car size={20} />}
+                trend="up"
+                trendValue="8%"
+              />
+
+              <StatCard1
+                title="Top Vehicle"
+                value={
+                  marketplaceStats?.popular_vehicles?.[0]
+                    ? `${marketplaceStats.popular_vehicles[0].view_count} views`
+                    : "N/A"
+                }
+                description={
+                  marketplaceStats?.popular_vehicles?.[0]
+                    ? `${marketplaceStats.popular_vehicles[0].year} ${marketplaceStats.popular_vehicles[0].make} ${marketplaceStats.popular_vehicles[0].model}`
+                    : ""
+                }
+                icon={<TrendingUp size={20} />}
+              />
+            </div>
           </Box>
         </motion.div>
       </Box>
@@ -116,6 +160,7 @@ const DashboardHero = ({ onAddVehicle }) => {
 export default function AdminDashboard() {
   const dispatch = useDispatch();
   const [selectedDetailsVehicle, setSelectedDetailsVehicle] = useState(null);
+  const { vehicleViews } = useSelector((state) => state.analytics);
   const { pendingVehicles, allVehicles, items, error } = useSelector(
     (state) => state.vehicles
   );
@@ -505,6 +550,16 @@ export default function AdminDashboard() {
   };
 
   const VehicleDetailModal = ({ vehicle, onClose }) => {
+    const dispatch = useDispatch();
+    const { vehicleViews } = useSelector((state) => state.analytics);
+
+    useEffect(() => {
+      if (vehicle) {
+        dispatch(fetchVehicleViews(vehicle.id));
+      }
+    }, [vehicle, dispatch]);
+
+    const viewsData = vehicleViews[vehicle?.id] || {};
     if (!vehicle) return null;
 
     return (
@@ -634,6 +689,72 @@ export default function AdminDashboard() {
                   </p>
                 </div>
               </div>
+            </div>
+
+            {/* View Statistics Section */}
+            <div className="mt-6 border-t pt-4">
+              <h3 className="text-lg font-semibold mb-3">View Statistics</h3>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-600">Total Views</p>
+                      <p className="text-2xl font-bold">
+                        {viewsData.total_views || 0}
+                      </p>
+                    </div>
+                    <Eye className="text-gray-400" size={20} />
+                  </div>
+                </div>
+
+                <div className="bg-gray-50 rounded-lg p-4">
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <p className="text-sm text-gray-600">
+                        Recent Views (30d)
+                      </p>
+                      <p className="text-2xl font-bold">
+                        {viewsData.recent_views || 0}
+                      </p>
+                    </div>
+                    <TrendingUp className="text-gray-400" size={20} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Views Over Time Chart */}
+              {viewsData.views_by_day && viewsData.views_by_day.length > 0 && (
+                <div className="bg-white border border-gray-200 rounded-lg p-4">
+                  <h4 className="font-medium mb-3">Views Over Last 7 Days</h4>
+                  <div className="flex items-end h-32 gap-1">
+                    {viewsData.views_by_day.map((day, index) => (
+                      <div
+                        key={index}
+                        className="flex flex-col items-center flex-1"
+                      >
+                        <div
+                          className="w-full bg-red-500 rounded-t"
+                          style={{
+                            height: `${
+                              (day.views /
+                                Math.max(
+                                  ...viewsData.views_by_day.map((d) => d.views)
+                                )) *
+                              80
+                            }px`,
+                          }}
+                        ></div>
+                        <span className="text-xs mt-1 text-gray-500">
+                          {new Date(day.date).toLocaleDateString("en-US", {
+                            weekday: "short",
+                          })}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Verification Section */}
@@ -1398,6 +1519,31 @@ const StatCard = ({ title, value, icon, bgColor, textColor, borderColor }) => (
       </div>
       <div className={`${textColor} p-2 rounded-full`}>{icon}</div>
     </div>
+  </div>
+);
+
+// New StatCard component
+const StatCard1 = ({ title, value, description, icon, trend, trendValue }) => (
+  <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4">
+    <div className="flex justify-between items-start">
+      <div>
+        <p className="text-sm text-white/80">{title}</p>
+        <p className="text-2xl font-bold text-white mt-1">{value}</p>
+        <p className="text-xs text-white/70 mt-1">{description}</p>
+      </div>
+      <div className="bg-white/20 p-2 rounded-lg">{icon}</div>
+    </div>
+    {trend && (
+      <div
+        className={`mt-2 text-xs flex items-center ${
+          trend === "up" ? "text-green-300" : "text-red-300"
+        }`}
+      >
+        <span>
+          {trend === "up" ? "↑" : "↓"} {trendValue}
+        </span>
+      </div>
+    )}
   </div>
 );
 

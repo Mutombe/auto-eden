@@ -84,6 +84,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
 import { FaWhatsapp } from "react-icons/fa";
+import useTracking from "../../hooks/useTracking";
 import VehicleCard from "./vehicleCard";
 
 // Mock data for enhanced features
@@ -258,6 +259,7 @@ export default function CarDetailsPage() {
   const { vehicleId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  useTracking(window.location.pathname, vehicleId); 
 
   // Get state from Redux
   const {

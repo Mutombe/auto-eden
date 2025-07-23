@@ -3,7 +3,7 @@ from urllib.parse import urlencode
 from django.core.cache import cache
 from rest_framework import viewsets, permissions
 from .models import Vehicle, Bid, Profile, User, VehicleSearch
-
+from .models import VehicleView
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from .serializers import (
@@ -18,7 +18,13 @@ from .serializers import (
     ProfileSerializer,
     UserSerializer,
 )
-
+from django.utils import timezone
+from rest_framework import status, permissions
+from rest_framework.response import Response
+from rest_framework.views import APIView
+from django.shortcuts import get_object_or_404
+from .models import Vehicle, VehicleView
+from django.conf import settings
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from rest_framework_simplejwt.views import TokenObtainPairView
 from .permissions import IsOwnerOrAdmin
@@ -39,6 +45,8 @@ from xhtml2pdf import pisa
 from io import BytesIO
 import logging
 from django.contrib.postgres.search import SearchVector
+from django.contrib.postgres.search import SearchQuery
+from django.contrib.postgres.search import SearchRank
 
 
 logger = logging.getLogger(__name__)
@@ -580,3 +588,156 @@ class QuoteRequestVieww(APIView):
             )
             return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class VehicleDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, vehicle_id):
+        vehicle = get_object_or_404(Vehicle, id=vehicle_id)
+        
+        # Track vehicle view
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
+        
+        VehicleView.objects.create(
+            vehicle=vehicle,
+            session_key=request.session.session_key,
+            user=request.user if request.user.is_authenticated else None,
+            ip_address=ip
+        )
+        
+        serializer = VehicleSerializer(vehicle)
+        return Response(serializer.data)
+
+class TrackVehicleView(APIView):
+    permission_classes = [permissions.AllowAny]
+    
+    def post(self, request, vehicle_id):
+        # Get the vehicle object or return 404
+        vehicle = get_object_or_404(Vehicle, id=vehicle_id)
+        
+        # Get client IP address
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        ip_address = x_forwarded_for.split(',')[0] if x_forwarded_for \
+            else request.META.get('REMOTE_ADDR')
+        
+        # Get session key (create one if doesn't exist)
+        session_key = request.session.session_key
+        if not session_key:
+            request.session.create()
+            session_key = request.session.session_key
+        
+        # Check if this is a unique view (same session/user hasn't viewed in last 30 minutes)
+        time_threshold = timezone.now() - timezone.timedelta(minutes=30)
+        
+        existing_view = VehicleView.objects.filter(
+            vehicle=vehicle,
+            session_key=session_key,
+            timestamp__gte=time_threshold
+        ).first()
+        
+        if request.user.is_authenticated:
+            user_view = VehicleView.objects.filter(
+                vehicle=vehicle,
+                user=request.user,
+                timestamp__gte=time_threshold
+            ).first()
+            if user_view:
+                existing_view = user_view
+        
+        # If no recent view exists, create a new one
+        if not existing_view:
+            VehicleView.objects.create(
+                vehicle=vehicle,
+                session_key=session_key,
+                user=request.user if request.user.is_authenticated else None,
+                ip_address=ip_address
+            )
+            
+            # Increment view count (using atomic update)
+            vehicle.view_count = models.F('view_count') + 1
+            vehicle.save(update_fields=['view_count'])
+            
+            return Response(
+                {'status': 'View tracked', 'view_count': vehicle.view_count + 1},
+                status=status.HTTP_201_CREATED
+            )
+        
+        return Response(
+            {'status': 'View already recorded recently', 'view_count': vehicle.view_count},
+            status=status.HTTP_200_OK
+        )
+
+    def get_client_ip(self, request):
+        """More robust IP address getter"""
+        x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
+        if x_forwarded_for:
+            ip = x_forwarded_for.split(',')[0]
+        else:
+            ip = request.META.get('REMOTE_ADDR')
+        return ip
+
+from .models import WebsiteVisit, VehicleView
+from django.db.models import Count, F, ExpressionWrapper, DurationField
+from django.utils import timezone
+from datetime import timedelta
+
+class MarketplaceStatsView(APIView):
+    def get(self, request):
+        # Total marketplace visits (last 30 days)
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        marketplace_visits = WebsiteVisit.objects.filter(
+            timestamp__gte=thirty_days_ago,
+            path__contains="/marketplace"
+        ).count()
+
+        # Vehicle views (last 30 days)
+        vehicle_views = VehicleView.objects.filter(
+            timestamp__gte=thirty_days_ago
+        ).count()
+
+        # Popular vehicles
+        popular_vehicles = VehicleView.objects.filter(
+            timestamp__gte=thirty_days_ago
+        ).values(
+            'vehicle__id',
+            'vehicle__make',
+            'vehicle__model',
+            'vehicle__year'
+        ).annotate(
+            view_count=Count('id')
+        ).order_by('-view_count')[:5]
+
+        return Response({
+            "marketplace_visits": marketplace_visits,
+            "vehicle_views": vehicle_views,
+            "popular_vehicles": list(popular_vehicles)
+        })
+
+class VehicleViewsView(APIView):
+    def get(self, request, vehicle_id):
+        # Total views for this vehicle
+        total_views = VehicleView.objects.filter(vehicle_id=vehicle_id).count()
+
+        # Views in the last 30 days
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        recent_views = VehicleView.objects.filter(
+            vehicle_id=vehicle_id,
+            timestamp__gte=thirty_days_ago
+        ).count()
+
+        # Views over time (last 7 days)
+        views_by_day = VehicleView.objects.filter(
+            vehicle_id=vehicle_id,
+            timestamp__gte=timezone.now() - timedelta(days=7)
+        ).extra({
+            'date': "date(timestamp)"
+        }).values('date').annotate(
+            views=Count('id')
+        ).order_by('date')
+
+        return Response({
+            "total_views": total_views,
+            "recent_views": recent_views,
+            "views_by_day": list(views_by_day)
+        })
