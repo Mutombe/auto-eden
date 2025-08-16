@@ -1,7 +1,7 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from rest_framework_simplejwt.views import TokenRefreshView
-from .views import QuoteRequestView, VehicleViewSet,VehicleSearchViewSet, BidViewSet, RegisterView, CustomTokenObtainPairView, MarketplaceView, InstantSaleViewSet, ProfileView, UserViewSet, PublicVehicleViewSet, TrackVehicleView, MarketplaceStatsView, VehicleViewsView
+from .views import DownloadQuoteView, QuoteRequestView, VehicleViewSet,VehicleSearchViewSet, BidViewSet, RegisterView, CustomTokenObtainPairView, MarketplaceView, InstantSaleViewSet, ProfileView, UserViewSet, PublicVehicleViewSet, TrackVehicleView, MarketplaceStatsView, VehicleViewsView
 
 router = DefaultRouter()
 router.register(r'vehicles', VehicleViewSet, basename='vehicles')
@@ -16,6 +16,8 @@ urlpatterns = [
     path("auth/register/", RegisterView.as_view(), name="register"),
     path('marketplace/', MarketplaceView.as_view(), name='marketplace'),
     path('vehicles/<int:vehicle_id>/request-quote/', QuoteRequestView.as_view(), name='request-quote'),
+    path('quotes/<int:quote_id>/download/', DownloadQuoteView.as_view(), name='download-quote'),
+
     path('vehicles/<int:vehicle_id>/track_view/', TrackVehicleView.as_view(), name='track-vehicle-view'),
     path('analytics/marketplace-stats/', MarketplaceStatsView.as_view()),
     path('analytics/vehicle-views/<int:vehicle_id>/', VehicleViewsView.as_view()),

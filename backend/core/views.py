@@ -2,7 +2,7 @@
 from urllib.parse import urlencode
 from django.core.cache import cache
 from rest_framework import viewsets, permissions
-from .models import Vehicle, Bid, Profile, User, VehicleSearch
+from .models import QuoteRequest, Vehicle, Bid, Profile, User, VehicleSearch
 from .models import VehicleView
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
@@ -45,8 +45,17 @@ from xhtml2pdf import pisa
 from io import BytesIO
 import logging
 from django.contrib.postgres.search import SearchVector
-from django.contrib.postgres.search import SearchQuery
-from django.contrib.postgres.search import SearchRank
+# views.py
+import qrcode
+from io import BytesIO
+import base64
+from django.template.loader import render_to_string
+from django.http import HttpResponse
+from django.core.mail import EmailMessage
+from xhtml2pdf import pisa
+from PIL import Image, ImageDraw
+import uuid
+from datetime import datetime, timedelta
 
 
 logger = logging.getLogger(__name__)
@@ -481,75 +490,214 @@ class QuoteRequestView(APIView):
 
         serializer = QuoteRequestSerializer(data=request.data)
         if serializer.is_valid():
-            quote = serializer.save(
-                vehicle=vehicle,
-            )
+            quote = serializer.save(vehicle=vehicle)
 
             # Generate and send PDF
-            self.send_quote_email(quote, vehicle)
-
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            try:
+                self.send_quote_email(quote, vehicle)
+                return Response({
+                    "message": "Quote request submitted successfully! You will receive an email with the quotation shortly.",
+                    "quote_id": quote.id
+                }, status=status.HTTP_201_CREATED)
+            except Exception as e:
+                # Log the error but don't fail the request
+                print(f"Email sending failed: {str(e)}")
+                return Response({
+                    "message": "Quote request submitted successfully!",
+                    "quote_id": quote.id,
+                    "note": "Email delivery may be delayed"
+                }, status=status.HTTP_201_CREATED)
+        
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
-    def send_quote_email(self, quote, vehicle):
-        # Generate PDF
-        pdf_buffer = self.generate_quote_pdf(quote, vehicle)
+    def generate_qr_code(self, url):
+        """Generate QR code and return as base64 string"""
+        qr = qrcode.QRCode(
+            version=1,
+            error_correction=qrcode.constants.ERROR_CORRECT_L,
+            box_size=10,
+            border=4,
+        )
+        qr.add_data(url)
+        qr.make(fit=True)
 
-        # Prepare email
-        subject = f"Your Quote for {vehicle.make} {vehicle.model}"
-        from_email = settings.DEFAULT_FROM_EMAIL
-        to_email = [quote.email]
-
-        # Create email with PDF attachment
-        email = EmailMessage(subject, "", from_email, to_email)
-        email.attach(f"quote_{quote.id}.pdf", pdf_buffer.getvalue(), "application/pdf")
-
-        # Send email
-        email.send()
-
-        # Also notify admins
-        self.notify_admins(quote, vehicle)
+        # Create QR code image
+        qr_img = qr.make_image(fill_color="black", back_color="white")
+        
+        # Convert to base64
+        buffer = BytesIO()
+        qr_img.save(buffer, format='PNG')
+        qr_base64 = base64.b64encode(buffer.getvalue()).decode()
+        
+        return qr_base64
 
     def generate_quote_pdf(self, quote, vehicle):
-        template = "quotes/quote_pdf.html"
+        """Generate professional PDF quotation"""
+        
+        # Generate QR code for website
+        qr_code_base64 = self.generate_qr_code("https://autoeden.co.zw")
+        
+        # Calculate quote validity (24 hours from creation)
+        valid_until = quote.created_at + timedelta(hours=24)
+        
+        # Prepare context for template
         context = {
             "quote": quote,
             "vehicle": vehicle,
-            "qr_url": "https://autoeden.com",
-            "date": quote.created_at.strftime("%B %d, %Y"),
+            "qr_code": qr_code_base64,
+            "quote_date": quote.created_at.strftime("%B %d, %Y"),
+            "valid_until": valid_until.strftime("%B %d, %Y at %I:%M %p"),
+            "quote_id": f"QT-{quote.id:06d}",
+            # Company details
+            "company": {
+                "name": "Auto Eden PL",
+                "address": "4 KAMIL COURT",
+                "address_line2": "Corner Herbert Chitepo Ave & 8th Street",
+                "phone": "+263782222032",
+                "email": "admin@autoeden.co.zw",
+                "website": "www.autoeden.co.zw",
+                "bank_details": {
+                    "account_name": "Auto Eden PL",
+                    "branch": "CBZ Borrowdale Branch",
+                    "account_number": "029 26378180010"
+                }
+            },
+            # Pricing (you might want to make this dynamic)
+            "base_price": vehicle.price if hasattr(vehicle, 'price') else 15000,
+            "additional_fees": 500,  # Processing, documentation, etc.
         }
+        
+        # Calculate totals
+        context["subtotal"] = context["base_price"] + context["additional_fees"]
+        context["grand_total"] = context["subtotal"]
 
+        # Render HTML template
+        template = "quotes/quote_pdf_template.html"
         html = render_to_string(template, context)
+        
+        # Generate PDF
         buffer = BytesIO()
-
-        # Create PDF
-        pisa_status = pisa.CreatePDF(html, dest=buffer)
+        pisa_status = pisa.CreatePDF(
+            html.encode('utf-8'), 
+            dest=buffer,
+            encoding='utf-8'
+        )
 
         if pisa_status.err:
-            raise Exception("PDF generation failed")
+            raise Exception(f"PDF generation failed: {pisa_status.err}")
 
         buffer.seek(0)
         return buffer
 
-    def notify_admins(self, quote, vehicle):
-        admin_subject = f"New Quote Request: {vehicle.make} {vehicle.model}"
-        admin_message = render_to_string(
-            "emails/new_quote_admin.html", {"quote": quote, "vehicle": vehicle}
-        )
+    def send_quote_email(self, quote, vehicle):
+        """Send professional quote email with PDF attachment"""
+        from django.core.mail import EmailMultiAlternatives  # Changed import
+    
+        # Generate PDF
+        pdf_buffer = self.generate_quote_pdf(quote, vehicle)
 
-        # Send to all admin users
-        admin_emails = User.objects.filter(is_staff=True).values_list(
-            "email", flat=True
+       # Email subject and content
+        subject = f"Your Vehicle Quotation - {vehicle.make} {vehicle.model} | Auto Eden"
+    
+        # Plain text content
+        text_content = f"""
+         Dear {quote.full_name},
+
+         Thank you for your interest in our {vehicle.make} {vehicle.model}.
+
+         Please find attached your personalized quotation. The quote is valid for 24 hours.
+
+         If you have any questions, please don't hesitate to contact us at admin@autoeden.co.zw or +263782222032.
+
+         Best regards,
+         Auto Eden Team
+        """
+
+        # HTML email body
+        email_context = {
+             "quote": quote,
+             "vehicle": vehicle,
+             "quote_id": f"QT-{quote.id:06d}",
+             "company_name": "Auto Eden"
+        }
+    
+        html_content = render_to_string("emails/quote_email_template.html", email_context)
+
+        # Create and send email using EmailMultiAlternatives
+        email = EmailMultiAlternatives(
+             subject=subject,
+             body=text_content,  # Plain text version
+             from_email=settings.DEFAULT_FROM_EMAIL,
+             to=[quote.email],
         )
+    
+        # Attach HTML version
+        email.attach_alternative(html_content, "text/html")
+    
+        # Attach PDF
+        pdf_filename = f"AutoEden_Quotation_{quote.id}_{vehicle.make}_{vehicle.model}.pdf"
+        email.attach(pdf_filename, pdf_buffer.getvalue(), "application/pdf")
+
+        # Send email
+        email.send()
+
+         # Notify admins
+        self.notify_admins(quote, vehicle)
+
+    def notify_admins(self, quote, vehicle):
+        """Notify admin staff about new quote request"""
+        admin_subject = f"🚗 New Quote Request: {vehicle.make} {vehicle.model} - QT-{quote.id:06d}"
+        
+        admin_context = {
+            "quote": quote,
+            "vehicle": vehicle,
+            "quote_id": f"QT-{quote.id:06d}",
+            "admin_url": f"{settings.SITE_URL}/admin/core/quoterequest/{quote.id}/change/"
+        }
+        
+        admin_message = render_to_string("emails/new_quote_admin_template.html", admin_context)
+
+        # Get admin emails
+        from django.contrib.auth.models import User
+        admin_emails = User.objects.filter(is_staff=True).values_list("email", flat=True)
 
         if admin_emails:
-            send_mail(
-                admin_subject,
-                strip_tags(admin_message),
-                settings.DEFAULT_FROM_EMAIL,
-                admin_emails,
-                html_message=admin_message,
-                fail_silently=False,
+            admin_email = EmailMessage(
+                subject=admin_subject,
+                body=admin_message,
+                from_email=settings.DEFAULT_FROM_EMAIL,
+                to=list(admin_emails),
+            )
+            admin_email.content_subtype = "html"
+            admin_email.send()
+
+
+# Additional utility view for downloading quotes
+class DownloadQuoteView(APIView):
+    """Allow users to download their quote PDF directly"""
+    permission_classes = [permissions.AllowAny]
+    
+    def get(self, request, quote_id):
+        try:
+            quote = QuoteRequest.objects.get(id=quote_id)
+            vehicle = quote.vehicle
+            
+            # Generate PDF
+            quote_view = QuoteRequestView()
+            pdf_buffer = quote_view.generate_quote_pdf(quote, vehicle)
+            
+            # Return PDF response
+            response = HttpResponse(pdf_buffer.getvalue(), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="AutoEden_Quote_{quote_id}.pdf"'
+            
+            return response
+            
+        except QuoteRequest.DoesNotExist:
+            return Response({"detail": "Quote not found"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response(
+                {"detail": f"PDF generation failed: {str(e)}"}, 
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
 
@@ -567,27 +715,6 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
-
-class QuoteRequestVieww(APIView):
-    permission_classes = [permissions.AllowAny]
-
-    def post(self, request, vehicle_id):
-        try:
-            vehicle = Vehicle.objects.get(id=vehicle_id, listing_type="instant_sale")
-        except Vehicle.DoesNotExist:
-            return Response(
-                {"detail": "Vehicle not found or not available for quotes"},
-                status=status.HTTP_404_NOT_FOUND,
-            )
-
-        serializer = QuoteRequestSerializer(data=request.data)
-        if serializer.is_valid():
-            quote = serializer.save(
-                vehicle=vehicle,
-                user=request.user if request.user.is_authenticated else None,
-            )
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 class VehicleDetailView(APIView):
     permission_classes = [permissions.AllowAny]

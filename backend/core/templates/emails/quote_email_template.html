@@ -1,0 +1,281 @@
+<!-- emails/quote_email_template.html -->
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Your Vehicle Quotation - Auto Eden</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: #f8fafc;
+        }
+        .container {
+            background: white;
+            margin: 20px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        }
+        .header {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 {
+            margin: 0;
+            font-size: 28px;
+            font-weight: bold;
+        }
+        .header p {
+            margin: 10px 0 0 0;
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        .content {
+            padding: 40px 30px;
+        }
+        .greeting {
+            font-size: 18px;
+            color: #1f2937;
+            margin-bottom: 20px;
+        }
+        .vehicle-card {
+            background: #f8fafc;
+            border: 2px solid #e2e8f0;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: center;
+        }
+        .vehicle-title {
+            font-size: 22px;
+            font-weight: bold;
+            color: #3b82f6;
+            margin: 0 0 10px 0;
+        }
+        .quote-id {
+            background: #ecfdf5;
+            color: #065f46;
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: inline-block;
+            font-weight: bold;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+        .features {
+            display: flex;
+            justify-content: space-around;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        .feature {
+            text-align: center;
+            margin: 10px;
+            min-width: 100px;
+        }
+        .feature-icon {
+            width: 40px;
+            height: 40px;
+            background: #3b82f6;
+            border-radius: 50%;
+            margin: 0 auto 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+        .feature-text {
+            font-size: 13px;
+            color: #6b7280;
+        }
+        .cta-section {
+            background: #fef3c7;
+            border-radius: 10px;
+            padding: 25px;
+            margin: 25px 0;
+            text-align: center;
+            border-left: 4px solid #f59e0b;
+        }
+        .cta-title {
+            color: #92400e;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 0 10px 0;
+        }
+        .cta-text {
+            color: #78350f;
+            margin-bottom: 15px;
+        }
+        .contact-info {
+            background: #f0f9ff;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 25px 0;
+        }
+        .contact-title {
+            color: #0c4a6e;
+            font-size: 16px;
+            font-weight: bold;
+            margin: 0 0 15px 0;
+        }
+        .contact-item {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            color: #0f172a;
+        }
+        .contact-icon {
+            width: 20px;
+            height: 20px;
+            margin-right: 10px;
+            color: #3b82f6;
+        }
+        .footer {
+            background: #1f2937;
+            color: #d1d5db;
+            text-align: center;
+            padding: 30px;
+            font-size: 14px;
+        }
+        .footer-logo {
+            font-size: 20px;
+            font-weight: bold;
+            color: #60a5fa;
+            margin-bottom: 10px;
+        }
+        .social-links {
+            margin: 20px 0;
+        }
+        .social-link {
+            display: inline-block;
+            margin: 0 10px;
+            color: #9ca3af;
+            text-decoration: none;
+        }
+        .disclaimer {
+            font-size: 12px;
+            color: #9ca3af;
+            margin-top: 20px;
+            line-height: 1.5;
+        }
+        @media (max-width: 600px) {
+            .container {
+                margin: 0;
+                border-radius: 0;
+            }
+            .content {
+                padding: 25px 20px;
+            }
+            .features {
+                justify-content: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>AUTO EDEN</h1>
+            <p>Your Vehicle Quotation is Ready!</p>
+        </div>
+        
+        <div class="content">
+            <div class="greeting">
+                Dear {{ quote.full_name }},
+            </div>
+            
+            <p>Thank you for your interest in our premium vehicles! We're excited to provide you with a personalized quotation for your dream car.</p>
+            
+            <div class="vehicle-card">
+                <div class="vehicle-title">{{ vehicle.make }} {{ vehicle.model }}</div>
+                <div class="quote-id">Quote ID: {{ quote_id }}</div>
+                
+                <div class="features">
+                    <div class="feature">
+                        <div class="feature-icon">🚗</div>
+                        <div class="feature-text">Premium<br>Quality</div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">✓</div>
+                        <div class="feature-text">Verified<br>Condition</div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🛡️</div>
+                        <div class="feature-text">Warranty<br>Included</div>
+                    </div>
+                    <div class="feature">
+                        <div class="feature-icon">🌟</div>
+                        <div class="feature-text">Best<br>Price</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cta-section">
+                <div class="cta-title">📎 Your Detailed Quotation is Attached</div>
+                <div class="cta-text">
+                    Please find your personalized PDF quotation attached to this email. 
+                    The quote includes detailed pricing, specifications, and payment information.
+                </div>
+                <p style="color: #dc2626; font-weight: bold;">
+                    ⏰ This quotation is valid for 24 hours only
+                </p>
+            </div>
+            
+            <div class="contact-info">
+                <div class="contact-title">Questions? We're Here to Help!</div>
+                <div class="contact-item">
+                    <span class="contact-icon">📞</span>
+                    <span>+263782222032</span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">📧</span>
+                    <span>admin@autoeden.co.zw</span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">🌐</span>
+                    <span>www.autoeden.co.zw</span>
+                </div>
+                <div class="contact-item">
+                    <span class="contact-icon">📍</span>
+                    <span>4 Kamil Court, Corner Herbert Chitepo Ave & 8th Street</span>
+                </div>
+            </div>
+            
+            <p>We look forward to helping you find the perfect vehicle. If you have any questions or would like to proceed with your purchase, please don't hesitate to contact us.</p>
+            
+            <p style="margin-top: 30px;">
+                Best regards,<br>
+                <strong>The Auto Eden Team</strong><br>
+                <em>Your trusted partner for quality vehicles</em>
+            </p>
+        </div>
+        
+        <div class="footer">
+            <div class="footer-logo">AUTO EDEN</div>
+            <p>Premium Vehicles • Exceptional Service • Trusted Quality</p>
+            
+            <div class="social-links">
+                <a href="#" class="social-link">Facebook</a>
+                <a href="#" class="social-link">Instagram</a>
+                <a href="#" class="social-link">LinkedIn</a>
+            </div>
+            
+            <div class="disclaimer">
+                This email was sent to {{ quote.email }} regarding your vehicle quotation request. 
+                All prices are subject to availability and market conditions. 
+                Please contact us if you did not request this quotation.
+                <br><br>
+                Auto Eden © 2025. All rights reserved.
+            </div>
+        </div>
+    </div>
+</body>
+</html>

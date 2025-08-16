@@ -48,7 +48,7 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5173',
     'https://auto-eden.onrender.com',
     'https://autoeden.co.zw',
-    'http://127.0.0.1:5176',
+    'http://127.0.0.1:5173',
 ]
 
 CORS_TRUSTED_ORIGINS = [
@@ -121,6 +121,8 @@ EMAIL_HOST_PASSWORD = 'itzh jjkc hdmv csih'
 DEFAULT_FROM_EMAIL = 'noreply@hospital.com'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
+SITE_URL = os.environ.get('SITE_URL', 'https://autoeden.co.zw')
+
 
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
 #EMAIL_HOST = 'smtp.hostinger.com'  # Hostinger's SMTP server

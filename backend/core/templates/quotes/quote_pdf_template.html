@@ -1,0 +1,413 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>Auto Eden Quotation</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 0.5in;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Arial', sans-serif;
+            font-size: 12px;
+            line-height: 1.4;
+            color: #333;
+            margin: 0;
+            padding: 0;
+        }
+        
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #3b82f6;
+            padding-bottom: 20px;
+        }
+        
+        .company-info {
+            flex: 1;
+        }
+        
+        .company-name {
+            font-size: 24px;
+            font-weight: bold;
+            color: #3b82f6;
+            margin: 0 0 10px 0;
+        }
+        
+        .company-details {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .qr-section {
+            text-align: center;
+            flex: 0 0 120px;
+        }
+        
+        .qr-code {
+            width: 80px;
+            height: 80px;
+            border: 1px solid #ddd;
+            margin: 0 auto 5px auto;
+            display: block;
+        }
+        
+        .qr-text {
+            font-size: 9px;
+            color: #666;
+        }
+        
+        .quotation-header {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        
+        .quotation-title {
+            font-size: 20px;
+            font-weight: bold;
+            margin: 0;
+        }
+        
+        .quotation-meta {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 10px;
+            font-size: 11px;
+        }
+        
+        .client-section {
+            display: flex;
+            justify-content: space-between;
+            margin: 30px 0;
+        }
+        
+        .client-details {
+            flex: 1;
+            margin-right: 20px;
+        }
+        
+        .section-title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #3b82f6;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            padding-bottom: 5px;
+        }
+        
+        .detail-item {
+            margin-bottom: 8px;
+        }
+        
+        .detail-label {
+            font-weight: bold;
+            color: #374151;
+            display: inline-block;
+            width: 80px;
+        }
+        
+        .vehicle-showcase {
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: center;
+        }
+        
+        .vehicle-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #1e293b;
+            margin-bottom: 10px;
+        }
+        
+        .vehicle-specs {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+            font-size: 11px;
+            color: #64748b;
+        }
+        
+        .pricing-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .pricing-table th {
+            background: #f1f5f9;
+            color: #374151;
+            font-weight: bold;
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        
+        .pricing-table td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #f1f5f9;
+        }
+        
+        .pricing-table tr:last-child td {
+            border-bottom: none;
+        }
+        
+        .amount {
+            text-align: right;
+            font-weight: bold;
+        }
+        
+        .total-row {
+            background: #f8fafc;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .grand-total {
+            background: #3b82f6 !important;
+            color: white !important;
+            font-size: 16px;
+        }
+        
+        .footer-sections {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 40px;
+            gap: 30px;
+        }
+        
+        .footer-section {
+            flex: 1;
+        }
+        
+        .bank-details {
+            background: #fefce8;
+            border: 1px solid #fde047;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .notes-section {
+            background: #f0f9ff;
+            border: 1px solid #7dd3fc;
+            border-radius: 6px;
+            padding: 15px;
+        }
+        
+        .validity-notice {
+            background: #fef2f2;
+            border: 1px solid #fca5a5;
+            color: #dc2626;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: bold;
+        }
+        
+        .footer-disclaimer {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            font-size: 10px;
+            color: #6b7280;
+            text-align: center;
+            line-height: 1.6;
+        }
+        
+        .contact-info {
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            background: #f8fafc;
+            border-radius: 6px;
+        }
+        
+        .contact-info strong {
+            color: #3b82f6;
+        }
+    </style>
+</head>
+<body>
+    <!-- Header Section -->
+    <div class="header">
+        <div class="company-info">
+            <h1 class="company-name">AUTO EDEN</h1>
+            <div class="company-details">
+                {{ company.address }}<br>
+                {{ company.address_line2 }}<br>
+                <strong>Phone:</strong> {{ company.phone }}<br>
+                <strong>Email:</strong> {{ company.email }}<br>
+                <strong>Web:</strong> {{ company.website }}
+            </div>
+        </div>
+        <div class="qr-section">
+            <img src="data:image/png;base64,{{ qr_code }}" alt="QR Code" class="qr-code">
+            <div class="qr-text">Scan to visit<br>{{ company.website }}</div>
+        </div>
+    </div>
+
+    <!-- Quotation Header -->
+    <div class="quotation-header">
+        <h2 class="quotation-title">VEHICLE QUOTATION</h2>
+        <div class="quotation-meta">
+            <div><strong>Quotation ID:</strong> {{ quote_id }}</div>
+            <div><strong>Date:</strong> {{ quote_date }}</div>
+            <div><strong>Valid Until:</strong> {{ valid_until }}</div>
+        </div>
+    </div>
+
+    <!-- Client Information -->
+    <div class="client-section">
+        <div class="client-details">
+            <div class="section-title">CLIENT DETAILS</div>
+            <div class="detail-item">
+                <span class="detail-label">Name:</span>
+                {{ quote.full_name }}
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Email:</span>
+                {{ quote.email }}
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Phone:</span>
+                {{ quote.telephone }}
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">Country:</span>
+                {{ quote.country }}
+            </div>
+            <div class="detail-item">
+                <span class="detail-label">City:</span>
+                {{ quote.city }}
+            </div>
+            {% if quote.address %}
+            <div class="detail-item">
+                <span class="detail-label">Address:</span>
+                {{ quote.address }}
+            </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Vehicle Showcase -->
+    <div class="vehicle-showcase">
+        <div class="vehicle-title">{{ vehicle.make }} {{ vehicle.model }}</div>
+        <div class="vehicle-specs">
+            <div><strong>Year:</strong> {{ vehicle.year|default:"N/A" }}</div>
+            <div><strong>Engine:</strong> {{ vehicle.engine_size|default:"N/A" }}</div>
+            <div><strong>Transmission:</strong> {{ vehicle.transmission|default:"N/A" }}</div>
+            <div><strong>Fuel Type:</strong> {{ vehicle.fuel_type|default:"N/A" }}</div>
+        </div>
+    </div>
+
+    <!-- Pricing Table -->
+    <table class="pricing-table">
+        <thead>
+            <tr>
+                <th style="width: 60%">DESCRIPTION</th>
+                <th style="width: 15%">QUANTITY</th>
+                <th style="width: 25%">AMOUNT (USD)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td>
+                    <strong>{{ vehicle.make }} {{ vehicle.model }}</strong><br>
+                    <small style="color: #6b7280;">
+                        {% if vehicle.year %}{{ vehicle.year }} • {% endif %}
+                        {% if vehicle.engine_size %}{{ vehicle.engine_size }} • {% endif %}
+                        {% if vehicle.transmission %}{{ vehicle.transmission }}{% endif %}
+                    </small>
+                </td>
+                <td>1</td>
+                <td class="amount">${{ base_price|floatformat:0 }}</td>
+            </tr>
+            {% if additional_fees > 0 %}
+            <tr>
+                <td>
+                    Processing & Documentation Fees<br>
+                    <small style="color: #6b7280;">Import duties, registration, and handling charges</small>
+                </td>
+                <td>1</td>
+                <td class="amount">${{ additional_fees|floatformat:0 }}</td>
+            </tr>
+            {% endif %}
+            <tr class="total-row">
+                <td colspan="2"><strong>SUBTOTAL</strong></td>
+                <td class="amount"><strong>${{ subtotal|floatformat:0 }}</strong></td>
+            </tr>
+            <tr class="grand-total">
+                <td colspan="2"><strong>GRAND TOTAL</strong></td>
+                <td class="amount"><strong>${{ grand_total|floatformat:0 }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <!-- Validity Notice -->
+    <div class="validity-notice">
+        ⚠️ This quotation is valid for 24 hours from the date of issue
+    </div>
+
+    <!-- Footer Sections -->
+    <div class="footer-sections">
+        <div class="footer-section">
+            <div class="section-title">BANK DETAILS</div>
+            <div class="bank-details">
+                <div><strong>Account Name:</strong> {{ company.bank_details.account_name }}</div>
+                <div><strong>Branch:</strong> {{ company.bank_details.branch }}</div>
+                <div><strong>Account Number:</strong> {{ company.bank_details.account_number }}</div>
+            </div>
+        </div>
+
+        <div class="footer-section">
+            <div class="section-title">ADDITIONAL NOTES</div>
+            <div class="notes-section">
+                {% if quote.note %}
+                    <div style="margin-bottom: 10px;">
+                        <strong>Customer Notes:</strong><br>
+                        {{ quote.note }}
+                    </div>
+                {% endif %}
+                <div style="font-size: 10px; color: #6b7280;">
+                    Prices are based on current costs, exchange rates, taxes and duties, 
+                    and are subject to change without prior notice.
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Contact Information -->
+    <div class="contact-info">
+        <strong>Questions? Contact us at {{ company.phone }} or {{ company.email }}</strong>
+    </div>
+
+    <!-- Footer Disclaimer -->
+    <div class="footer-disclaimer">
+        This quotation is automatically generated by Auto Eden's quotation system. 
+        All prices are in USD and subject to availability and market conditions. 
+        Terms and conditions apply.
+        <br><br>
+        <strong>Auto Eden</strong> - Your trusted partner for quality vehicles
+    </div>
+</body>
+</html>
