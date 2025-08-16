@@ -203,6 +203,8 @@ class VehicleSearchSerializer(serializers.ModelSerializer):
         read_only_fields = ('user', 'created_at', 'last_matched', 'match_count')
 
 class QuoteRequestSerializer(serializers.ModelSerializer):
+    status = serializers.CharField(default='pending')
+    priority = serializers.CharField(default='medium')
     class Meta:
         model = QuoteRequest
         fields = '__all__'

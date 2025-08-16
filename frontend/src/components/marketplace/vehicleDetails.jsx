@@ -86,6 +86,7 @@ import { useMemo } from "react";
 import { FaWhatsapp } from "react-icons/fa";
 import useTracking from "../../hooks/useTracking";
 import VehicleCard from "./vehicleCard";
+import QuoteRequestModal from "./quoteRequestModal";
 
 // Mock data for enhanced features
 const mockVehicleDetails = {
@@ -995,167 +996,16 @@ export default function CarDetailsPage() {
             </Button>
           </div>
         </div>
-      </Dialog>
-
-      {/* Quote Modal */}
-      <Dialog
-        open={showQuoteModal}
-        onClose={() => setShowQuoteModal(false)}
-        maxWidth="md"
-        fullWidth
-      >
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                Get Vehicle Quote
-              </h3>
-              <p className="text-gray-600 mt-1">
-                Get a personalized quote for this {vehicle.year} {vehicle.make}{" "}
-                {vehicle.model}
-              </p>
-            </div>
-            <IconButton onClick={() => setShowQuoteModal(false)}>
-              <X />
-            </IconButton>
-          </div>
-
-          <form
-            onSubmit={(e) => {
-              e.preventDefault();
-              handleSubmitQuote();
-            }}
-          >
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <TextField
-                  fullWidth
-                  label="Full Name"
-                  required
-                  value={quoteForm.fullName}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, fullName: e.target.value })
-                  }
-                  variant="outlined"
-                />
-
-                <TextField
-                  fullWidth
-                  label="Email Address"
-                  type="email"
-                  required
-                  value={quoteForm.email}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, email: e.target.value })
-                  }
-                  variant="outlined"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <FormControl fullWidth>
-                  <InputLabel>Country</InputLabel>
-                  <Select
-                    value={quoteForm.country}
-                    label="Country"
-                    onChange={(e) =>
-                      setQuoteForm({ ...quoteForm, country: e.target.value })
-                    }
-                    required
-                  >
-                    <MenuItem value="Zimbabwe">Zimbabwe</MenuItem>
-                    <MenuItem value="Botswana">Botswana</MenuItem>
-                    <MenuItem value="Zambia">Zambia</MenuItem>
-                    <MenuItem value="South Africa">South Africa</MenuItem>
-                    <MenuItem value="Namibia">Namibia</MenuItem>
-                  </Select>
-                </FormControl>
-
-                <TextField
-                  fullWidth
-                  label="City"
-                  required
-                  value={quoteForm.city}
-                  onChange={(e) =>
-                    setQuoteForm({ ...quoteForm, city: e.target.value })
-                  }
-                  variant="outlined"
-                />
-              </div>
-
-              <TextField
-                fullWidth
-                label="Telephone"
-                type="tel"
-                required
-                value={quoteForm.telephone}
-                onChange={(e) =>
-                  setQuoteForm({ ...quoteForm, telephone: e.target.value })
-                }
-                variant="outlined"
-              />
-
-              <TextField
-                fullWidth
-                label="Address"
-                multiline
-                rows={2}
-                value={quoteForm.address}
-                onChange={(e) =>
-                  setQuoteForm({ ...quoteForm, address: e.target.value })
-                }
-                variant="outlined"
-              />
-
-              <TextField
-                fullWidth
-                label="Additional Notes"
-                placeholder="Any specific requirements, financing needs, or questions?"
-                multiline
-                rows={3}
-                value={quoteForm.note}
-                onChange={(e) =>
-                  setQuoteForm({ ...quoteForm, note: e.target.value })
-                }
-                variant="outlined"
-              />
-
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <div className="flex items-center space-x-2 mb-2">
-                  <Info className="text-blue-500" size={20} />
-                  <span className="font-medium text-blue-900">
-                    What happens next?
-                  </span>
-                </div>
-                <ul className="text-sm text-blue-800 space-y-1">
-                  <li>• Our team will review your request within 24 hours</li>
-                  <li>• You'll receive a personalized quote via email</li>
-                  <li>• We'll include financing options if requested</li>
-                  <li>• Schedule a test drive or inspection</li>
-                </ul>
-              </div>
-
-              <Button
-                type="submit"
-                fullWidth
-                variant="contained"
-                size="large"
-                sx={{
-                  backgroundColor: "#3b82f6",
-                  "&:hover": { backgroundColor: "#2563eb" },
-                  py: 1.5,
-                  mt: 3,
-                }}
-              >
-                Submit Quote Request
-              </Button>
-            </div>
-          </form>
-        </div>
-      </Dialog>
-
+      </Dialog>      
+        <QuoteRequestModal
+          open={showQuoteModal}
+          onClose={() => setShowQuoteModal(false)}
+          vehicle={vehicle}
+          vehicleId={vehicle?.id}
+        />
       {/* Auth Modals */}
       <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
+
 
       {/* Snackbar */}
       <Snackbar

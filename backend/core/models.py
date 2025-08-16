@@ -4,6 +4,7 @@ from django.db import models
 from django.db.models.signals import post_save
 from django.dispatch import receiver
 from django.core.validators import MinValueValidator, MaxValueValidator
+from django.core.validators import EmailValidator, RegexValidator
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 from model_utils import FieldTracker
@@ -233,25 +234,6 @@ class TestUpload(models.Model):
 
     class Meta:
         verbose_name = "Test Upload"
-    
-class QuoteRequest(models.Model):
-    vehicle = models.ForeignKey(
-        Vehicle, 
-        on_delete=models.CASCADE,
-        related_name='quote_requests'
-    )
-    full_name = models.CharField(max_length=255)
-    email = models.EmailField()
-    country = models.CharField(max_length=100)
-    city = models.CharField(max_length=100)
-    address = models.TextField()
-    telephone = models.CharField(max_length=20)
-    note = models.TextField(blank=True)
-    created_at = models.DateTimeField(auto_now_add=True)
-    is_processed = models.BooleanField(default=False)
-
-    def __str__(self):
-        return f"Quote request for {self.vehicle} from {self.full_name}"
 
 class Bid(models.Model):
     BID_STATUS = (
@@ -269,6 +251,144 @@ class Bid(models.Model):
 
     def __str__(self):
         return f"{self.amount} bid for {self.vehicle}"
+    
+class QuoteRequest(models.Model):
+    PRIORITY_CHOICES = [
+        ('low', 'Low'),
+        ('medium', 'Medium'),
+        ('high', 'High'),
+        ('urgent', 'Urgent'),
+    ]
+    
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('reviewed', 'Reviewed'),
+        ('quoted', 'Quoted'),
+        ('converted', 'Converted'),
+        ('expired', 'Expired'),
+    ]
+    
+    vehicle = models.ForeignKey(
+        'Vehicle', 
+        on_delete=models.CASCADE,
+        related_name='quote_requests'
+    )
+    
+    # Customer Information
+    full_name = models.CharField(
+        max_length=255,
+        help_text="Customer's full name"
+    )
+    email = models.EmailField(
+        validators=[EmailValidator()],
+        help_text="Customer's email address"
+    )
+    country = models.CharField(
+        max_length=100,
+        help_text="Customer's country"
+    )
+    city = models.CharField(
+        max_length=100,
+        help_text="Customer's city"
+    )
+    address = models.TextField(
+        blank=True,
+        help_text="Customer's address (optional)"
+    )
+    telephone = models.CharField(
+        max_length=20,
+        validators=[
+            RegexValidator(
+                regex=r'^[\+]?[\d\s\-\(\)]{8,}$',
+                message='Enter a valid phone number'
+            )
+        ],
+        help_text="Customer's phone number with country code"
+    )
+    note = models.TextField(
+        blank=True,
+        help_text="Additional notes from customer"
+    )
+    
+    # Tracking Information
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+    is_processed = models.BooleanField(
+        default=False,
+        help_text="Whether this quote has been processed by admin"
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        help_text="Current status of the quote request"
+    )
+    priority = models.CharField(
+        max_length=20,
+        choices=PRIORITY_CHOICES,
+        default='medium',
+        help_text="Priority level of this quote"
+    )
+    
+    # Admin fields
+    admin_notes = models.TextField(
+        blank=True,
+        help_text="Internal notes for admin use"
+    )
+    processed_by = models.ForeignKey(
+        'auth.User',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='processed_quotes',
+        help_text="Admin user who processed this quote"
+    )
+    processed_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When this quote was processed"
+    )
+    
+    # Email tracking
+    quote_email_sent = models.BooleanField(
+        default=False,
+        help_text="Whether quote email was sent successfully"
+    )
+    email_sent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+        help_text="When the quote email was sent"
+    )
+    
+    class Meta:
+        ordering = ['-created_at']
+        verbose_name = "Quote Request"
+        verbose_name_plural = "Quote Requests"
+        indexes = [
+            models.Index(fields=['created_at']),
+            models.Index(fields=['email']),
+            models.Index(fields=['status']),
+            models.Index(fields=['is_processed']),
+        ]
+
+    def __str__(self):
+        return f"Quote #{self.id} - {self.vehicle} from {self.full_name}"
+    
+    @property
+    def is_expired(self):
+        """Check if quote is expired (24 hours)"""
+        from django.utils import timezone
+        from datetime import timedelta
+        return timezone.now() > self.created_at + timedelta(hours=24)
+    
+    @property
+    def time_remaining(self):
+        """Get remaining time for quote validity"""
+        from django.utils import timezone
+        from datetime import timedelta
+        if self.is_expired:
+            return None
+        return (self.created_at + timedelta(hours=24)) - timezone.now()
     
 class VehicleSearch(models.Model):
     STATUS_CHOICES = (
