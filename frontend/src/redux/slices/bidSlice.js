@@ -3,10 +3,10 @@ import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import api from "../../utils/api";
 
 export const fetchBids = createAsyncThunk(
-  'bids/fetchAll',
+  "bids/fetchAll",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get('/core/bids/all_bids/');
+      const { data } = await api.get("/core/bids/all_bids/");
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -15,7 +15,7 @@ export const fetchBids = createAsyncThunk(
 );
 
 export const deleteBid = createAsyncThunk(
-  'bids/delete',
+  "bids/delete",
   async (bidId, { rejectWithValue }) => {
     try {
       await api.delete(`/core/bids/${bidId}/`);
@@ -28,11 +28,12 @@ export const deleteBid = createAsyncThunk(
 
 export const placeBid = createAsyncThunk(
   "bids/place",
-  async ({ vehicleId, amount }, { rejectWithValue }) => {
+  async ({ vehicleId, amount, message }, { rejectWithValue }) => {
     try {
       const { data } = await api.post("/core/bids/", {
-        vehicle: vehicleId,
+        vehicle_id: vehicleId, // Changed from 'vehicle' to 'vehicle_id'
         amount,
+        message: message || "No message provided",
       });
       return data;
     } catch (err) {
@@ -41,12 +42,11 @@ export const placeBid = createAsyncThunk(
   }
 );
 
-
 export const fetchUserBids = createAsyncThunk(
-  'bids/fetchUserBids',
+  "bids/fetchUserBids",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get('/core/bids/my-bids/',);
+      const { data } = await api.get("/core/bids/my-bids/");
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -55,7 +55,7 @@ export const fetchUserBids = createAsyncThunk(
 );
 
 export const fetchBidderDetails = createAsyncThunk(
-  'bids/fetchBidder',
+  "bids/fetchBidder",
   async (userId) => {
     const response = await api.get(`/core/users/${userId}/`);
     return response.data;
@@ -68,6 +68,8 @@ const bidSlice = createSlice({
     items: [],
     allBids: [],
     biddersCache: {},
+    placing: false,
+
     loading: false,
     error: null,
   },
@@ -77,7 +79,7 @@ const bidSlice = createSlice({
       .addCase(fetchBids.pending, (state) => {
         state.loading = true;
       })
-      .addCase(fetchBids.fulfilled, (state, action) => {    
+      .addCase(fetchBids.fulfilled, (state, action) => {
         state.loading = false;
         //state.items = action.payload;
         state.allBids = action.payload;
@@ -87,14 +89,15 @@ const bidSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(placeBid.pending, (state) => {
-        state.loading = true;
+        state.placing = true; // Set placing to true when bid starts
+        state.error = null;
       })
       .addCase(placeBid.fulfilled, (state, action) => {
-        state.loading = false;
+        state.placing = false; // Reset when bid succeeds
         state.items.push(action.payload);
       })
       .addCase(placeBid.rejected, (state, action) => {
-        state.loading = false;
+        state.placing = false; // Reset when bid fails
         state.error = action.payload;
       })
       .addCase(fetchUserBids.pending, (state) => {
@@ -109,12 +112,13 @@ const bidSlice = createSlice({
         state.error = action.payload;
       })
       .addCase(fetchBidderDetails.fulfilled, (state, action) => {
-            state.biddersCache[action.meta.arg] = action.payload;
+        state.biddersCache[action.meta.arg] = action.payload;
       })
       .addCase(deleteBid.fulfilled, (state, action) => {
-        state.allBids = state.allBids.filter(bid => bid.id !== action.payload);
+        state.allBids = state.allBids.filter(
+          (bid) => bid.id !== action.payload
+        );
       });
-  
   },
 });
 

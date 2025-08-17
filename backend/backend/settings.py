@@ -134,7 +134,7 @@ SITE_URL = os.environ.get('SITE_URL', 'https://autoeden.co.zw')
 #DEFAULT_FROM_EMAIL = 'Auto Eden <admin@autoeden.co.zw>'
 
 SERVER_EMAIL = 'admin@autoeden.co.zw'  
-ADMIN_EMAIL = ['simbamtombe@gmail.com', 'simbarashemutombe1@gmail.com', 'admin@autoeden.co.zw', 'autoedemedia25@gmail.com'] 
+ADMIN_EMAIL = ['autoedemedia25@gmail.com', 'simbamtombe@gmail.com', 'simbarashemutombe1@gmail.com', 'admin@autoeden.co.zw'] 
 AUTHENTICATION_BACKENDS = [
    'django.contrib.auth.backends.ModelBackend',
 ]
