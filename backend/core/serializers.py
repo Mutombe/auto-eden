@@ -175,12 +175,27 @@ class VehicleReviewSerializer(serializers.ModelSerializer):
         return data
 
 class BidSerializer(serializers.ModelSerializer):
+    # For read operations
     vehicle = VehicleSerializer(read_only=True)
     bidder = UserSerializer(read_only=True)
+    
+    # For write operations (bid creation)
+    vehicle_id = serializers.PrimaryKeyRelatedField(
+        queryset=Vehicle.objects.all(), 
+        source='vehicle', 
+        write_only=True,
+        required=True
+    )
+
     class Meta:
         model = Bid
         fields = '__all__'
-        read_only_fields = ['status']
+        read_only_fields = ['status', 'bidder']
+
+    def validate_amount(self, value):
+        if value <= 0:
+            raise serializers.ValidationError("Bid amount must be positive")
+        return value
 
 class PublicVehicleSerializer(serializers.ModelSerializer):
     bids = BidSerializer(many=True, read_only=True)

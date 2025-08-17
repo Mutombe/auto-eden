@@ -375,6 +375,16 @@ class BidViewSet(viewsets.ModelViewSet):
         queryset = Bid.objects.all()
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+    def create(self, request, *args, **kwargs):
+        try:
+            return super().create(request, *args, **kwargs)
+        except Exception as e:
+            logger.error(f"Bid creation failed: {str(e)}")
+            return Response(
+                {"detail": "Error creating bid"}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
     
 from rest_framework.pagination import PageNumberPagination
 

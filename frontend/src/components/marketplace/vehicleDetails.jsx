@@ -152,24 +152,34 @@ function VehicleMetaTags({ vehicle }) {
   if (!vehicle) return null;
 
   const title = `${vehicle.year} ${vehicle.make} ${vehicle.model} - Auto Eden`;
-  const description = `${vehicle.year} ${vehicle.make} ${vehicle.model} for $${vehicle.price?.toLocaleString()} - ${vehicle.body_type || 'Sedan'} with ${vehicle.mileage?.toLocaleString()}km. ${vehicle.is_physically_verified ? 'Physically verified' : 'Digitally verified'} vehicle on Auto Eden.`;
-  
+  const description = `${vehicle.year} ${vehicle.make} ${
+    vehicle.model
+  } for $${vehicle.price?.toLocaleString()} - ${
+    vehicle.body_type || "Sedan"
+  } with ${vehicle.mileage?.toLocaleString()}km. ${
+    vehicle.is_physically_verified
+      ? "Physically verified"
+      : "Digitally verified"
+  } vehicle on Auto Eden.`;
+
   // Fix 1: Ensure absolute URL for images
-  const baseUrl = 'https://autoeden.co.zw';
+  const baseUrl = "https://autoeden.co.zw";
   const defaultImage = `${baseUrl}/default-car-image.jpg`;
-  
+
   // Fix 2: Get the first valid image or use default
   const getImageUrl = () => {
     if (vehicle.images && vehicle.images.length > 0) {
       const firstImage = vehicle.images[0]?.image;
       if (firstImage) {
         // If it's already absolute, use it; otherwise make it absolute
-        return firstImage.startsWith('http') ? firstImage : `${baseUrl}${firstImage}`;
+        return firstImage.startsWith("http")
+          ? firstImage
+          : `${baseUrl}${firstImage}`;
       }
     }
     return defaultImage;
   };
-  
+
   const image = getImageUrl();
   const url = `${baseUrl}/vehicles/${vehicle.id}`;
 
@@ -178,8 +188,11 @@ function VehicleMetaTags({ vehicle }) {
       {/* Basic Meta Tags */}
       <title>{title}</title>
       <meta name="description" content={description} />
-      <meta name="keywords" content={`${vehicle.make}, ${vehicle.model}, ${vehicle.year}, car, vehicle, auto, zimbabwe, harare, for sale`} />
-      
+      <meta
+        name="keywords"
+        content={`${vehicle.make}, ${vehicle.model}, ${vehicle.year}, car, vehicle, auto, zimbabwe, harare, for sale`}
+      />
+
       {/* Open Graph Meta Tags - Fixed */}
       <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
@@ -188,11 +201,14 @@ function VehicleMetaTags({ vehicle }) {
       <meta property="og:image:secure_url" content={image} />
       <meta property="og:image:width" content="1200" />
       <meta property="og:image:height" content="630" />
-      <meta property="og:image:alt" content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`} />
+      <meta
+        property="og:image:alt"
+        content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`}
+      />
       <meta property="og:url" content={url} />
       <meta property="og:site_name" content="Auto Eden" />
       <meta property="og:locale" content="en_US" />
-      
+
       {/* Twitter Card Meta Tags - Fixed */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@AutoEdenZW" />
@@ -200,56 +216,61 @@ function VehicleMetaTags({ vehicle }) {
       <meta name="twitter:title" content={title} />
       <meta name="twitter:description" content={description} />
       <meta name="twitter:image" content={image} />
-      <meta name="twitter:image:alt" content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`} />
-      
+      <meta
+        name="twitter:image:alt"
+        content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`}
+      />
+
       {/* WhatsApp specific (uses Open Graph) */}
       <meta property="og:image:type" content="image/jpeg" />
-      
+
       {/* Additional Meta Tags */}
       <meta name="robots" content="index, follow" />
       <meta name="author" content="Auto Eden Motors" />
       <link rel="canonical" href={url} />
-      
+
       {/* Structured Data for better SEO */}
       <script type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org/",
           "@type": "Car",
-          "name": `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
-          "description": description,
-          "image": [image], // Array format is preferred
-          "brand": {
+          name: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+          description: description,
+          image: [image], // Array format is preferred
+          brand: {
             "@type": "Brand",
-            "name": vehicle.make
+            name: vehicle.make,
           },
-          "model": vehicle.model,
-          "vehicleModelDate": vehicle.year,
-          "mileageFromOdometer": {
+          model: vehicle.model,
+          vehicleModelDate: vehicle.year,
+          mileageFromOdometer: {
             "@type": "QuantitativeValue",
-            "value": vehicle.mileage,
-            "unitCode": "KMT"
+            value: vehicle.mileage,
+            unitCode: "KMT",
           },
-          "offers": {
+          offers: {
             "@type": "Offer",
-            "url": url,
-            "priceCurrency": "USD",
-            "price": vehicle.price,
-            "priceValidUntil": new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-            "itemCondition": "https://schema.org/UsedCondition",
-            "availability": "https://schema.org/InStock",
-            "seller": {
+            url: url,
+            priceCurrency: "USD",
+            price: vehicle.price,
+            priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+              .toISOString()
+              .split("T")[0],
+            itemCondition: "https://schema.org/UsedCondition",
+            availability: "https://schema.org/InStock",
+            seller: {
               "@type": "Organization",
-              "name": "Auto Eden Motors",
-              "url": "https://autoeden.co.zw"
-            }
+              name: "Auto Eden Motors",
+              url: "https://autoeden.co.zw",
+            },
           },
-          "manufacturer": {
+          manufacturer: {
             "@type": "Organization",
-            "name": vehicle.make
+            name: vehicle.make,
           },
-          "vehicleConfiguration": vehicle.body_type,
-          "fuelType": vehicle.fuel_type || "Gasoline",
-          "url": url
+          vehicleConfiguration: vehicle.body_type,
+          fuelType: vehicle.fuel_type || "Gasoline",
+          url: url,
         })}
       </script>
     </Helmet>
@@ -260,7 +281,7 @@ export default function CarDetailsPage() {
   const { vehicleId } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
-  useTracking(window.location.pathname, vehicleId); 
+  useTracking(window.location.pathname, vehicleId);
 
   // Get state from Redux
   const {
@@ -270,6 +291,7 @@ export default function CarDetailsPage() {
   } = useSelector((state) => state.vehicles);
 
   const { isAuthenticated } = useSelector((state) => state.auth);
+  const { placing } = useSelector((state) => state.bids);
 
   const [bidAmount, setBidAmount] = useState("");
   const [bidMessage, setBidMessage] = useState("");
@@ -296,7 +318,7 @@ export default function CarDetailsPage() {
     open: false,
     message: "",
     severity: "success",
-  })
+  });
 
   // Get recommendations (similar vehicles)
   const recommendations = useMemo(() => {
@@ -321,33 +343,8 @@ export default function CarDetailsPage() {
     dispatch(fetchMarketplace());
   }, [dispatch]);
 
-  const handleSubmitQuote = () => {
-    if (currentVehicle) {
-      dispatch(
-        requestQuote({
-          vehicleId: currentVehicle.id,
-          ...quoteForm,
-        })
-      )
-        .then(() => {
-          setShowQuoteModal(false);
-          setSnackbar({
-            open: true,
-            message: "Quote request submitted successfully!",
-            severity: "success",
-          });
-        })
-        .catch((error) => {
-          setSnackbar({
-            open: true,
-            message: error?.message || "Failed to submit quote request",
-            severity: "error",
-          });
-        });
-    }
-  };
-
   const handlePlaceBid = () => {
+    if (placing) return;
     if (currentVehicle && bidAmount) {
       dispatch(
         placeBid({
@@ -364,9 +361,14 @@ export default function CarDetailsPage() {
           });
         })
         .catch((error) => {
+          const errorMessage =
+            error?.payload?.detail ||
+            error?.payload?.message ||
+            "Failed to place bid. Please try again.";
+
           setSnackbar({
             open: true,
-            message: error?.message || "Failed to place bid. Please try again.",
+            message: errorMessage,
             severity: "error",
           });
         });
@@ -644,7 +646,7 @@ export default function CarDetailsPage() {
                               ),
                             }}
                           />
-                           <Divider className="p-1" />
+                          <Divider className="p-1" />
 
                           <TextField
                             fullWidth
@@ -657,20 +659,33 @@ export default function CarDetailsPage() {
                             variant="outlined"
                           />
 
-                           <Divider className="p-1"/>
+                          <Divider className="p-1" />
 
                           <Button
                             fullWidth
                             variant="contained"
                             onClick={handlePlaceBid}
                             size="large"
+                            disabled={placing} // Disable button during submission
                             sx={{
                               backgroundColor: "#dc2626",
-                              "&:hover": { backgroundColor: "#b91c1c" },
+                              "&:hover": {
+                                backgroundColor: placing
+                                  ? "#dc2626"
+                                  : "#b91c1c",
+                              },
                               py: 1.5,
+                              "&:disabled": {
+                                backgroundColor: "#e5e5e5",
+                                color: "#a3a3a3",
+                              },
                             }}
                           >
-                            Submit Offer
+                            {placing ? (
+                              "Offering..."
+                            ) : (
+                              "Submit Offer"
+                            )}
                           </Button>
                         </>
                       ) : (
@@ -996,16 +1011,15 @@ export default function CarDetailsPage() {
             </Button>
           </div>
         </div>
-      </Dialog>      
-        <QuoteRequestModal
-          open={showQuoteModal}
-          onClose={() => setShowQuoteModal(false)}
-          vehicle={vehicle}
-          vehicleId={vehicle?.id}
-        />
+      </Dialog>
+      <QuoteRequestModal
+        open={showQuoteModal}
+        onClose={() => setShowQuoteModal(false)}
+        vehicle={vehicle}
+        vehicleId={vehicle?.id}
+      />
       {/* Auth Modals */}
       <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
-
 
       {/* Snackbar */}
       <Snackbar
