@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { CarFront } from 'lucide-react';
 import { useMediaQuery } from "@mui/material";
 import { logout, login, register } from "../../redux/slices/authSlice";
 import {
@@ -412,7 +413,7 @@ export const Navbar = () => {
                   scrolled ? "text-gray-800" : "text-gray-900"
                 }`}
               >
-                <DollarSign className="w-5 h-5 mr-2" />
+                <CarFront className="w-5 h-5 mr-2" />
                 Buy My Car
               </Link>
               <Link
