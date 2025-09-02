@@ -12,6 +12,7 @@ import {
   fetchAllVehicles,
 } from "../../redux/slices/vehicleSlice";
 import { fetchBids, deleteBid } from "../../redux/slices/bidSlice";
+import ExportDropdown from "./export";
 import {
   CheckCircle,
   XCircle,
@@ -365,6 +366,49 @@ export default function AdminDashboard() {
     // Pagination
     const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
     return displayData.slice(startIndex, startIndex + ITEMS_PER_PAGE);
+  };
+
+  const getAllFilteredData = () => {
+    let displayData = [];
+    switch (activeTab) {
+      case 0: // PENDING REVIEW
+        displayData = pendingVehicles || [];
+        break;
+      case 1: // D-VERIFIED
+        displayData =
+          items?.filter((v) => v.verification_state === "digital") || [];
+        break;
+      case 2: // P-VERIFIED
+        displayData =
+          items?.filter((v) => v.verification_state === "physical") || [];
+        break;
+      case 3: // REJECTED
+        displayData =
+          items?.filter((v) => v.verification_state === "rejected") || [];
+        break;
+      case 4: // ALL VEHICLES
+        displayData = items || [];
+        break;
+      case 5: // BIDS
+        displayData = allBids || [];
+        break;
+      default:
+        displayData = [];
+    }
+
+    // Apply search filter
+    if (activeTab !== 5) {
+      displayData = displayData.filter((vehicle) => {
+        const searchTerm = filters.search.toLowerCase();
+        return (
+          vehicle.make.toLowerCase().includes(searchTerm) ||
+          vehicle.model.toLowerCase().includes(searchTerm) ||
+          vehicle.vin.toLowerCase().includes(searchTerm)
+        );
+      });
+    }
+
+    return displayData;
   };
 
   const VerificationModal = ({ vehicle, onClose }) => {
@@ -870,10 +914,10 @@ export default function AdminDashboard() {
           </h1>
 
           <div className="flex gap-2 self-end md:self-auto">
-            <button className="bg-white border border-gray-300 text-gray-700 px-3 py-2 rounded-md flex items-center gap-2 hover:bg-gray-50">
-              <Download size={16} />
-              <span className="hidden md:inline">Export</span>
-            </button>
+            <ExportDropdown
+              data={getAllFilteredData()}
+              fileName={`vehicles-${new Date().toISOString().split("T")[0]}`}
+            />
             <button
               className="bg-red-600 text-white px-3 py-2 rounded-md flex items-center gap-2 hover:bg-red-700"
               onClick={() => setShowAddModal(true)}
@@ -1522,7 +1566,6 @@ const StatCard = ({ title, value, icon, bgColor, textColor, borderColor }) => (
   </div>
 );
 
-// New StatCard component
 const StatCard1 = ({ title, value, description, icon, trend, trendValue }) => (
   <div className="bg-white/20 backdrop-blur-sm rounded-xl p-4">
     <div className="flex justify-between items-start">

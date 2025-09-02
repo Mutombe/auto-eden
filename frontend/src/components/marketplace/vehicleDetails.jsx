@@ -10,7 +10,7 @@ import { placeBid } from "../../redux/slices/bidSlice";
 import { requestQuote } from "../../redux/slices/quoteSlice";
 import { AuthModals } from "../navbar/navbar";
 import ImageWithFallback from "../../utils/smartImage";
-import { FaXTwitter } from "react-icons/fa6";
+import { FaXTwitter, FaWhatsapp } from "react-icons/fa6";
 import {
   Car,
   DollarSign,
@@ -48,42 +48,15 @@ import {
   Facebook,
   Twitter,
   Copy,
+  Loader2,
+  Menu,
+  ChevronDown,
+  ChevronUp,
+  ExternalLink,
 } from "lucide-react";
-import {
-  Button,
-  TextField,
-  Chip,
-  Dialog,
-  IconButton,
-  Snackbar,
-  Alert,
-  CircularProgress,
-  Divider,
-  Badge,
-  FormControl,
-  InputLabel,
-  Select,
-  MenuItem,
-  Tooltip,
-  Card,
-  CardContent,
-  LinearProgress,
-  Avatar,
-  Tabs,
-  Tab,
-  Box,
-  Typography,
-  Grid,
-  Paper,
-  Stack,
-  List,
-  ListItem,
-  ListItemIcon,
-  ListItemText,
-} from "@mui/material";
 import { motion, AnimatePresence } from "framer-motion";
 import { useMemo } from "react";
-import { FaWhatsapp } from "react-icons/fa";
+import ImagePreview, { useImagePreview } from "../imagePreviewing";
 import useTracking from "../../hooks/useTracking";
 import VehicleCard from "./vehicleCard";
 import QuoteRequestModal from "./quoteRequestModal";
@@ -134,19 +107,156 @@ const mockVehicleDetails = {
   ],
 };
 
-function TabPanel({ children, value, index, ...other }) {
+// Custom Toast Component
+const Toast = ({ show, message, type, onClose }) => {
+  useEffect(() => {
+    if (show) {
+      const timer = setTimeout(onClose, 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [show, onClose]);
+
   return (
-    <div
-      role="tabpanel"
-      hidden={value !== index}
-      id={`vehicle-tabpanel-${index}`}
-      aria-labelledby={`vehicle-tab-${index}`}
-      {...other}
-    >
-      {value === index && <Box sx={{ p: 3 }}>{children}</Box>}
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, y: 50, x: "-50%" }}
+          animate={{ opacity: 1, y: 0, x: "-50%" }}
+          exit={{ opacity: 0, y: 50, x: "-50%" }}
+          className={`fixed bottom-6 left-1/2 transform -translate-x-1/2 z-50 px-6 py-4 rounded-lg shadow-lg max-w-sm w-full mx-4 ${
+            type === "success"
+              ? "bg-green-600 text-white"
+              : type === "error"
+              ? "bg-red-600 text-white"
+              : "bg-blue-600 text-white"
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <p className="text-sm font-medium">{message}</p>
+            <button
+              onClick={onClose}
+              className="ml-4 text-white hover:text-gray-200 transition-colors"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// Modal Component
+const Modal = ({ isOpen, onClose, children, title, size = "max-w-md" }) => {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="absolute inset-0 bg-gray-900/30 backdrop-blur-sm bg-opacity-50"
+          />
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95, y: 20 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            className={`relative bg-white rounded-xl shadow-xl ${size} w-full max-h-[90vh] overflow-y-auto`}
+          >
+            {title && (
+              <div className="flex items-center justify-between p-6 border-b">
+                <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+                <button
+                  onClick={onClose}
+                  className="text-gray-400 hover:text-gray-600 transition-colors"
+                >
+                  <X size={24} />
+                </button>
+              </div>
+            )}
+            {children}
+          </motion.div>
+        </div>
+      )}
+    </AnimatePresence>
+  );
+};
+
+// Tabs Component
+const Tabs = ({ tabs, activeTab, onTabChange }) => {
+  return (
+    <div className="border-b border-gray-200">
+      <div className="flex overflow-x-auto scrollbar-hide">
+        {tabs.map((tab, index) => (
+          <button
+            key={index}
+            onClick={() => onTabChange(index)}
+            className={`whitespace-nowrap px-6 py-4 text-sm font-medium border-b-2 transition-colors ${
+              activeTab === index
+                ? "border-red-500 text-red-600"
+                : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
+            }`}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
     </div>
   );
-}
+};
+
+// Button Component
+const Button = ({
+  children,
+  variant = "primary",
+  size = "md",
+  disabled = false,
+  loading = false,
+  onClick,
+  className = "",
+  icon: Icon,
+  ...props
+}) => {
+  const baseClasses =
+    "inline-flex items-center justify-center font-medium rounded-lg transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2";
+
+  const variants = {
+    primary:
+      "bg-red-600 text-white hover:bg-red-700 focus:ring-red-500 disabled:bg-gray-300",
+    secondary:
+      "bg-gray-100 text-gray-700 hover:bg-gray-200 focus:ring-gray-500 disabled:bg-gray-100",
+    outline:
+      "border border-gray-300 text-gray-700 hover:bg-gray-50 focus:ring-gray-500 disabled:border-gray-200",
+    ghost: "text-gray-700 hover:bg-gray-100 focus:ring-gray-500",
+  };
+
+  const sizes = {
+    sm: "px-3 py-1.5 text-sm",
+    md: "px-4 py-2 text-sm",
+    lg: "px-6 py-3 text-base",
+    xl: "px-8 py-4 text-lg",
+  };
+
+  return (
+    <button
+      className={`${baseClasses} ${variants[variant]} ${sizes[size]} ${
+        disabled ? "opacity-50 cursor-not-allowed" : ""
+      } ${className}`}
+      disabled={disabled || loading}
+      onClick={onClick}
+      {...props}
+    >
+      {loading ? (
+        <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+      ) : Icon ? (
+        <Icon className="w-4 h-4 mr-2" />
+      ) : null}
+      {children}
+    </button>
+  );
+};
 
 function VehicleMetaTags({ vehicle }) {
   if (!vehicle) return null;
@@ -162,16 +272,13 @@ function VehicleMetaTags({ vehicle }) {
       : "Digitally verified"
   } vehicle on Auto Eden.`;
 
-  // Fix 1: Ensure absolute URL for images
   const baseUrl = "https://autoeden.co.zw";
   const defaultImage = `${baseUrl}/default-car-image.jpg`;
 
-  // Fix 2: Get the first valid image or use default
   const getImageUrl = () => {
     if (vehicle.images && vehicle.images.length > 0) {
       const firstImage = vehicle.images[0]?.image;
       if (firstImage) {
-        // If it's already absolute, use it; otherwise make it absolute
         return firstImage.startsWith("http")
           ? firstImage
           : `${baseUrl}${firstImage}`;
@@ -185,7 +292,6 @@ function VehicleMetaTags({ vehicle }) {
 
   return (
     <Helmet>
-      {/* Basic Meta Tags */}
       <title>{title}</title>
       <meta name="description" content={description} />
       <meta
@@ -193,7 +299,6 @@ function VehicleMetaTags({ vehicle }) {
         content={`${vehicle.make}, ${vehicle.model}, ${vehicle.year}, car, vehicle, auto, zimbabwe, harare, for sale`}
       />
 
-      {/* Open Graph Meta Tags - Fixed */}
       <meta property="og:type" content="website" />
       <meta property="og:title" content={title} />
       <meta property="og:description" content={description} />
@@ -209,7 +314,6 @@ function VehicleMetaTags({ vehicle }) {
       <meta property="og:site_name" content="Auto Eden" />
       <meta property="og:locale" content="en_US" />
 
-      {/* Twitter Card Meta Tags - Fixed */}
       <meta name="twitter:card" content="summary_large_image" />
       <meta name="twitter:site" content="@AutoEdenZW" />
       <meta name="twitter:creator" content="@AutoEdenZW" />
@@ -221,22 +325,18 @@ function VehicleMetaTags({ vehicle }) {
         content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`}
       />
 
-      {/* WhatsApp specific (uses Open Graph) */}
       <meta property="og:image:type" content="image/jpeg" />
-
-      {/* Additional Meta Tags */}
       <meta name="robots" content="index, follow" />
       <meta name="author" content="Auto Eden Motors" />
       <link rel="canonical" href={url} />
 
-      {/* Structured Data for better SEO */}
       <script type="application/ld+json">
         {JSON.stringify({
           "@context": "https://schema.org/",
           "@type": "Car",
           name: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
           description: description,
-          image: [image], // Array format is preferred
+          image: [image],
           brand: {
             "@type": "Brand",
             name: vehicle.make,
@@ -282,6 +382,7 @@ export default function CarDetailsPage() {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   useTracking(window.location.pathname, vehicleId);
+  const { preview, openPreview, closePreview } = useImagePreview();
 
   // Get state from Redux
   const {
@@ -293,6 +394,7 @@ export default function CarDetailsPage() {
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { placing } = useSelector((state) => state.bids);
 
+  // Local state
   const [bidAmount, setBidAmount] = useState("");
   const [bidMessage, setBidMessage] = useState("");
   const [showQuoteModal, setShowQuoteModal] = useState(false);
@@ -300,24 +402,15 @@ export default function CarDetailsPage() {
   const [showCarousel, setShowCarousel] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [authModal, setAuthModal] = useState(null);
-  const [tabValue, setTabValue] = useState(0);
+  const [activeTab, setActiveTab] = useState(0);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const [viewCount, setViewCount] = useState(1247);
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
 
-  const [quoteForm, setQuoteForm] = useState({
-    fullName: "",
-    email: "",
-    country: "",
-    city: "",
-    address: "",
-    telephone: "",
-    note: "",
-  });
-
-  const [snackbar, setSnackbar] = useState({
-    open: false,
+  const [toast, setToast] = useState({
+    show: false,
     message: "",
-    severity: "success",
+    type: "success",
   });
 
   // Get recommendations (similar vehicles)
@@ -343,6 +436,14 @@ export default function CarDetailsPage() {
     dispatch(fetchMarketplace());
   }, [dispatch]);
 
+  const showToast = (message, type = "success") => {
+    setToast({ show: true, message, type });
+  };
+
+  const hideToast = () => {
+    setToast({ ...toast, show: false });
+  };
+
   const handlePlaceBid = () => {
     if (placing) return;
     if (currentVehicle && bidAmount) {
@@ -354,28 +455,35 @@ export default function CarDetailsPage() {
         })
       )
         .then(() => {
-          setSnackbar({
-            open: true,
-            message: "Your bid has been placed successfully!",
-            severity: "success",
-          });
+          showToast("Your bid has been placed successfully!");
+          setBidAmount("");
+          setBidMessage("");
         })
         .catch((error) => {
           const errorMessage =
             error?.payload?.detail ||
             error?.payload?.message ||
             "Failed to place bid. Please try again.";
-
-          setSnackbar({
-            open: true,
-            message: errorMessage,
-            severity: "error",
-          });
+          showToast(errorMessage, "error");
         });
     }
   };
 
+  const handleImageClick = (imageIndex = currentImageIndex) => {
+    const imageUrls = vehicle.images?.map((img) => img.image) || [
+      vehicle.main_image,
+    ];
+    openPreview(
+      imageUrls,
+      imageIndex,
+      `${vehicle.make} ${vehicle.model}`,
+      `${vehicle.make} ${vehicle.model} Gallery`,
+      "Vehicle image gallery"
+    );
+  };
+
   const vehicle = currentVehicle;
+
   const handleShare = (platform) => {
     const url = window.location.href;
     const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
@@ -398,11 +506,7 @@ export default function CarDetailsPage() {
         break;
       case "copy":
         navigator.clipboard.writeText(url);
-        setSnackbar({
-          open: true,
-          message: "Link copied to clipboard!",
-          severity: "success",
-        });
+        showToast("Link copied to clipboard!");
         break;
     }
     setShowShareModal(false);
@@ -426,616 +530,601 @@ export default function CarDetailsPage() {
     return "Verification Pending";
   };
 
+  const tabs = ["Specifications", "Features", "Seller Info", "History"];
+
   if (!vehicle || loadingDetails) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
-        <CircularProgress sx={{ color: "#dc2626" }} />
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-red-600 mx-auto mb-4" />
+          <p className="text-gray-600">Loading vehicle details...</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div style={{ background: "red", color: "white", padding: "10px" }}>
-        TEST: Component is rendering
-      </div>
-      {/* Meta Tags */}
       <VehicleMetaTags vehicle={vehicle} />
-      {/* Header */}
-      <div className="bg-white shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+
+      {/* Mobile-First Header */}
+      <div className="bg-gray-100 shadow-sm pt-20">
+        <div className="px-4 py-3">
           <div className="flex items-center justify-between">
             <Button
-              startIcon={<ArrowLeft />}
+              variant="ghost"
+              size="sm"
               onClick={() => navigate(-1)}
-              sx={{ color: "#dc2626" }}
+              icon={ArrowLeft}
             >
-              Back to Marketplace
+              <span className="hidden sm:inline">Back</span>
             </Button>
 
-            <div className="flex items-center space-x-3">
-              <div className="flex items-center text-gray-600">
+            <div className="flex items-center space-x-2">
+              <div className="hidden sm:flex items-center text-gray-600 text-sm">
                 <Eye size={16} className="mr-1" />
-                <span className="text-sm">
-                  {viewCount.toLocaleString()} views
-                </span>
+                <span>{viewCount.toLocaleString()}</span>
               </div>
 
-              <IconButton
+              <button
                 onClick={() => setIsWishlisted(!isWishlisted)}
-                sx={{ color: isWishlisted ? "#dc2626" : "#6b7280" }}
+                className="p-2 rounded-full hover:bg-gray-100 transition-colors"
               >
-                <Heart fill={isWishlisted ? "currentColor" : "none"} />
-              </IconButton>
+                <Heart
+                  size={20}
+                  className={
+                    isWishlisted ? "text-red-500 fill-current" : "text-gray-500"
+                  }
+                />
+              </button>
 
               <Button
-                startIcon={<Share2 />}
+                variant="ghost"
+                size="sm"
                 onClick={() => setShowShareModal(true)}
-                variant="outlined"
-                size="small"
+                icon={Share2}
               >
-                Share
+                <span className="hidden sm:inline">Share</span>
               </Button>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Main Vehicle Details */}
+      <div className="max-w-7xl mx-auto px-4 py-6 space-y-6 ">
+        {/* Main Vehicle Card - Mobile Optimized */}
         <motion.div
-          className="bg-white rounded-2xl shadow-xl overflow-hidden mb-8"
+          className="bg-white rounded-xl shadow-lg overflow-hidden "
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-            {/* Enhanced Image Gallery */}
-            <div className="relative">
-              <div className="aspect-w-16 aspect-h-12 bg-gray-100">
-                <ImageWithFallback
-                  src={vehicle.images?.[currentImageIndex]?.image}
-                  className="w-full h-96 object-cover cursor-pointer"
-                  alt={`${vehicle.make} ${vehicle.model}`}
-                  onClick={() => setShowCarousel(true)}
-                />
+          {/* Mobile Image Gallery */}
+          <div className="relative">
+            <div
+              className="aspect-w-16 aspect-h-9 sm:aspect-h-12"
+              onClick={() => handleImageClick(currentImageIndex)}
+            >
+              <ImageWithFallback
+                src={vehicle.images?.[currentImageIndex]?.image}
+                className="w-full h-74 sm:h-80 lg:h-96 object-cover cursor-pointer"
+                alt={`${vehicle.make} ${vehicle.model}`}
+              />
+            </div>
 
-                {/* Image counter */}
-                <div className="absolute top-4 right-4 bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
-                  {currentImageIndex + 1} / {vehicle.images?.length || 1}
-                </div>
-
-                {/* Camera icon */}
-                <div className="absolute bottom-4 right-4 bg-black bg-opacity-50 text-white p-2 rounded-full">
-                  <Camera size={20} />
-                </div>
+            {/* Image counter and camera icon */}
+            <div className="absolute top-4 right-4 flex space-x-2">
+              <div className="bg-black bg-opacity-50 text-white px-3 py-1 rounded-full text-sm">
+                {currentImageIndex + 1} / {vehicle.images?.length || 1}
               </div>
-
-              {/* Enhanced thumbnail gallery */}
-              <div className="p-4">
-                <div className="flex space-x-2 overflow-x-auto">
-                  {vehicle.images?.map((img, index) => (
-                    <motion.div
-                      key={index}
-                      className={`flex-shrink-0 relative cursor-pointer ${
-                        currentImageIndex === index ? "ring-2 ring-red-500" : ""
-                      }`}
-                      whileHover={{ scale: 1.05 }}
-                      onClick={() => setCurrentImageIndex(index)}
-                    >
-                      <ImageWithFallback
-                        src={img.image}
-                        className="h-20 w-20 object-cover rounded-lg"
-                        alt={`Preview ${index + 1}`}
-                      />
-                    </motion.div>
-                  ))}
-                </div>
+              <div className="bg-black bg-opacity-50 text-white p-2 rounded-full">
+                <Camera size={16} />
               </div>
             </div>
 
-            {/* Enhanced Vehicle Info */}
-            <div className="p-8">
-              <div className="space-y-6">
-                {/* Header */}
-                <div>
-                  <div className="flex items-center justify-between mb-2">
-                    <h1 className="text-4xl font-bold text-gray-900">
-                      {vehicle.year} {vehicle.make} {vehicle.model}
-                    </h1>
-                    <div className="flex items-center space-x-2">
-                      {getVerificationIcon(vehicle)}
-                      <span className="text-sm text-gray-600">
-                        {getVerificationText(vehicle)}
-                      </span>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-4 mb-4">
-                    <Chip
-                      label={`$${vehicle.price?.toLocaleString() || "0"}`}
-                      sx={{
-                        backgroundColor: "#dc2626",
-                        color: "white",
-                        fontSize: "1.125rem",
-                        fontWeight: "bold",
-                        padding: "0.5rem",
-                      }}
+            {/* Mobile thumbnail strip */}
+            <div className="absolute bottom-4 left-4 right-4">
+              <div className="flex space-x-2 overflow-x-auto scrollbar-hide">
+                {vehicle.images?.slice(0, 5).map((img, index) => (
+                  <motion.button
+                    key={index}
+                    className={`flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 ${
+                      currentImageIndex === index
+                        ? "border-white"
+                        : "border-transparent"
+                    }`}
+                    whileHover={{ scale: 1.05 }}
+                    onDoubleClick={() => handleImageClick(index)}
+                  >
+                    <ImageWithFallback
+                      src={img.image}
+                      className="w-full h-full object-cover"
+                      alt={`Preview ${index + 1}`}
                     />
+                  </motion.button>
+                ))}
+                {vehicle.images?.length > 5 && (
+                  <button
+                    onClick={() => handleImageClick(0)}
+                    className="flex-shrink-0 w-12 h-12 sm:w-16 sm:h-16 bg-black bg-opacity-50 rounded-lg flex items-center justify-center text-white text-xs"
+                  >
+                    +{vehicle.images.length - 5}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
 
-                    {vehicle.listing_type === "marketplace" && (
-                      <div className="flex items-center text-red-500 bg-red-50 px-3 py-1 rounded-full">
-                        <TrendingUp className="mr-1" size={16} />
-                        <span className="text-sm font-medium">Marketplace</span>
-                      </div>
-                    )}
+          {/* Vehicle Info - Mobile Optimized */}
+          <div className="p-4 sm:p-6 lg:p-8">
+            {/* Header */}
+            <div className="mb-6">
+              <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between mb-3">
+                <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-0">
+                  {vehicle.year} {vehicle.make} {vehicle.model}
+                </h1>
+                <div className="flex items-center space-x-2">
+                  {getVerificationIcon(vehicle)}
+                  <span className="text-xs sm:text-sm text-gray-600">
+                    {getVerificationText(vehicle)}
+                  </span>
+                </div>
+              </div>
 
-                    <Badge badgeContent={vehicle.bid_count || 0} color="error">
-                      <div className="flex items-center text-gray-600 bg-gray-100 px-3 py-1 rounded-full">
-                        <MessageCircle className="mr-1" size={16} />
-                        <span className="text-sm">Bids</span>
-                      </div>
-                    </Badge>
-                  </div>
+              {/* Price and badges */}
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <div className="bg-red-600 text-white px-4 py-2 rounded-lg font-bold text-lg sm:text-xl">
+                  ${vehicle.price?.toLocaleString() || "0"}
                 </div>
 
-                {/* Key specifications */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <Gauge className="text-blue-500" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-600">Mileage</p>
-                      <p className="font-semibold">
-                        {vehicle.mileage?.toLocaleString() || "0"} km
-                      </p>
-                    </div>
+                {vehicle.listing_type === "marketplace" && (
+                  <div className="flex items-center text-red-500 bg-red-50 px-3 py-1 rounded-full text-sm">
+                    <TrendingUp className="mr-1" size={16} />
+                    <span>Marketplace</span>
                   </div>
+                )}
 
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <Tag className="text-green-500" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-600">Body Type</p>
-                      <p className="font-semibold">
-                        {vehicle.body_type || "Sedan"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <MapPin className="text-purple-500" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-600">Location</p>
-                      <p className="font-semibold">
-                        {vehicle.location || "Auto Eden HQ"}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
-                    <Fuel className="text-orange-500" size={20} />
-                    <div>
-                      <p className="text-sm text-gray-600">Fuel Type</p>
-                      <p className="font-semibold">
-                        {vehicle.fuel_type || "Petrol"}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {/* Enhanced Bid/Quote Section */}
-                <div className="bg-gradient-to-r from-red-50 to-pink-50 p-6 rounded-xl">
-                  {vehicle.listing_type === "marketplace" ? (
-                    <div className="space-y-4">
-                      <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                        <DollarSign className="mr-2 text-red-500" />
-                        Make an Offer
-                      </h3>
-
-                      {isAuthenticated ? (
-                        <>
-                          <TextField
-                            fullWidth
-                            type="number"
-                            label="Your Bid Amount"
-                            value={bidAmount}
-                            onChange={(e) => setBidAmount(e.target.value)}
-                            variant="outlined"
-                            InputProps={{
-                              startAdornment: (
-                                <DollarSign className="mr-2 text-gray-400" />
-                              ),
-                            }}
-                          />
-                          <Divider className="p-1" />
-
-                          <TextField
-                            fullWidth
-                            multiline
-                            rows={3}
-                            label="Message to Seller"
-                            value={bidMessage}
-                            onChange={(e) => setBidMessage(e.target.value)}
-                            placeholder="Tell the seller why you're interested..."
-                            variant="outlined"
-                          />
-
-                          <Divider className="p-1" />
-
-                          <Button
-                            fullWidth
-                            variant="contained"
-                            onClick={handlePlaceBid}
-                            size="large"
-                            disabled={placing} // Disable button during submission
-                            sx={{
-                              backgroundColor: "#dc2626",
-                              "&:hover": {
-                                backgroundColor: placing
-                                  ? "#dc2626"
-                                  : "#b91c1c",
-                              },
-                              py: 1.5,
-                              "&:disabled": {
-                                backgroundColor: "#e5e5e5",
-                                color: "#a3a3a3",
-                              },
-                            }}
-                          >
-                            {placing ? (
-                              "Offering..."
-                            ) : (
-                              "Submit Offer"
-                            )}
-                          </Button>
-                        </>
-                      ) : (
-                        <div className="space-y-4">
-                          <Button
-                            fullWidth
-                            variant="contained"
-                            onClick={() => setAuthModal("login")}
-                            size="large"
-                            sx={{
-                              backgroundColor: "#dc2626",
-                              "&:hover": { backgroundColor: "#b91c1c" },
-                              py: 1.5,
-                            }}
-                          >
-                            Login to Make an Offer
-                          </Button>
-
-                          <Divider>or</Divider>
-
-                          <Button
-                            fullWidth
-                            variant="outlined"
-                            onClick={() => setShowQuoteModal(true)}
-                            size="large"
-                            sx={{ py: 1.5 }}
-                          >
-                            Get Instant Quote
-                          </Button>
-                        </div>
-                      )}
-                    </div>
-                  ) : (
-                    <Button
-                      fullWidth
-                      variant="contained"
-                      size="large"
-                      sx={{
-                        backgroundColor: "#dc2626",
-                        "&:hover": { backgroundColor: "#b91c1c" },
-                        py: 1.5,
-                      }}
-                    >
-                      <Zap className="mr-2" />
-                      Buy Now
-                    </Button>
+                <div className="flex items-center text-gray-600 bg-gray-100 px-3 py-1 rounded-full text-sm relative">
+                  <MessageCircle className="mr-1" size={16} />
+                  <span>Bids</span>
+                  {vehicle.bid_count > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
+                      {vehicle.bid_count}
+                    </span>
                   )}
                 </div>
               </div>
             </div>
+
+            {/* Key specs grid - Mobile optimized */}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <Gauge className="text-blue-500 flex-shrink-0" size={20} />
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-600">Mileage</p>
+                  <p className="font-semibold text-sm truncate">
+                    {vehicle.mileage?.toLocaleString() || "0"} km
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <Tag className="text-green-500 flex-shrink-0" size={20} />
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-600">Body Type</p>
+                  <p className="font-semibold text-sm truncate">
+                    {vehicle.body_type || "Sedan"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <MapPin className="text-purple-500 flex-shrink-0" size={20} />
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-600">Location</p>
+                  <p className="font-semibold text-sm truncate">
+                    {vehicle.location || "Auto Eden HQ"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-lg">
+                <Fuel className="text-orange-500 flex-shrink-0" size={20} />
+                <div className="min-w-0">
+                  <p className="text-xs text-gray-600">Fuel Type</p>
+                  <p className="font-semibold text-sm truncate">
+                    {vehicle.fuel_type || "Petrol"}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {/* Action section - Mobile optimized */}
+            <div className="bg-gradient-to-r from-red-50 to-pink-50 p-4 sm:p-6 rounded-xl">
+              {vehicle.listing_type === "marketplace" ? (
+                <div className="space-y-4">
+                  <h3 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center">
+                    <DollarSign className="mr-2 text-red-500" />
+                    Make an Offer
+                  </h3>
+
+                  {isAuthenticated ? (
+                    <div className="space-y-3">
+                      <div className="relative">
+                        <DollarSign
+                          className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                          size={20}
+                        />
+                        <input
+                          type="number"
+                          placeholder="Your bid amount"
+                          value={bidAmount}
+                          onChange={(e) => setBidAmount(e.target.value)}
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                        />
+                      </div>
+
+                      <textarea
+                        placeholder="Tell the seller why you're interested..."
+                        value={bidMessage}
+                        onChange={(e) => setBidMessage(e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-transparent resize-none"
+                      />
+
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        loading={placing}
+                        onClick={handlePlaceBid}
+                        className="w-full"
+                      >
+                        {placing ? "Submitting..." : "Submit Offer"}
+                      </Button>
+                    </div>
+                  ) : (
+                    <div className="space-y-3">
+                      <Button
+                        variant="primary"
+                        size="lg"
+                        onClick={() => setAuthModal("login")}
+                        className="w-full"
+                      >
+                        Login to Make an Offer
+                      </Button>
+
+                      <div className="relative">
+                        <div className="absolute inset-0 flex items-center">
+                          <div className="w-full border-t border-gray-300" />
+                        </div>
+                        <div className="relative flex justify-center text-sm">
+                          <span className="px-2 bg-gray-50 text-gray-500">
+                            or
+                          </span>
+                        </div>
+                      </div>
+
+                      <Button
+                        variant="outline"
+                        size="lg"
+                        onClick={() => setShowQuoteModal(true)}
+                        className="w-full"
+                      >
+                        Get Instant Quote
+                      </Button>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <Button
+                  variant="primary"
+                  size="lg"
+                  icon={Zap}
+                  className="w-full"
+                >
+                  Buy Now
+                </Button>
+              )}
+            </div>
           </div>
         </motion.div>
 
-        {/* Enhanced Details Tabs */}
+        {/* Details Tabs - Mobile Optimized */}
         <motion.div
-          className="bg-white rounded-2xl shadow-xl mb-8"
+          className="bg-white rounded-xl shadow-lg"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6, delay: 0.2 }}
         >
-          <Tabs
-            value={tabValue}
-            onChange={(e, newValue) => setTabValue(newValue)}
-            sx={{ borderBottom: 1, borderColor: "divider" }}
-          >
-            <Tab label="Specifications" />
-            <Tab label="Features" />
-            <Tab label="Seller Info" />
-            <Tab label="History" />
-          </Tabs>
+          <Tabs tabs={tabs} activeTab={activeTab} onTabChange={setActiveTab} />
 
-          <TabPanel value={tabValue} index={0}>
-            <Grid container spacing={3}>
-              {Object.entries(mockVehicleDetails.specifications).map(
-                ([key, value]) => (
-                  <Grid item xs={12} sm={6} md={4} key={key}>
-                    <Card variant="outlined" sx={{ height: "100%" }}>
-                      <CardContent>
-                        <Typography
-                          variant="h6"
-                          component="div"
-                          sx={{ textTransform: "capitalize", mb: 1 }}
-                        >
-                          {key.replace(/([A-Z])/g, " $1").trim()}
-                        </Typography>
-                        <Typography variant="body1" color="text.secondary">
-                          {value}
-                        </Typography>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                )
-              )}
-            </Grid>
-          </TabPanel>
+          <div className="p-4 sm:p-6">
+            {/* Specifications Tab */}
+            {activeTab === 0 && (
+              <div className="space-y-4">
+                {vehicle.description && (
+                  <div className="mt-6">
+                    <h4 className="font-semibold text-gray-900 mb-2">
+                      Description
+                    </h4>
+                    <p className="text-gray-600 leading-relaxed">
+                      {vehicle.description}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
 
-          <TabPanel value={tabValue} index={1}>
-            <Grid container spacing={2}>
-              {mockVehicleDetails.features.map((feature, index) => (
-                <Grid item xs={12} sm={6} md={4} key={index}>
-                  <div className="flex items-center space-x-2 p-3 bg-green-50 rounded-lg">
-                    <CheckCircle className="text-green-500" size={20} />
-                    <span className="text-gray-700">{feature}</span>
-                  </div>
-                </Grid>
-              ))}
-            </Grid>
-          </TabPanel>
-
-          <TabPanel value={tabValue} index={2}>
-            <div className="space-y-6">
-              <div className="flex items-center space-x-4">
-                <Avatar sx={{ width: 64, height: 64, bgcolor: "#dc2626" }}>
-                  {mockVehicleDetails.seller.name.charAt(0)}
-                </Avatar>
-                <div>
-                  <div className="flex items-center space-x-2">
-                    <h3 className="text-xl font-bold">
-                      {mockVehicleDetails.seller.name}
-                    </h3>
-                    {mockVehicleDetails.seller.verified && (
-                      <CheckCircle className="text-green-500" size={20} />
-                    )}
-                  </div>
-                  <div className="flex items-center space-x-2 text-gray-600">
-                    <Star className="text-yellow-400" size={16} />
-                    <span>{mockVehicleDetails.seller.rating}</span>
-                    <span>
-                      ({mockVehicleDetails.seller.reviewCount} reviews)
-                    </span>
-                  </div>
-                  <div className="flex items-center text-gray-600">
-                    <MapPin size={16} className="mr-1" />
-                    <span>{mockVehicleDetails.seller.location}</span>
-                  </div>
+            {/* Features Tab */}
+            {activeTab === 1 && (
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                <div className="flex items-center space-x-3 p-3 bg-green-50 rounded-lg">
+                  <CheckCircle
+                    className="text-green-500 flex-shrink-0"
+                    size={20}
+                  />
+                  <span className="text-gray-700">{vehicle.description}</span>
                 </div>
               </div>
+            )}
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <Button
-                  variant="outlined"
-                  startIcon={<Phone />}
-                  fullWidth
-                  href={`tel:${mockVehicleDetails.seller.phone}`}
-                >
-                  {mockVehicleDetails.seller.phone}
-                </Button>
-                <Button
-                  variant="outlined"
-                  startIcon={<Mail />}
-                  fullWidth
-                  href={`mailto:${mockVehicleDetails.seller.email}`}
-                >
-                  Send Email
-                </Button>
+            {/* Seller Info Tab */}
+            {activeTab === 2 && (
+              <div className="space-y-6">
+                <div className="flex flex-col sm:flex-row items-start space-y-4 sm:space-y-0 sm:space-x-4">
+                  <div className="w-16 h-16 bg-red-600 text-white rounded-full flex items-center justify-center text-xl font-bold">
+                    {mockVehicleDetails.seller.name.charAt(0)}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center space-x-2 mb-2">
+                      <h3 className="text-xl font-bold">
+                        {mockVehicleDetails.seller.name}
+                      </h3>
+                      {mockVehicleDetails.seller.verified && (
+                        <CheckCircle className="text-green-500" size={20} />
+                      )}
+                    </div>
+                    <div className="flex items-center space-x-2 text-gray-600 mb-1">
+                      <Star className="text-yellow-400" size={16} />
+                      <span>{mockVehicleDetails.seller.rating}</span>
+                      <span>
+                        ({mockVehicleDetails.seller.reviewCount} reviews)
+                      </span>
+                    </div>
+                    <div className="flex items-center text-gray-600">
+                      <MapPin size={16} className="mr-1" />
+                      <span>{mockVehicleDetails.seller.location}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <Button
+                    variant="outline"
+                    icon={Phone}
+                    onClick={() =>
+                      window.open(`tel:${mockVehicleDetails.seller.phone}`)
+                    }
+                    className="w-full"
+                  >
+                    <span className="hidden sm:inline">
+                      {mockVehicleDetails.seller.phone}
+                    </span>
+                    <span className="sm:hidden">Call</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    icon={Mail}
+                    onClick={() =>
+                      window.open(`mailto:${mockVehicleDetails.seller.email}`)
+                    }
+                    className="w-full"
+                  >
+                    <span className="hidden sm:inline">Send Email</span>
+                    <span className="sm:hidden">Email</span>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    icon={FaWhatsapp}
+                    onClick={() =>
+                      window.open(
+                        `https://wa.me/${mockVehicleDetails.seller.phone.replace(
+                          /\D/g,
+                          ""
+                        )}`
+                      )
+                    }
+                    className="w-full sm:col-span-2 text-green-600"
+                  >
+                    WhatsApp
+                  </Button>
+                </div>
               </div>
-            </div>
-          </TabPanel>
+            )}
 
-          <TabPanel value={tabValue} index={3}>
-            <List>
-              {mockVehicleDetails.history.map((item, index) => (
-                <ListItem key={index} divider>
-                  <ListItemIcon>
-                    {item.status === "success" ? (
-                      <CheckCircle className="text-green-500" />
-                    ) : (
-                      <Info className="text-blue-500" />
-                    )}
-                  </ListItemIcon>
-                  <ListItemText
-                    primary={item.event}
-                    secondary={new Date(item.date).toLocaleDateString()}
-                  />
-                </ListItem>
-              ))}
-            </List>
-          </TabPanel>
-        </motion.div>
-
-        {/* Recommendations */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.6, delay: 0.4 }}
-        >
-          <h2 className="text-2xl font-bold mb-6 text-gray-900">
-            Similar Vehicles
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {recommendations.map((vehicle) => (
-              <VehicleCard
-                key={vehicle.id}
-                vehicle={vehicle}
-                onClick={() => navigate(`/vehicles/${vehicle.id}`)}
-              />
-            ))}
+            {/* History Tab */}
+            {activeTab === 3 && (
+              <div className="space-y-4">
+                {mockVehicleDetails.history.map((item, index) => (
+                  <div
+                    key={index}
+                    className="flex items-start space-x-3 pb-4 border-b border-gray-100 last:border-b-0"
+                  >
+                    <div className="flex-shrink-0 mt-1">
+                      {item.status === "success" ? (
+                        <CheckCircle className="text-green-500" size={20} />
+                      ) : (
+                        <Info className="text-blue-500" size={20} />
+                      )}
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-gray-900">{item.event}</p>
+                      <p className="text-sm text-gray-500">
+                        {new Date(item.date).toLocaleDateString()}
+                      </p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         </motion.div>
+
+        {/* Recommendations - Mobile Optimized */}
+        {recommendations.length > 0 && (
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, delay: 0.4 }}
+          >
+            <h2 className="text-xl sm:text-2xl font-bold mb-4 text-gray-900 px-2">
+              Similar Vehicles
+            </h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {recommendations.map((vehicle) => (
+                <VehicleCard
+                  key={vehicle.id}
+                  vehicle={vehicle}
+                  onClick={() => navigate(`/vehicles/${vehicle.id}`)}
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
       </div>
 
       {/* Image Carousel Modal */}
-      <Dialog
-        open={showCarousel}
+      <Modal
+        isOpen={showCarousel}
         onClose={() => setShowCarousel(false)}
-        maxWidth="lg"
-        fullWidth
-        PaperProps={{
-          sx: { bgcolor: "black", color: "white" },
-        }}
+        size="max-w-6xl"
       >
-        <div className="relative">
-          <IconButton
-            onClick={() => setShowCarousel(false)}
-            sx={{
-              position: "absolute",
-              top: 16,
-              right: 16,
-              color: "white",
-              zIndex: 1,
-            }}
-          >
-            <X />
-          </IconButton>
-
-          <div className="relative">
+        <div className="bg-black text-white">
+          <div className="relative aspect-w-16 aspect-h-9">
             <img
               src={vehicle.images?.[currentImageIndex]?.image}
               alt={`${vehicle.make} ${vehicle.model}`}
-              className="w-full h-96 object-contain"
+              className="w-full h-96 sm:h-[70vh] object-contain"
             />
 
             {/* Navigation arrows */}
-            <IconButton
+            <button
               onClick={() =>
                 setCurrentImageIndex(Math.max(0, currentImageIndex - 1))
               }
               disabled={currentImageIndex === 0}
-              sx={{
-                position: "absolute",
-                left: 16,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "white",
-              }}
+              className="absolute left-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black bg-opacity-50 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-opacity-70 transition-all"
             >
-              <ChevronLeft />
-            </IconButton>
+              <ChevronLeft size={24} />
+            </button>
 
-            <IconButton
+            <button
               onClick={() =>
                 setCurrentImageIndex(
                   Math.min(vehicle.images?.length - 1, currentImageIndex + 1)
                 )
               }
               disabled={currentImageIndex === vehicle.images?.length - 1}
-              sx={{
-                position: "absolute",
-                right: 16,
-                top: "50%",
-                transform: "translateY(-50%)",
-                color: "white",
-              }}
+              className="absolute right-4 top-1/2 transform -translate-y-1/2 p-2 rounded-full bg-black bg-opacity-50 text-white disabled:opacity-30 disabled:cursor-not-allowed hover:bg-opacity-70 transition-all"
             >
-              <ChevronRight />
-            </IconButton>
+              <ChevronRight size={24} />
+            </button>
+
+            {/* Close button */}
+            <button
+              onClick={() => setShowCarousel(false)}
+              className="absolute top-4 right-4 p-2 rounded-full bg-black bg-opacity-50 text-white hover:bg-opacity-70 transition-all"
+            >
+              <X size={24} />
+            </button>
           </div>
 
           {/* Image indicators */}
-          <div className="flex justify-center space-x-2 p-4">
+          <div className="flex justify-center space-x-2 p-4 overflow-x-auto">
             {vehicle.images?.map((_, index) => (
               <button
                 key={index}
                 onClick={() => setCurrentImageIndex(index)}
-                className={`w-3 h-3 rounded-full ${
+                className={`w-3 h-3 rounded-full transition-all ${
                   currentImageIndex === index ? "bg-white" : "bg-gray-400"
                 }`}
               />
             ))}
           </div>
         </div>
-      </Dialog>
+      </Modal>
 
       {/* Share Modal */}
-      <Dialog open={showShareModal} onClose={() => setShowShareModal(false)}>
+      <Modal
+        isOpen={showShareModal}
+        onClose={() => setShowShareModal(false)}
+        title="Share this vehicle"
+      >
         <div className="p-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-xl font-bold">Share this vehicle</h3>
-            <IconButton onClick={() => setShowShareModal(false)}>
-              <X />
-            </IconButton>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-2 gap-3">
             <Button
-              variant="outlined"
-              startIcon={<Facebook />}
+              variant="outline"
+              icon={Facebook}
               onClick={() => handleShare("facebook")}
-              sx={{ color: "#1877f2" }}
+              className="text-blue-600 border-blue-200 hover:bg-blue-50"
             >
               Facebook
             </Button>
             <Button
-              variant="outlined"
-              startIcon={<FaXTwitter />}
+              variant="outline"
+              icon={FaXTwitter}
               onClick={() => handleShare("twitter")}
-              sx={{ color: "#1da1f2" }}
-            ></Button>
+              className="text-black border-gray-200 hover:bg-gray-50"
+            >
+              Twitter
+            </Button>
             <Button
-              variant="outlined"
-              startIcon={<FaWhatsapp />}
+              variant="outline"
+              icon={FaWhatsapp}
               onClick={() => handleShare("whatsapp")}
-              sx={{ color: "#25d366" }}
+              className="text-green-600 border-green-200 hover:bg-green-50"
             >
               WhatsApp
             </Button>
             <Button
-              variant="outlined"
-              startIcon={<Copy />}
+              variant="outline"
+              icon={Copy}
               onClick={() => handleShare("copy")}
             >
               Copy Link
             </Button>
           </div>
         </div>
-      </Dialog>
+      </Modal>
+
+      {/* Quote Request Modal */}
       <QuoteRequestModal
         open={showQuoteModal}
         onClose={() => setShowQuoteModal(false)}
         vehicle={vehicle}
         vehicleId={vehicle?.id}
       />
+
       {/* Auth Modals */}
       <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
 
-      {/* Snackbar */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar({ ...snackbar, open: false })}
-        anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          sx={{ width: "100%" }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      <ImagePreview
+        isOpen={preview.isOpen}
+        onClose={closePreview}
+        images={preview.images}
+        currentIndex={preview.currentIndex}
+        alt={preview.alt}
+        title={preview.title}
+        description={preview.description}
+      />
+
+      {/* Toast */}
+      <Toast
+        show={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={hideToast}
+      />
     </div>
   );
 }
