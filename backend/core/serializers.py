@@ -1,3 +1,4 @@
+#serializers.py
 from rest_framework import serializers
 from .models import QuoteRequest, Vehicle, VehicleImage, Bid, Profile, User, VehicleSearch
 from django.db.models import Q
@@ -121,7 +122,7 @@ class VehicleListSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = Vehicle
-        fields = ('id', 'make', 'model', 'year', 'price', 'mileage', 
+        fields = ('id', 'make', 'model', 'year', 'price','body_type', 'mileage','fuel_type',
                  'location', 'created_at', 'main_image', 'owner_username')
 
     def get_main_image(self, obj):
