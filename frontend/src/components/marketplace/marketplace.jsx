@@ -24,6 +24,14 @@ import {
   CheckCircle,
   Clock,
   Filter,
+  Grid3X3,
+  List,
+  X,
+  ChevronDown,
+  ChevronUp,
+  ChevronLeft,
+  ChevronRight,
+  SlidersHorizontal,
 } from "lucide-react";
 import {
   Button,
@@ -168,6 +176,80 @@ const VehicleSkeleton = ({ viewMode }) => (
   </div>
 );
 
+const CustomSelect = ({ label, value, onChange, options, placeholder, icon: Icon }) => {
+  const [isOpen, setIsOpen] = useState(false);
+
+  return (
+    <div className="relative">
+      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+      <button
+        type="button"
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
+      >
+        <div className="flex items-center">
+          {Icon && <Icon className="w-4 h-4 mr-2 text-gray-500" />}
+          <span className={value ? "text-gray-900" : "text-gray-500"}>
+            {value || placeholder}
+          </span>
+        </div>
+        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
+      </button>
+      
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto"
+          >
+            {options.map((option) => (
+              <button
+                key={option.value}
+                type="button"
+                onClick={() => {
+                  onChange(option.value);
+                  setIsOpen(false);
+                }}
+                className="w-full text-left px-3 py-2 hover:bg-gray-50 focus:bg-gray-50 transition-colors"
+              >
+                {option.label}
+              </button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+      
+      {/* Backdrop */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+// Custom Input Component
+const CustomInput = ({ label, value, onChange, placeholder, type = "text", icon: Icon }) => (
+  <div>
+    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+    <div className="relative">
+      <input
+        type={type}
+        value={value}
+        onChange={onChange}
+        placeholder={placeholder}
+        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
+      />
+      {Icon && <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />}
+    </div>
+  </div>
+);
+
 export default function MarketplacePage() {
   const dispatch = useDispatch();
   useTracking(window.location.pathname);
@@ -194,39 +276,13 @@ export default function MarketplacePage() {
     page: 1, // Add this
     page_size: 12, // Add this
   });
-  // In MarketplacePage.jsx
-  // Convert filter names to snake_case before sending
-  const backendFilters = {
-    min_price: filters.minPrice,
-    max_price: filters.maxPrice,
-    make: filters.make,
-    year: filters.year,
-    sort_by: filters.sortBy,
-    body_type: filters.bodyType,
-    fuel_type: filters.fuelType,
-    search_term: filters.searchTerm,
-    page: filters.page,
-    page_size: filters.page_size,
-  };
 
   const [authModal, setAuthModal] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [bidAmount, setBidAmount] = useState("");
-  const [bidMessage, setBidMessage] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid");
-  const [selectedImage, setSelectedImage] = useState(null);
   const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [quoteForm, setQuoteForm] = useState({
-    fullName: "",
-    email: "",
-    country: "",
-    city: "",
-    address: "",
-    telephone: "",
-    note: "",
-  });
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -238,9 +294,23 @@ export default function MarketplacePage() {
 
   // Popular body types
   const bodyTypes = ["Sedan", "SUV", "Hatchback", "Coupe", "Truck", "Van"];
-
-  // Fuel types
   const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"];
+
+  const sortOptions = [
+    { value: "newest", label: "Newest First" },
+    { value: "priceLowHigh", label: "Price: Low to High" },
+    { value: "priceHighLow", label: "Price: High to Low" },
+  ];
+
+  const bodyTypeOptions = [
+    { value: "", label: "Any Body Type" },
+    ...bodyTypes.map((type) => ({ value: type, label: type })),
+  ];
+
+  const fuelTypeOptions = [
+    { value: "", label: "Any Fuel Type" },
+    ...fuelTypes.map((type) => ({ value: type, label: type })),
+  ];
 
   useEffect(() => {
     setIsLoading(true);
@@ -275,12 +345,8 @@ export default function MarketplacePage() {
   };
 
   // Handle filter change - reset to page 1 when filters change
-  const handleFilterChange = (e) => {
-    setFilters({
-      ...filters,
-      [e.target.name]: e.target.value,
-      page: 1, // Reset to first page when filters change
-    });
+  const handleFilterChange = (name, value) => {
+    setFilters({ ...filters, [name]: value, page: 1 });
   };
 
   // Similarly update other filter handlers to reset page to 1
@@ -327,36 +393,6 @@ export default function MarketplacePage() {
     );
   };
 
-  const handlePlaceBid = () => {
-    if (selectedVehicle && bidAmount) {
-      dispatch(
-        placeBid({
-          vehicleId: selectedVehicle.id,
-          amount: parseFloat(bidAmount),
-          message: bidMessage || "No message provided",
-        })
-      )
-        .then(() => {
-          setSelectedVehicle(null);
-          setBidAmount("");
-          setSnackbar({
-            open: true,
-            message: "Your bid has been placed successfully!",
-            severity: "success",
-          });
-        })
-        .catch((error) => {
-          setSnackbar({
-            open: true,
-            message: error?.message || "Failed to place bid. Please try again.",
-            severity: "error",
-          });
-        });
-    }
-  };
-
-  // Filter and sort vehicle
-
   const getPageRange = () => {
     const range = [];
     const start = Math.max(1, currentPage - 2);
@@ -368,34 +404,46 @@ export default function MarketplacePage() {
     return range;
   };
 
+  const activeFiltersCount = Object.values(filters).filter(
+    (value, index, array) => {
+      const keys = Object.keys(filters);
+      const key = keys[index];
+      return value && key !== "sortBy" && key !== "page" && key !== "page_size";
+    }
+  ).length;
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Hero Section with Parallax Effect */}
       <motion.section
-        className="relative h-[calc(100vh-64px)] md:h-72 lg:h-96 bg-gradient-to-r from-red-700 to-red-900 overflow-hidden"
+        className="relative h-[60vh] sm:h-[50vh] md:h-[40vh] lg:h-96 bg-gradient-to-br from-red-600 via-red-700 to-red-800 overflow-hidden"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        <div className="absolute inset-0 opacity-20">
-          {[...Array(12)].map((_, i) => (
+        {/* Animated Background Elements */}
+        <div className="absolute inset-0 opacity-10">
+          {[...Array(8)].map((_, i) => (
             <motion.div
               key={i}
-              className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-white rounded-full"
+              className="absolute w-32 h-32 sm:w-64 sm:h-64 lg:w-96 lg:h-96 bg-white rounded-full"
               initial={{
                 scale: 0.1,
-                x: Math.random() * 1000 - 500,
-                y: Math.random() * 500 - 250,
+                x: Math.random() * window.innerWidth,
+                y: Math.random() * 400,
                 opacity: 0.1,
               }}
               animate={{
-                scale: [0.1, 0.5 + Math.random() * 0.5],
-                x: [Math.random() * 1000 - 500, Math.random() * 1000 - 500],
-                y: [Math.random() * 500 - 250, Math.random() * 500 - 250],
-                opacity: [0.1, 0.2 + Math.random() * 0.1],
+                scale: [0.1, 0.3 + Math.random() * 0.4],
+                x: [
+                  Math.random() * window.innerWidth,
+                  Math.random() * window.innerWidth,
+                ],
+                y: [Math.random() * 400, Math.random() * 400],
+                opacity: [0.1, 0.15 + Math.random() * 0.1],
               }}
               transition={{
-                duration: 15 + Math.random() * 10,
+                duration: 12 + Math.random() * 8,
                 repeat: Infinity,
                 repeatType: "reverse",
               }}
@@ -405,16 +453,16 @@ export default function MarketplacePage() {
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
           <motion.h1
-            className="text-4xl md:text-5xl font-extrabold text-white leading-tight mb-4"
-            initial={{ y: 20, opacity: 0 }}
+            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-3 sm:mb-4"
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.2 }}
           >
             Find Your Perfect Ride
           </motion.h1>
           <motion.p
-            className="text-lg md:text-xl text-white/80 max-w-2xl mb-8"
-            initial={{ y: 20, opacity: 0 }}
+            className="text-base sm:text-lg md:text-xl text-white/90 max-w-2xl mb-6 sm:mb-8"
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.3 }}
           >
@@ -424,49 +472,38 @@ export default function MarketplacePage() {
 
           {/* Search Bar */}
           <motion.div
-            className="bg-white rounded-xl shadow-lg flex overflow-hidden w-full max-w-3xl"
-            initial={{ y: 20, opacity: 0 }}
+            className="bg-white rounded-xl shadow-xl flex flex-col sm:flex-row overflow-hidden w-full max-w-4xl"
+            initial={{ y: 30, opacity: 0 }}
             animate={{ y: 0, opacity: 1 }}
             transition={{ delay: 0.4 }}
           >
             <div className="flex-grow p-2">
-              <TextField
-                fullWidth
-                value={filters.searchTerm}
-                onChange={(e) =>
-                  setFilters({ ...filters, searchTerm: e.target.value })
-                }
-                placeholder="Search by make, model, or keyword..."
-                InputProps={{
-                  startAdornment: (
-                    <InputAdornment position="start">
-                      <Search className="text-gray-400" />
-                    </InputAdornment>
-                  ),
-                  sx: { borderRadius: "0.75rem" },
-                }}
-                variant="outlined"
-                sx={{
-                  "& .MuiOutlinedInput-root": {
-                    "& fieldset": { border: "none" },
-                  },
-                }}
-              />
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  value={filters.searchTerm}
+
+                    onChange={(e) => handleFilterChange("searchTerm", e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        // Search triggers automatically via useEffect
+                      }
+                    }}
+                  placeholder="Search by make, model, or keyword..."
+                  className="w-full pl-10 pr-4 py-3 sm:py-2 text-gray-900 placeholder-gray-500 border-0 focus:ring-0 focus:outline-none rounded-lg"
+                />
+              </div>
             </div>
-            <Button
-              variant="contained"
-              className="!rounded-r-xl !h-full !px-6"
-              sx={{
-                backgroundColor: "#dc2626",
-                "&:hover": {
-                  backgroundColor: "#b91c1c",
-                },
-                borderRadius: "0",
-                height: "100%",
+            <button
+              onClick={() => {
+                /* Search functionality can be added here */
               }}
+              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 sm:py-2 font-medium transition-colors duration-200 sm:rounded-r-xl"
             >
               Search
-            </Button>
+            </button>
           </motion.div>
         </div>
       </motion.section>
@@ -474,91 +511,85 @@ export default function MarketplacePage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 mb-20 relative z-10">
         {/* Quick Filters - Makes */}
         <motion.div
-          className="bg-white shadow-md rounded-xl p-4 mb-6"
+          className="bg-white shadow-lg rounded-xl p-4 mb-6"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.5 }}
         >
-          <div className="flex flex-wrap items-center gap-2 md:gap-4">
-            <h3 className="text-gray-700 font-medium">Popular Makes:</h3>
-            {popularMakes.map((make) => (
-              <Chip
-                key={make}
-                label={make}
-                onClick={() => handleQuickFilterMake(make)}
-                sx={{
-                  backgroundColor:
-                    filters.make === make ? "#dc2626" : "#f3f4f6",
-                  color: filters.make === make ? "white" : "#1f2937",
-                  fontWeight: 500,
-                  "&:hover": {
-                    backgroundColor:
-                      filters.make === make ? "#b91c1c" : "#e5e7eb",
-                  },
-                }}
-              />
-            ))}
-            <Tooltip title="Clear make filter">
-              <IconButton
-                size="small"
-                onClick={() => setFilters({ ...filters, make: "" })}
-                sx={{ ml: 1 }}
-              >
-                <CheckCircle
-                  className={`w-5 h-5 ${
-                    filters.make ? "text-red-600" : "text-gray-300"
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+            <h3 className="text-gray-700 font-semibold text-sm sm:text-base whitespace-nowrap">
+              Popular Makes:
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {popularMakes.map((make) => (
+                <button
+                  key={make}
+                  onClick={() => handleQuickFilterMake(make)}
+                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                    filters.make === make
+                      ? "bg-red-600 text-white shadow-md"
+                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                   }`}
-                />
-              </IconButton>
-            </Tooltip>
+                >
+                  {make}
+                </button>
+              ))}
+              {filters.make && (
+                <button
+                  onClick={() => handleFilterChange("make", "")}
+                  className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
+                  title="Clear make filter"
+                >
+                  <X className="w-3 h-3" />
+                </button>
+              )}
+            </div>
           </div>
         </motion.div>
 
         {/* Filter Bar */}
+        {/* Filter Bar */}
         <motion.div
-          className="bg-white shadow-md rounded-xl mb-6 overflow-hidden"
+          className="bg-white shadow-lg rounded-xl mb-6 overflow-hidden"
           initial={{ y: 20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ delay: 0.6 }}
         >
-          <div className="p-4 flex justify-between items-center">
+          {/* Filter Header */}
+          <div className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
             <div className="flex items-center gap-3">
-              <Filter className="text-gray-600" />
-              <h2 className="text-lg font-semibold">Filters & Sorting</h2>
+              <SlidersHorizontal className="text-gray-600 w-5 h-5" />
+              <h2 className="text-lg font-semibold text-gray-900">
+                Filters & Sorting
+              </h2>
+              {activeFiltersCount > 0 && (
+                <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full font-medium">
+                  {activeFiltersCount}
+                </span>
+              )}
             </div>
             <div className="flex gap-2">
-              <Button
-                variant="outlined"
-                size="small"
+              <button
                 onClick={handleClearFilters}
-                sx={{
-                  color: "#6b7280",
-                  borderColor: "#d1d5db",
-                  "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "rgba(156, 163, 175, 0.04)",
-                  },
-                }}
+                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
               >
                 Clear All
-              </Button>
-              <Button
-                variant="contained"
-                size="small"
+              </button>
+              <button
                 onClick={() => setShowFilters(!showFilters)}
-                endIcon={showFilters ? <ArrowUpDown /> : <ArrowUpDown />}
-                sx={{
-                  backgroundColor: "#dc2626",
-                  "&:hover": {
-                    backgroundColor: "#b91c1c",
-                  },
-                }}
+                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-2"
               >
-                {showFilters ? "Hide Filters" : "Show Filters"}
-              </Button>
+                {showFilters ? "Hide" : "Show"} Filters
+                {showFilters ? (
+                  <ChevronUp className="w-4 h-4" />
+                ) : (
+                  <ChevronDown className="w-4 h-4" />
+                )}
+              </button>
             </div>
           </div>
 
+          {/* Collapsible Filters */}
           <AnimatePresence>
             {showFilters && (
               <motion.div
@@ -566,223 +597,110 @@ export default function MarketplacePage() {
                 animate={{ height: "auto", opacity: 1 }}
                 exit={{ height: 0, opacity: 0 }}
                 transition={{ duration: 0.3 }}
-                className="px-4 pb-4 border-t border-gray-100"
+                className="border-t border-gray-100"
               >
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mt-4">
+                <div className="p-4 space-y-4">
                   {/* Price Range */}
-                  <div>
-                    <div className="flex justify-between mb-2">
-                      <InputLabel className="text-gray-600 text-sm">
-                        Price Range
-                      </InputLabel>
-                      <span className="text-xs text-gray-500">
-                        ${filters.minPrice || 0} - ${filters.maxPrice || "∞"}
-                      </span>
-                    </div>
-                    <div className="flex gap-4">
-                      <TextField
-                        name="minPrice"
-                        label="Min"
-                        type="number"
-                        size="small"
-                        InputProps={{
-                          startAdornment: (
-                            <DollarSign className="w-4 h-4 mr-1 text-gray-400" />
-                          ),
-                        }}
-                        value={filters.minPrice}
-                        onChange={handleFilterChange}
-                        fullWidth
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#dc2626",
-                            },
-                          },
-                          "& .MuiFormLabel-root.Mui-focused": {
-                            color: "#dc2626",
-                          },
-                        }}
-                      />
-                      <TextField
-                        name="maxPrice"
-                        label="Max"
-                        type="number"
-                        size="small"
-                        InputProps={{
-                          startAdornment: (
-                            <DollarSign className="w-4 h-4 mr-1 text-gray-400" />
-                          ),
-                        }}
-                        value={filters.maxPrice}
-                        onChange={handleFilterChange}
-                        fullWidth
-                        sx={{
-                          "& .MuiOutlinedInput-root": {
-                            "&.Mui-focused fieldset": {
-                              borderColor: "#dc2626",
-                            },
-                          },
-                          "& .MuiFormLabel-root.Mui-focused": {
-                            color: "#dc2626",
-                          },
-                        }}
-                      />
-                    </div>
-                  </div>
-
-                  {/* Make & Year */}
-                  <div className="flex gap-4">
-                    <TextField
-                      name="make"
-                      label="Make"
-                      size="small"
-                      value={filters.make}
-                      onChange={handleFilterChange}
-                      fullWidth
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#dc2626",
-                          },
-                        },
-                        "& .MuiFormLabel-root.Mui-focused": {
-                          color: "#dc2626",
-                        },
-                      }}
-                    />
-                    <TextField
-                      name="year"
-                      label="Year"
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <CustomInput
+                      label="Min Price"
+                      value={filters.minPrice}
+                      onChange={(e) =>
+                        handleFilterChange("minPrice", e.target.value)
+                      }
+                      placeholder="0"
                       type="number"
-                      size="small"
-                      InputProps={{
-                        startAdornment: (
-                          <Calendar className="w-4 h-4 mr-1 text-gray-400" />
-                        ),
-                      }}
-                      value={filters.year}
-                      onChange={handleFilterChange}
-                      fullWidth
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#dc2626",
-                          },
-                        },
-                        "& .MuiFormLabel-root.Mui-focused": {
-                          color: "#dc2626",
-                        },
-                      }}
+                      icon={DollarSign}
+                    />
+                    <CustomInput
+                      label="Max Price"
+                      value={filters.maxPrice}
+                      onChange={(e) =>
+                        handleFilterChange("maxPrice", e.target.value)
+                      }
+                      placeholder="No limit"
+                      type="number"
+                      icon={DollarSign}
                     />
                   </div>
 
-                  {/* Body Type & Fuel Type */}
-                  <div className="flex gap-4">
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="body-type-label">Body Type</InputLabel>
-                      <Select
-                        labelId="body-type-label"
-                        name="bodyType"
-                        value={filters.bodyType}
-                        onChange={handleFilterChange}
-                        label="Body Type"
-                        sx={{
-                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#dc2626",
-                          },
-                          "&.Mui-focused .MuiSelect-icon": {
-                            color: "#dc2626",
-                          },
-                        }}
-                      >
-                        <MenuItem value="">Any</MenuItem>
-                        {bodyTypes.map((type) => (
-                          <MenuItem key={type} value={type}>
-                            {type}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
-                    <FormControl fullWidth size="small">
-                      <InputLabel id="fuel-type-label">Fuel Type</InputLabel>
-                      <Select
-                        labelId="fuel-type-label"
-                        name="fuelType"
-                        value={filters.fuelType}
-                        onChange={handleFilterChange}
-                        label="Fuel Type"
-                        sx={{
-                          "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                            borderColor: "#dc2626",
-                          },
-                          "&.Mui-focused .MuiSelect-icon": {
-                            color: "#dc2626",
-                          },
-                        }}
-                      >
-                        <MenuItem value="">Any</MenuItem>
-                        {fuelTypes.map((type) => (
-                          <MenuItem key={type} value={type}>
-                            {type}
-                          </MenuItem>
-                        ))}
-                      </Select>
-                    </FormControl>
+                  {/* Make and Year */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <CustomInput
+                      label="Make"
+                      value={filters.make}
+                      onChange={(e) =>
+                        handleFilterChange("make", e.target.value)
+                      }
+                      placeholder="Any make"
+                      icon={Car}
+                    />
+                    <CustomInput
+                      label="Year"
+                      value={filters.year}
+                      onChange={(e) =>
+                        handleFilterChange("year", e.target.value)
+                      }
+                      placeholder="Any year"
+                      type="number"
+                      icon={Calendar}
+                    />
                   </div>
 
-                  {/* Sort Order */}
-                  <FormControl fullWidth size="small">
-                    <InputLabel id="sort-label">Sort By</InputLabel>
-                    <Select
-                      labelId="sort-label"
-                      name="sortBy"
-                      value={filters.sortBy}
-                      onChange={handleFilterChange}
+                  {/* Dropdowns */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <CustomSelect
+                      label="Body Type"
+                      value={filters.bodyType}
+                      onChange={(value) =>
+                        handleFilterChange("bodyType", value)
+                      }
+                      options={bodyTypeOptions}
+                      placeholder="Any body type"
+                      icon={Tag}
+                    />
+                    <CustomSelect
+                      label="Fuel Type"
+                      value={filters.fuelType}
+                      onChange={(value) =>
+                        handleFilterChange("fuelType", value)
+                      }
+                      options={fuelTypeOptions}
+                      placeholder="Any fuel type"
+                      icon={Gauge}
+                    />
+                    <CustomSelect
                       label="Sort By"
-                      IconComponent={ArrowUpDown}
-                      sx={{
-                        "&.Mui-focused .MuiOutlinedInput-notchedOutline": {
-                          borderColor: "#dc2626",
-                        },
-                        "&.Mui-focused .MuiSelect-icon": {
-                          color: "#dc2626",
-                        },
-                      }}
-                    >
-                      <MenuItem value="newest">Newest First</MenuItem>
-                      <MenuItem value="priceLowHigh">
-                        Price: Low to High
-                      </MenuItem>
-                      <MenuItem value="priceHighLow">
-                        Price: High to Low
-                      </MenuItem>
-                    </Select>
-                  </FormControl>
-                </div>
+                      value={filters.sortBy}
+                      onChange={(value) => handleFilterChange("sortBy", value)}
+                      options={sortOptions}
+                      placeholder="Sort by"
+                      icon={ArrowUpDown}
+                    />
+                  </div>
 
-                {/* Body Type Quick Filters */}
-                <div className="mt-6">
-                  <div className="flex flex-wrap items-center gap-2 md:gap-4">
-                    <h3 className="text-gray-700 font-medium">Body Type:</h3>
-                    {bodyTypes.map((type) => (
-                      <Chip
-                        key={type}
-                        label={type}
-                        onClick={() => handleQuickFilterBodyType(type)}
-                        sx={{
-                          backgroundColor:
-                            filters.bodyType === type ? "#dc2626" : "#f3f4f6",
-                          color:
-                            filters.bodyType === type ? "white" : "#1f2937",
-                          fontWeight: 500,
-                          "&:hover": {
-                            backgroundColor:
-                              filters.bodyType === type ? "#b91c1c" : "#e5e7eb",
-                          },
-                        }}
-                      />
-                    ))}
+                  {/* Body Type Quick Filters */}
+                  <div className="pt-4 border-t border-gray-100">
+                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                      <h3 className="text-gray-700 font-semibold text-sm whitespace-nowrap">
+                        Quick Filter:
+                      </h3>
+                      <div className="flex flex-wrap gap-2">
+                        {bodyTypes.map((type) => (
+                          <button
+                            key={type}
+                            onClick={() => handleQuickFilterBodyType(type)}
+                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
+                              filters.bodyType === type
+                                ? "bg-red-600 text-white shadow-md"
+                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                            }`}
+                          >
+                            {type}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -1169,270 +1087,6 @@ export default function MarketplacePage() {
             </div>
           </div>
         )}
-        {/* Bid Dialog */}
-        <Dialog
-          open={!!selectedVehicle}
-          onClose={() => setSelectedVehicle(null)}
-          PaperProps={{
-            sx: {
-              borderRadius: "12px",
-              maxWidth: "450px",
-              width: "100%",
-            },
-          }}
-        >
-          {selectedVehicle && (
-            <div className="p-6">
-              {/* Add image gallery section */}
-              <div className="grid grid-cols-3 gap-2 mb-4">
-                {selectedVehicle.images?.map((image, index) => {
-                  const formattedUrl = formatMediaUrl(image.image);
-                  return (
-                    <div
-                      key={index}
-                      className="cursor-pointer relative aspect-square group"
-                      onClick={() => setSelectedImage(formattedUrl)}
-                    >
-                      <img
-                        src={formattedUrl}
-                        className="w-full h-full object-cover rounded-md transition-opacity group-hover:opacity-90"
-                        alt={`Preview ${index + 1}`}
-                        loading="lazy"
-                        onError={(e) => {
-                          e.target.src = "/placeholder-car.jpg";
-                        }}
-                      />
-                      {index === 0 && (
-                        <div className="absolute inset-0 bg-black/30 flex items-center justify-center text-white text-sm opacity-0 group-hover:opacity-100 transition-opacity">
-                          Click to preview
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Add more vehicle details */}
-              <Divider className="my-4" />
-              <div className="grid grid-cols-2 gap-4 mb-6">
-                <div className="flex items-center">
-                  <Gauge className="w-5 h-5 mr-2 text-gray-600" />
-                  <span>
-                    Mileage: {selectedVehicle.mileage?.toLocaleString()} km
-                  </span>
-                </div>
-                <div className="flex items-center">
-                  <Shield className="w-5 h-5 mr-2 text-gray-600" />
-                  <span>VIN: {selectedVehicle.vin || "N/A"}</span>
-                </div>
-                {/* Add more details as needed */}
-              </div>
-
-              <div className="flex justify-between items-start mb-4">
-                <h3 className="text-xl font-bold text-gray-900">
-                  Place Bid on {selectedVehicle.make} {selectedVehicle.model}
-                </h3>
-                <IconButton
-                  size="small"
-                  onClick={() => setSelectedVehicle(null)}
-                  sx={{ color: "#6b7280" }}
-                >
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
-                    viewBox="0 0 20 20"
-                    fill="currentColor"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </IconButton>
-              </div>
-
-              <div className="flex items-center mb-6">
-                <img
-                  src={
-                    selectedVehicle.images?.[0]?.image
-                      ? selectedVehicle.images[0].image
-                      : selectedVehicle.images[0].image
-                  }
-                  alt={`${selectedVehicle.make} ${selectedVehicle.model}`}
-                  className="w-20 h-20 object-cover rounded-md mr-4"
-                />
-                <div>
-                  <h4 className="text-gray-900 font-medium">
-                    {selectedVehicle.year} {selectedVehicle.make}{" "}
-                    {selectedVehicle.model}
-                  </h4>
-                  <p className="text-gray-600 text-sm">
-                    {selectedVehicle.mileage?.toLocaleString() || "0"} km •{" "}
-                    {selectedVehicle.location || "Unknown location"}
-                  </p>
-                </div>
-              </div>
-
-              <Divider className="mb-6" />
-
-              <div className="mb-6">
-                <div className="flex justify-between mb-1">
-                  <span className="text-gray-600">Current Highest Bid:</span>
-                  <span className="text-gray-900 font-bold">
-                    ${selectedVehicle.price?.toLocaleString()}
-                  </span>
-                </div>
-                <div className="flex justify-between mb-4">
-                  <span className="text-gray-600">Minimum Bid Increment:</span>
-                  <span className="text-gray-900 font-medium">$100</span>
-                </div>
-                <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-                  <span className="font-medium">Note:</span> Your bid must be at
-                  least ${(selectedVehicle.price + 100).toLocaleString()}
-                </div>
-              </div>
-
-              <TextField
-                fullWidth
-                type="number"
-                label="Your Bid Amount"
-                value={bidAmount}
-                onChange={(e) => setBidAmount(e.target.value)}
-                InputProps={{
-                  startAdornment: (
-                    <DollarSign className="w-4 h-4 mr-2 text-gray-400" />
-                  ),
-                }}
-                sx={{
-                  marginBottom: "24px",
-                  "& .MuiOutlinedInput-root": {
-                    "&.Mui-focused fieldset": {
-                      borderColor: "#dc2626",
-                    },
-                  },
-                  "& .MuiFormLabel-root.Mui-focused": {
-                    color: "#dc2626",
-                  },
-                }}
-              />
-
-              {/* In the bid dialog, before the bid amount field */}
-              <TextField
-                fullWidth
-                label="Message to seller (optional)"
-                multiline
-                rows={3}
-                value={bidMessage}
-                onChange={(e) => setBidMessage(e.target.value)}
-                sx={{
-                  mb: 2,
-                  "& .MuiOutlinedInput-root": {
-                    "&.Mui-focused fieldset": { borderColor: "#dc2626" },
-                  },
-                }}
-                inputProps={{ maxLength: 200 }}
-                helperText={`${bidMessage.length}/200 characters`}
-              />
-
-              {isAuthenticated ? (
-                <Button
-                  fullWidth
-                  variant="contained"
-                  onClick={handlePlaceBid}
-                  disabled={
-                    !bidAmount || parseFloat(bidAmount) <= selectedVehicle.price
-                  }
-                  sx={{
-                    backgroundColor: "#dc2626",
-                    "&:hover": { backgroundColor: "#b91c1c" },
-                    "&.Mui-disabled": {
-                      backgroundColor: "#f3f4f6",
-                      color: "#9ca3af",
-                    },
-                    padding: "12px",
-                    fontWeight: 600,
-                    fontSize: "1rem",
-                    boxShadow:
-                      "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-                  }}
-                >
-                  Place Bid
-                </Button>
-              ) : (
-                <>
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() => {
-                      setSelectedVehicle(null);
-                      setAuthModal("login");
-                    }}
-                    sx={{
-                      backgroundColor: "#dc2626",
-                      "&:hover": { backgroundColor: "#b91c1c" },
-                      padding: "12px",
-                      paddingBottom: "0.5rem",
-                      fontWeight: 600,
-                      fontSize: "1rem",
-                      boxShadow:
-                        "0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)",
-                    }}
-                  >
-                    Log In to Place Bid
-                  </Button>
-
-                  <Divider className="my-7" />
-                  <Button
-                    fullWidth
-                    variant="contained"
-                    onClick={() => {
-                      setSelectedVehicle(null);
-                      setShowQuoteModal(true);
-                    }}
-                    sx={{
-                      backgroundColor: "#3b82f6",
-                      "&:hover": { backgroundColor: "#2563eb" },
-                      padding: "12px",
-                    }}
-                  >
-                    Get a Quote
-                  </Button>
-                </>
-              )}
-              {/* Terms of Service */}
-
-              <p className="text-xs text-gray-500 text-center mt-4">
-                By placing a bid, you agree to our Terms of Service and M Rules
-              </p>
-            </div>
-          )}
-        </Dialog>
-
-        {/* Image Preview Dialog */}
-        <Dialog
-          open={!!selectedImage}
-          onClose={() => setSelectedImage(null)}
-          maxWidth="lg"
-        >
-          {selectedImage && (
-            <div className="p-2">
-              <img
-                src={
-                  selectedVehicle.images?.[0]?.image
-                    ? `${import.meta.env.VITE_API_BASE_URL_LOCAL}${
-                        selectedVehicle.images[0].image
-                      }`
-                    : `${import.meta.env.VITE_API_BASE_URL_DEPLOY}${
-                        selectedVehicle.images[0].image
-                      }`
-                }
-                className="w-full h-full max-h-[80vh] object-contain"
-                alt="Enlarged preview"
-              />
-            </div>
-          )}
-        </Dialog>
 
         {/* Quote Request Modal */}
         <QuoteRequestModal

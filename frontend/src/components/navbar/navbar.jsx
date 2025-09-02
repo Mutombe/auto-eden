@@ -349,8 +349,8 @@ export function Logo() {
   return (
     <div className="flex items-center">
       <Link to="/" className="flex-shrink-0 flex items-center">
-        <div className="w-40 h-40 mr-2 mt-25">
-          <img src="/logo.png" alt="Auto Eden Logo" className="rounded-sm" />
+        <div className="w-40 h-24 mr-2 mt-15">
+          <img src="/logo4.png" alt="Auto Eden Logo" className="rounded-sm" />
         </div>
       </Link>
     </div>
