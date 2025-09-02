@@ -3,6 +3,7 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { ShoppingCart, DollarSign, Info, Shield } from "lucide-react";
+import { FolderDot } from 'lucide-react';
 import {
   Car,
   User,
@@ -443,7 +444,7 @@ export const Navbar = () => {
                     scrolled ? "text-gray-800" : "text-gray-900"
                   }`}
                 >
-                  <Shield className="w-5 h-5 mr-2" />
+                  <FolderDot className="w-5 h-5 mr-2" />
                   Admin Dashboard
                 </Link>
               )}
@@ -581,7 +582,7 @@ export const Navbar = () => {
                   className="flex items-center text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
                   onClick={() => setMobileMenuOpen(false)}
                 >
-                  <DollarSign className="w-5 h-5 mr-3" />
+                  <CarFront  className="w-5 h-5 mr-3" />
                   Sell Your Car
                 </Link>
                 <Link
@@ -608,7 +609,7 @@ export const Navbar = () => {
                     className="flex items-center text-gray-800 p-2 font-medium hover:bg-gray-50 hover:text-red-600 rounded-lg transition-colors"
                     onClick={() => setMobileMenuOpen(false)}
                   >
-                    <Shield className="w-5 h-5 mr-3" />
+                    <FolderDot className="w-5 h-5 mr-3" />
                     Admin Dashboard
                   </Link>
                 )}
