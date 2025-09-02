@@ -2,6 +2,7 @@ import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import HomePage from "./components/homepage/home";
 import { Navbar } from "./components/navbar/navbar";
+import Footer from "./components/navbar/footer";
 import DashboardPage from "./components/dashboard/userDashboard";
 import MarketplacePage from "./components/marketplace/marketplace";
 import AboutPage from "./components/about/about";
@@ -37,6 +38,7 @@ function App() {
         <Route path="/profile" element={<ProfilePage />} />
         <Route path="/admin" element={<AdminDashboard />} />
       </Routes>
+      <Footer />
     </BrowserRouter>
   );
 }

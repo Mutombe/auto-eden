@@ -25,26 +25,26 @@ export default function Footer() {
     services: [
       { name: 'Buy Cars', href: '/marketplace', icon: ShoppingCart },
       { name: 'Sell Your Car', href: '/sell', icon: DollarSign },
-      { name: 'Instant Valuation', href: '/valuation', icon: FileText },
-      { name: 'Car History Reports', href: '/reports', icon: Info },
+      { name: 'Instant Valuation', href: '/sell', icon: FileText },
+      { name: 'Car History Reports', href: '/marketplace', icon: Info },
     ],
     company: [
       { name: 'About Us', href: '/about', icon: Info },
-      { name: 'Our Team', href: '/team', icon: User },
-      { name: 'Careers', href: '/careers', icon: ArrowRight },
-      { name: 'Press & Media', href: '/press', icon: FileText },
+      { name: 'Our Team', href: '/about', icon: User },
+      { name: 'Careers', href: '#', icon: ArrowRight },
+      { name: 'Press & Media', href: '#', icon: FileText },
     ],
     support: [
-      { name: 'Help Center', href: '/help', icon: HelpCircle },
-      { name: 'Contact Us', href: '/contact', icon: Mail },
-      { name: 'FAQs', href: '/faq', icon: HelpCircle },
-      { name: 'Live Chat', href: '/chat', icon: Phone },
+      { name: 'Help Center', href: '#', icon: HelpCircle },
+      { name: 'Contact Us', href: 'tel:+263782222032', icon: Mail },
+      { name: 'FAQs', href: '#', icon: HelpCircle },
+      { name: 'Live Chat', href: 'tel:+263782222032', icon: Phone },
     ],
     legal: [
-      { name: 'Privacy Policy', href: '/privacy', icon: Shield },
-      { name: 'Terms of Service', href: '/terms', icon: FileText },
-      { name: 'Cookie Policy', href: '/cookies', icon: Info },
-      { name: 'Data Protection', href: '/data-protection', icon: Shield },
+      { name: 'Privacy Policy', href: '#', icon: Shield },
+      { name: 'Terms of Service', href: '#', icon: FileText },
+      { name: 'Cookie Policy', href: '#', icon: Info },
+      { name: 'Data Protection', href: '#', icon: Shield },
     ]
   };
 
@@ -63,13 +63,6 @@ export default function Footer() {
           {/* Company Info */}
           <div className="lg:col-span-2 space-y-6">
             <div className="flex items-center space-x-3">
-              <div className="w-12 h-12">
-                <img
-                  src="/logo.png"
-                  alt="Auto Eden Logo"
-                  className="w-full h-full rounded-lg"
-                />
-              </div>
               <div>
                 <h3 className="text-2xl font-bold text-white">Auto Eden</h3>
                 <p className="text-gray-400 text-sm">Your Trusted Car Partner</p>
@@ -86,15 +79,15 @@ export default function Footer() {
             <div className="space-y-3">
               <div className="flex items-center space-x-3 text-gray-300">
                 <Phone className="w-5 h-5 text-red-500" />
-                <span>+1 (555) 123-4567</span>
+                <span>+263 78 222 2032</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-300">
                 <Mail className="w-5 h-5 text-red-500" />
-                <span>support@autoeden.com</span>
+                <span>admin@autoeden.co.zw</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-300">
                 <MapPin className="w-5 h-5 text-red-500" />
-                <span>123 Auto Street, Car City, CC 12345</span>
+                <span>Harare Zimbabwe</span>
               </div>
             </div>
 
