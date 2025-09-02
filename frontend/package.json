@@ -20,6 +20,8 @@
     "axios": "^1.8.4",
     "formik": "^2.4.6",
     "framer-motion": "^12.6.3",
+    "jspdf": "^3.0.2",
+    "jspdf-autotable": "^5.0.2",
     "lucide-react": "^0.487.0",
     "memoize-one": "^6.0.0",
     "react": "^19.0.0",
@@ -30,6 +32,7 @@
     "react-redux": "^9.2.0",
     "react-router-dom": "^7.4.1",
     "tailwindcss": "^4.1.1",
+    "xlsx": "^0.18.5",
     "yup": "^1.6.1"
   },
   "devDependencies": {

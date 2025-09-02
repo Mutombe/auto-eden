@@ -31,7 +31,7 @@ const VehicleDialog = ({
     year: new Date().getFullYear(),
     price: "",
     mileage: "",
-    fuel_type: "petrol",
+    fuel_type: "  Petrol",
     vin: "",
     description: "", 
     listingType: "marketplace",
@@ -374,9 +374,9 @@ const VehicleDialog = ({
               variant="outlined"
               displayEmpty
             >
-              <MenuItem value="petrol">Petrol</MenuItem>
-              <MenuItem value="diesel">Diesel</MenuItem>
-              <MenuItem value="electric">Electric</MenuItem>
+              <MenuItem value="Petrol">Petrol</MenuItem>
+              <MenuItem value="Diesel">Diesel</MenuItem>
+              <MenuItem value="Electric">Electric</MenuItem>
             </Select>
 
             <TextField

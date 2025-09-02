@@ -6,6 +6,7 @@ import { placeBid } from "../../redux/slices/bidSlice";
 import { AuthModals } from "../navbar/navbar";
 import { formatMediaUrl } from "../../utils/image";
 import QuoteRequestModal from "./quoteRequestModal";
+import ImagePreview, { useImagePreview } from "../imagePreviewing";
 import SmartImage from "../../utils/smartImage";
 import {
   Car,
@@ -171,6 +172,8 @@ export default function MarketplacePage() {
   const dispatch = useDispatch();
   useTracking(window.location.pathname);
   const { marketplace, loading } = useSelector((state) => state.vehicles);
+  const { preview, openPreview, closePreview } = useImagePreview();
+
   const {
     results: vehicles = [],
     count: totalVehicles = 0,
@@ -192,19 +195,19 @@ export default function MarketplacePage() {
     page_size: 12, // Add this
   });
   // In MarketplacePage.jsx
-// Convert filter names to snake_case before sending
-const backendFilters = {
-  min_price: filters.minPrice,
-  max_price: filters.maxPrice,
-  make: filters.make,
-  year: filters.year,
-  sort_by: filters.sortBy,
-  body_type: filters.bodyType,
-  fuel_type: filters.fuelType,
-  search_term: filters.searchTerm,
-  page: filters.page,
-  page_size: filters.page_size
-};
+  // Convert filter names to snake_case before sending
+  const backendFilters = {
+    min_price: filters.minPrice,
+    max_price: filters.maxPrice,
+    make: filters.make,
+    year: filters.year,
+    sort_by: filters.sortBy,
+    body_type: filters.bodyType,
+    fuel_type: filters.fuelType,
+    search_term: filters.searchTerm,
+    page: filters.page,
+    page_size: filters.page_size,
+  };
 
   const [authModal, setAuthModal] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
@@ -239,9 +242,9 @@ const backendFilters = {
   // Fuel types
   const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"];
 
-useEffect(() => {
+  useEffect(() => {
     setIsLoading(true);
-    
+
     // Convert frontend filters to backend format
     const backendFilters = {
       min_price: filters.minPrice,
@@ -253,14 +256,13 @@ useEffect(() => {
       fuel_type: filters.fuelType,
       search_term: filters.searchTerm,
       page: filters.page,
-      page_size: filters.page_size
+      page_size: filters.page_size,
     };
 
     dispatch(fetchMarketplace(backendFilters))
       .then(() => setIsLoading(false))
       .catch(() => setIsLoading(false));
   }, [dispatch, filters]);
-
 
   const handlePageChange = (newPage) => {
     setFilters((prev) => ({
@@ -310,6 +312,19 @@ useEffect(() => {
       searchTerm: "",
       page: 1,
     });
+  };
+
+  const handleMarketplaceImageClick = (vehicle, imageIndex = 0) => {
+    const imageUrls = vehicle.images?.map((img) => img.image) || [
+      vehicle.main_image,
+    ];
+    openPreview(
+      imageUrls,
+      imageIndex,
+      `${vehicle.make} ${vehicle.model}`,
+      `${vehicle.make} ${vehicle.model}`,
+      `${vehicle.year} ${vehicle.make} ${vehicle.model}`
+    );
   };
 
   const handlePlaceBid = () => {
@@ -898,6 +913,7 @@ useEffect(() => {
                     <ImageWithFallback
                       src={vehicle.main_image}
                       alt={`${vehicle.make} ${vehicle.model}`}
+                      onClick={() => handleMarketplaceImageClick(vehicle, 0)}
                       className={`w-full object-cover ${
                         viewMode === "list"
                           ? "h-56 md:h-full md:rounded-l-xl"
@@ -1416,7 +1432,7 @@ useEffect(() => {
               />
             </div>
           )}
-        </Dialog>        
+        </Dialog>
 
         {/* Quote Request Modal */}
         <QuoteRequestModal
@@ -1426,6 +1442,16 @@ useEffect(() => {
           vehicleId={selectedVehicle?.id}
         />
         <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
+
+        <ImagePreview
+          isOpen={preview.isOpen}
+          onClose={closePreview}
+          images={preview.images}
+          currentIndex={preview.currentIndex}
+          alt={preview.alt}
+          title={preview.title}
+          description={preview.description}
+        />
 
         {/* Snackbar for notifications */}
         <Snackbar
