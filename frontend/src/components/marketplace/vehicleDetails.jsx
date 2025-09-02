@@ -634,7 +634,7 @@ export default function CarDetailsPage() {
                         : "border-transparent"
                     }`}
                     whileHover={{ scale: 1.05 }}
-                    onDoubleClick={() => handleImageClick(index)}
+                    onClick={() => handleImageClick(index)}
                   >
                     <ImageWithFallback
                       src={img.image}
