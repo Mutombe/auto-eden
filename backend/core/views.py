@@ -415,7 +415,7 @@ class MarketplaceView(APIView):
             is_visible=True, 
             listing_type="marketplace"
         ).select_related('owner').prefetch_related('images').only(
-            'id', 'make', 'model', 'year', 'price', 'mileage', 
+            'id', 'make', 'model', 'year', 'price', 'mileage', 'fuel_type',
             'location', 'created_at', 'owner__username'
         )
 

@@ -134,6 +134,7 @@ class Vehicle(models.Model):
     )
     listing_type = models.CharField(max_length=20, choices=LISTING_TYPE)
     fuel_type = models.CharField(max_length=50, blank=True, null=True)
+    body_type = models.CharField(max_length=50, blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For marketplace
     rejection_reason = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
