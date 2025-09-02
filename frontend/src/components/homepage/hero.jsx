@@ -5,6 +5,9 @@ import {
   Star, Clock, Shield, Check, ChevronRight,
   ChevronLeft, Play, Pause, Sparkles
 } from "lucide-react";
+import { Info } from 'lucide-react';
+import { CarFront } from 'lucide-react';
+import { LifeBuoy } from 'lucide-react';
 
 export default function EnhancedHeroCarousel() {
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -34,6 +37,7 @@ export default function EnhancedHeroCarousel() {
       primaryCTA: "Browse Marketplace",
       link: "/marketplace",
       secondaryCTA: "Sell Your Car",
+      icon: CarFront,
       features: ["No Hidden Fees", "100% Secure", "Instant Valuation"],
       gradient: "from-purple-900 via-red-900 to-orange-900"
     },
@@ -49,6 +53,7 @@ export default function EnhancedHeroCarousel() {
       primaryCTA: "Get Instant Quote",
       link: "/sell",
       secondaryCTA: "Learn More",
+      icon: Info,
       features: ["Free Valuation", "Professional Photos", "Verified Buyers"],
       gradient: "from-blue-900 via-indigo-900 to-red-900"
     },
@@ -64,6 +69,7 @@ export default function EnhancedHeroCarousel() {
       primaryCTA: "View Inventory",
       link: "/marketplace",
       secondaryCTA: "Book Test Drive",
+      icon: LifeBuoy,
       features: ["Verified Listings", "Warranty Included", "24/7 Support"],
       gradient: "from-green-900 via-teal-900 to-red-900"
     }
@@ -360,7 +366,9 @@ export default function EnhancedHeroCarousel() {
                     >
                       <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
                       <span className="relative z-10 truncate">{currentData.secondaryCTA}</span>
-                      <DollarSign className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform relative z-10 flex-shrink-0" />
+                      <div className="w-5 h-5 ml-2 group-hover:scale-110 transition-transform relative z-10 flex-shrink-0">
+                        {currentData.icon && <currentData.icon className="w-5 h-5" />}
+                      </div>
                     </motion.button>
                   </motion.div>
                 </motion.div>
