@@ -513,7 +513,7 @@ export default function CarDetailsPage() {
   };
 
   const getVerificationIcon = (vehicle) => {
-    if (vehicle.is_physically_verified) {
+    if (vehicle.verification_state === "physical") {
       return <CheckCircle className="text-green-500" size={20} />;
     } else if (vehicle.is_digitally_verified) {
       return <Shield className="text-blue-500" size={20} />;
@@ -524,7 +524,7 @@ export default function CarDetailsPage() {
   };
 
   const getVerificationText = (vehicle) => {
-    if (vehicle.is_physically_verified) return "Physically Verified";
+    if (vehicle.verification_state === "physical") return "Physically Verified";
     if (vehicle.is_digitally_verified) return "Digitally Verified";
     if (vehicle.is_rejected) return "Rejected";
     return "Verification Pending";
