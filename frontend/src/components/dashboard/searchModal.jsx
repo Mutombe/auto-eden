@@ -26,14 +26,12 @@ const SearchModal = ({ open, onClose, editSearch }) => {
     min_year: editSearch?.min_year || new Date().getFullYear() - 5,
     max_year: editSearch?.max_year || new Date().getFullYear(),
     max_price: editSearch?.max_price || '',
-    max_mileage: editSearch?.max_mileage || '',
   });
 
   const handleSubmit = () => {
     const payload = {
       ...formData,
       max_price: Number(formData.max_price),
-      max_mileage: Number(formData.max_mileage)
     };
 
     if (editSearch) {
@@ -88,15 +86,6 @@ const SearchModal = ({ open, onClose, editSearch }) => {
             onChange={(e) => setFormData({ ...formData, max_price: e.target.value })}
             InputProps={{
               startAdornment: <InputAdornment position="start">$</InputAdornment>,
-            }}
-          />
-          <TextField
-            label="Max Mileage"
-            type="number"
-            value={formData.max_mileage}
-            onChange={(e) => setFormData({ ...formData, max_mileage: e.target.value })}
-            InputProps={{
-              endAdornment: <InputAdornment position="end">km</InputAdornment>,
             }}
           />
         </Box>

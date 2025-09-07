@@ -177,6 +177,7 @@ export default function AdminDashboard() {
   const [rejectionReason, setRejectionReason] = useState("");
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [modalType, setModalType] = useState(null);
   const [submitSuccess, setSubmitSuccess] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
   const [editVehicle, setEditVehicle] = useState(null);
@@ -622,21 +623,27 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            {/* Image Gallery */}
+            {/* Image Gallery - FIXED VERSION */}
             <div className="mb-6">
               <h3 className="text-lg font-semibold mb-2">Images</h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {vehicle.images?.length > 0 ? (
                   vehicle.images.map((image, index) => (
                     <div
-                      key={index}
+                      key={`${vehicle.id}-${index}`} // More stable key
                       className="rounded-lg overflow-hidden border"
                     >
                       <ImageWithFallback
                         src={image.image}
-                        alt={`Vehicle ${index + 1}`}
+                        alt={`${vehicle.year} ${vehicle.make} ${
+                          vehicle.model
+                        } - Image ${index + 1}`}
                         className="w-full h-48 object-cover"
-                        loading="lazy"
+                        loading="eager" // Changed from lazy to eager
+                        style={{
+                          minHeight: "192px", // Ensure consistent height
+                          backgroundColor: "#f3f4f6", // Light gray background while loading
+                        }}
                       />
                     </div>
                   ))
@@ -1139,7 +1146,10 @@ export default function AdminDashboard() {
                           <>
                             <button
                               className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex justify-end gap-2"
-                              onClick={() => setSelectedDetailsVehicle(vehicle)}
+                              onClick={() => {
+                                setSelectedDetailsVehicle(vehicle);
+                                setModalType("details");
+                              }}
                             >
                               <Eye size={14} />
                               View Details
@@ -1152,6 +1162,7 @@ export default function AdminDashboard() {
                               <button
                                 onClick={() => {
                                   setSelectedVehicle(vehicle);
+                                  setModalType("verification"); // Set modal type to verification
                                   setRejectionReason("");
                                 }}
                                 className="text-green-600 hover:text-green-800 p-1"
@@ -1520,24 +1531,23 @@ export default function AdminDashboard() {
         </div>
       )}
 
-      {selectedDetailsVehicle && (
-        <VerificationModal
-          vehicle={selectedDetailsVehicle}
-          onClose={() => setSelectedDetailsVehicle(null)}
-        />
-      )}
-
-      {selectedDetailsVehicle && (
+      {selectedDetailsVehicle && modalType === "details" && (
         <VehicleDetailModal
           vehicle={selectedDetailsVehicle}
-          onClose={() => setSelectedDetailsVehicle(null)}
+          onClose={() => {
+            setSelectedDetailsVehicle(null);
+            setModalType(null);
+          }}
         />
       )}
 
-      {selectedVehicle && (
+      {selectedVehicle && modalType === "verification" && (
         <VerificationModal
           vehicle={selectedVehicle}
-          onClose={() => setSelectedVehicle(null)}
+          onClose={() => {
+            setSelectedVehicle(null);
+            setModalType(null);
+          }}
         />
       )}
 

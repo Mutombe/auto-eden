@@ -69,7 +69,6 @@ def check_vehicle_matches(sender, instance, created, **kwargs):
             min_year__lte=instance.year,
             max_year__gte=instance.year,
             max_price__gte=instance.price,
-            max_mileage__gte=instance.mileage,
             status='active'
         )
 
