@@ -31,9 +31,10 @@ const VehicleDialog = ({
     year: new Date().getFullYear(),
     price: "",
     mileage: "",
-    fuel_type: "  Petrol",
+    fuel_type: "Petrol",
+    transmission: "Automatic",
     vin: "",
-    description: "", 
+    description: "",
     listingType: "marketplace",
     images: [],
   });
@@ -59,8 +60,9 @@ const VehicleDialog = ({
         price: editVehicle.price || editVehicle.proposed_price || "",
         mileage: editVehicle.mileage || "",
         fuel_type: editVehicle.fuel_type || "petrol",
+        trnsmission: editVehicle.transmission || "Automatic",
         vin: editVehicle.vin || "",
-        description: editVehicle.description || "", 
+        description: editVehicle.description || "",
         listingType: editVehicle.listing_type || "marketplace",
         images: editVehicle.images || [],
       });
@@ -87,9 +89,10 @@ const VehicleDialog = ({
         year: new Date().getFullYear(),
         price: "",
         mileage: "",
-        fuel_type: "petrol",
+        fuel_type: "Petrol",
+        transmission: "Automatic",
         vin: "",
-        description: "", 
+        description: "",
         listingType: "marketplace",
         images: [],
       });
@@ -105,6 +108,8 @@ const VehicleDialog = ({
     if (!formData.year) errors.year = "Year is required";
     if (!formData.mileage) errors.mileage = "Mileage is required";
     if (!formData.fuel_type) errors.fuel_type = "Fuel type is required";
+    if (!formData.transmission)
+      errors.transmission = "Transmission is required";
     if (!formData.vin) errors.vin = "VIN is required";
     if (!formData.price) errors.price = "Price is required";
     if (imageFiles.length === 0 && formData.images.length === 0)
@@ -203,8 +208,9 @@ const VehicleDialog = ({
     formDataObj.append("year", formData.year);
     formDataObj.append("mileage", formData.mileage);
     formDataObj.append("fuel_type", formData.fuel_type);
+    formDataObj.append("transmission", formData.transmission);
     formDataObj.append("vin", formData.vin);
-    formDataObj.append("description", formData.description); 
+    formDataObj.append("description", formData.description);
     formDataObj.append("listing_type", formData.listingType);
 
     // Append price based on listing type
@@ -232,7 +238,7 @@ const VehicleDialog = ({
     onSubmit(formDataObj);
   };
 
-    const handleClose = () => {
+  const handleClose = () => {
     // Clean up preview URLs to prevent memory leaks
     previewUrls.forEach((url) => {
       if (url) {
@@ -250,6 +256,8 @@ const VehicleDialog = ({
       price: "",
       mileage: "",
       fuel_type: "petrol",
+      transmission: "Automatic",
+      description: "",
       vin: "",
       listingType: "marketplace",
       images: [],
@@ -357,14 +365,12 @@ const VehicleDialog = ({
 
             <TextField
               fullWidth
-              label="Mileage"
+              label="Mileage (HR/MILES/KM)"
               name="mileage"
-              type="number"
               value={formData.mileage}
               onChange={handleInputChange}
               required
               variant="outlined"
-              InputProps={{ inputProps: { min: 0 } }}
             />
             <Select
               fullWidth
@@ -378,7 +384,17 @@ const VehicleDialog = ({
               <MenuItem value="Diesel">Diesel</MenuItem>
               <MenuItem value="Electric">Electric</MenuItem>
             </Select>
-
+            <Select
+              fullWidth
+              name="transmission"
+              value={formData.transmission}
+              onChange={handleInputChange}
+              variant="outlined"
+              displayEmpty
+            >
+              <MenuItem value="Automatic">Automatic</MenuItem>
+              <MenuItem value="Manual">Manual</MenuItem>
+            </Select>
             <TextField
               fullWidth
               label="Price ($)"
@@ -390,16 +406,16 @@ const VehicleDialog = ({
               variant="outlined"
               InputProps={{ inputProps: { min: 0 } }}
             />
-          <TextField
-          fullWidth
-          label="Description"
-          name="description"
-          value={formData.description}
-          onChange={handleInputChange}
-          multiline
-          rows={4}
-          variant="outlined"
-        />
+            <TextField
+              fullWidth
+              label="Description"
+              name="description"
+              value={formData.description}
+              onChange={handleInputChange}
+              multiline
+              rows={4}
+              variant="outlined"
+            />
 
             <Select
               fullWidth

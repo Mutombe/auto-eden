@@ -885,11 +885,6 @@ export default function DashboardPage() {
                                 size="small"
                               />
                               <Chip
-                                label={`Max Mileage: ${search.max_mileage}km`}
-                                variant="outlined"
-                                size="small"
-                              />
-                              <Chip
                                 label={search.status}
                                 color={
                                   search.status === "active"

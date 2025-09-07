@@ -114,7 +114,9 @@ class Vehicle(models.Model):
             MaxValueValidator(timezone.now().year + 1)
         ]
     )
-    mileage = models.PositiveIntegerField(
+    mileage = models.CharField(
+        max_length=20,
+        blank=True,
         help_text="Current vehicle mileage in kilometers"
     )
     proposed_price = models.DecimalField(
@@ -134,6 +136,7 @@ class Vehicle(models.Model):
     )
     listing_type = models.CharField(max_length=20, choices=LISTING_TYPE)
     fuel_type = models.CharField(max_length=50, blank=True, null=True)
+    transmission = models.CharField(max_length=10, blank=True, null=True)
     body_type = models.CharField(max_length=50, blank=True, null=True)
     price = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)  # For marketplace
     rejection_reason = models.TextField(blank=True, null=True)
@@ -404,7 +407,6 @@ class VehicleSearch(models.Model):
     min_year = models.PositiveIntegerField()
     max_year = models.PositiveIntegerField()
     max_price = models.DecimalField(max_digits=10, decimal_places=2)
-    max_mileage = models.PositiveIntegerField()
     status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='active')
     created_at = models.DateTimeField(auto_now_add=True)
     last_matched = models.DateTimeField(null=True, blank=True)
