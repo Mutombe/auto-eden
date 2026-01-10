@@ -413,7 +413,7 @@ export default function MarketplacePage() {
   ).length;
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="pacaembu-font min-h-screen bg-gray-50">
       {/* Hero Section with Parallax Effect */}
       <motion.section
         className="relative h-[60vh] sm:h-[50vh] md:h-[40vh] lg:h-96 bg-gradient-to-br from-red-600 via-red-700 to-red-800 overflow-hidden"

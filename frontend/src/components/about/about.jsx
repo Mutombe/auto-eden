@@ -1,318 +1,437 @@
 // src/pages/AboutPage.jsx
 import React from "react";
 import { motion } from "framer-motion";
-import { Award, Users, Clock, Globe, Check, ChevronRight, Car } from "lucide-react";
-import { Button } from "@mui/material";
+import { 
+  Car, Upload, Search, Shield, CheckCircle, 
+  CreditCard, Key, Camera, FileCheck, Users,
+  ArrowRight, BadgeCheck, Handshake, Eye,
+  Clock, Zap, DollarSign, Heart
+} from "lucide-react";
+import { Link } from "react-router-dom";
 
+/**
+ * About Page - Auto Eden
+ * SEO-optimized, user-friendly page explaining our story and processes
+ */
 export default function AboutPage() {
-  const fadeIn = {
-    initial: { opacity: 0, y: 20 },
-    animate: { opacity: 1, y: 0 },
+  // Animation variants
+  const fadeInUp = {
+    initial: { opacity: 0, y: 30 },
+    whileInView: { opacity: 1, y: 0 },
+    viewport: { once: true },
     transition: { duration: 0.6 }
   };
-  
-  const staggerContainer = {
-    animate: { transition: { staggerChildren: 0.1 } }
-  };
 
-  const milestones = [
+  // Step-by-step process for sellers
+  const sellerSteps = [
     {
-      year: "2018",
-      title: "Foundation",
-      description: "Auto Eden was established with a vision to transform the pre-owned automotive marketplace.",
+      step: 1,
+      icon: <Camera className="w-6 h-6" />,
+      title: "Upload Your Vehicle",
+      description: "Take clear photos of your car and fill in the details. It's completely free — no listing fees ever."
     },
     {
-      year: "2019",
-      title: "Digital Innovation",
-      description: "Launched our proprietary verification technology and online platform.",
+      step: 2,
+      icon: <FileCheck className="w-6 h-6" />,
+      title: "We Verify Your Car",
+      description: "Our team reviews your listing digitally, then schedules a physical inspection at no cost to you."
     },
     {
-      year: "2021",
-      title: "National Expansion",
-      description: "Expanded operations to cover all major metropolitan areas across the country.",
+      step: 3,
+      icon: <Eye className="w-6 h-6" />,
+      title: "Buyers Find You",
+      description: "Your verified listing goes live. Thousands of buyers browse and express interest in your vehicle."
     },
     {
-      year: "2023",
-      title: "Industry Recognition",
-      description: "Received multiple awards for customer satisfaction and service excellence.",
-    },
-    {
-      year: "2024",
-      title: "Global Vision",
-      description: "Initiated international expansion with a focus on premium markets.",
-    },
+      step: 4,
+      icon: <Handshake className="w-6 h-6" />,
+      title: "Secure Sale",
+      description: "We facilitate the transaction. You get paid securely, and the buyer gets their dream car."
+    }
   ];
 
-  const teamMembers = [
+  // Step-by-step process for buyers
+  const buyerSteps = [
     {
-      name: "Alexandra Mutimutema",
-      position: "Chief Executive Officer",
-      image: "/user1.jpg",
-      description: "With over 15 years of experience in automotive retail and technology, Alexandra leads Auto Eden's strategic vision and operations.",
+      step: 1,
+      icon: <Search className="w-6 h-6" />,
+      title: "Browse Freely",
+      description: "Explore our entire marketplace at no cost. Filter by make, model, price, and more."
     },
     {
-      name: "Marcus Mutimutema",
-      position: "Chief Technology Officer",
-      image: "/user1.jpg",
-      description: "A pioneer in automotive tech, Marcus oversees our digital platform and innovative verification systems.",
+      step: 2,
+      icon: <BadgeCheck className="w-6 h-6" />,
+      title: "Trust Our Verification",
+      description: "Every vehicle is digitally and physically verified. View detailed inspection reports."
     },
     {
-      name: "Samantha Mutimutema",
-      position: "Customer Experience Director",
-      image: "/user1.jpg",
-      description: "Dedicated to creating seamless experiences, Samantha ensures client satisfaction at every touchpoint.",
+      step: 3,
+      icon: <Car className="w-6 h-6" />,
+      title: "Schedule a Test Drive",
+      description: "Found the one? Book a test drive to experience the vehicle firsthand."
     },
+    {
+      step: 4,
+      icon: <Key className="w-6 h-6" />,
+      title: "Drive Away Happy",
+      description: "Complete the secure transaction through Auto Eden and get the keys to your new car."
+    }
   ];
 
-  const values = [
+  // Why choose us points
+  const whyChooseUs = [
     {
-      icon: <Check className="w-6 h-6 text-red-600" />,
-      title: "Integrity",
-      description: "We believe in complete transparency and honesty in every transaction and interaction."
+      icon: <DollarSign className="w-8 h-8" />,
+      title: "Zero Fees for Sellers",
+      description: "List your vehicle completely free. No hidden charges, no listing fees, no commissions on your sale."
     },
     {
-      icon: <Award className="w-6 h-6 text-red-600" />,
-      title: "Excellence",
-      description: "We strive for excellence in our service, our platform, and our customer relationships."
+      icon: <Shield className="w-8 h-8" />,
+      title: "Verified Vehicles Only",
+      description: "Every car undergoes rigorous digital and physical verification before appearing on our platform."
     },
     {
-      icon: <Users className="w-6 h-6 text-red-600" />,
-      title: "Community",
-      description: "We build lasting relationships with our customers and within the communities we serve."
+      icon: <Zap className="w-8 h-8" />,
+      title: "Fast & Simple",
+      description: "Our streamlined process means less waiting, less paperwork, and more time enjoying your car."
     },
     {
-      icon: <Globe className="w-6 h-6 text-red-600" />,
-      title: "Sustainability",
-      description: "We are committed to environmentally responsible practices in all aspects of our business."
-    },
+      icon: <Heart className="w-8 h-8" />,
+      title: "Customer First",
+      description: "We're here to help at every step. Real people, real support, real results."
+    }
   ];
 
   return (
-    <div className="bg-white">
+    <main className="min-h-screen bg-white">
+      {/* SEO-optimized hidden heading */}
+      <h1 className="sr-only">
+        About Auto Eden - Zimbabwe's Free Car Marketplace | How to Buy & Sell Cars
+      </h1>
+
       {/* Hero Section */}
-      <div className="relative bg-gradient-to-r from-black to-red-800 text-white py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-10">
+      <section className="relative bg-gray-900 text-white overflow-hidden">
+        {/* Background Pattern */}
+        <div className="absolute inset-0 opacity-10">
+          <div className="absolute inset-0" style={{
+            backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.4'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
+          }} />
+        </div>
+
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
           <motion.div 
-            className="text-center max-w-3xl mx-auto"
+            className="max-w-3xl"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
           >
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">About Auto Eden</h1>
-            <p className="text-lg md:text-xl text-gray-200 mb-10">
-              Redefining the experience of buying and selling brand-new and premium pre-owned vehicles through transparency, 
-              innovation, and exceptional service.
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-red-600/20 text-red-400 text-sm font-medium mb-6">
+              Est. 2019 • Harare, Zimbabwe
+            </span>
+            <h2 className="text-4xl sm:text-5xl lg:text-6xl font-bold mb-6 leading-tight">
+              We're Making Car Trading 
+              <span className="text-red-500"> Simple & Free</span>
+            </h2>
+            <p className="text-lg sm:text-xl text-gray-300 leading-relaxed mb-8">
+              Auto Eden is Zimbabwe's first truly free car marketplace. We connect buyers 
+              and sellers without the traditional fees, paperwork hassles, or trust issues 
+              that plague the industry.
             </p>
-            {/*<div className="flex justify-center">
-              <Button
-                variant="contained"
-                size="large"
-                className="!bg-red-600 !text-white !hover:bg-red-700 !rounded-lg !px-8 !py-3 !font-medium"
-                endIcon={<ChevronRight />}
+            <div className="flex flex-wrap gap-4">
+              <Link
+                to="/sell"
+                className="inline-flex items-center px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
               >
-                Our Story
-              </Button>
-            </div>*/}
+                Sell Your Car
+                <ArrowRight className="w-4 h-4 ml-2" />
+              </Link>
+              <Link
+                to="/marketplace"
+                className="inline-flex items-center px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors border border-white/20"
+              >
+                Browse Cars
+              </Link>
+            </div>
           </motion.div>
         </div>
-      </div>
+      </section>
 
       {/* Our Story Section */}
-      <div className="py-20 bg-white">
+      <section className="py-16 lg:py-24 bg-white" aria-labelledby="our-story">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex flex-col md:flex-row gap-12 items-center">
-            <motion.div 
-              className="md:w-1/2"
-              {...fadeIn}
-            >
-              <h2 className="text-3xl font-bold text-gray-900 mb-6">Our Journey</h2>
-              <p className="text-lg text-gray-700 mb-6">
-                Founded in 2019, Auto Eden began with a simple yet powerful vision: to create a marketplace where buying and selling cars would be a pleasant, transparent, and rewarding experience. Our founders, having experienced the frustrations of traditional car dealerships and private sales, saw an opportunity to combine technology, expertise, and customer service to transform the industry.
-              </p>
-              <p className="text-lg text-gray-700 mb-6">
-                What started as a small team with big dreams has evolved into a national platform trusted by thousands of customers. Our commitment to verification, fair pricing, and exceptional service has made us a leader in the premium pre-owned vehicle market.
-              </p>
-              <p className="text-lg text-gray-700">
-                Today, Auto Eden continues to innovate and expand, guided by our founding principles and driven by our passion for connecting people with their perfect vehicles.
-              </p>
+          <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            <motion.div {...fadeInUp}>
+              <h2 id="our-story" className="text-3xl lg:text-4xl font-bold text-gray-900 mb-6">
+                Our Story
+              </h2>
+              <div className="space-y-4 text-gray-600 leading-relaxed">
+                <p>
+                  Founded in 2019, Auto Eden was born from a simple frustration: buying and 
+                  selling cars in Zimbabwe was expensive, complicated, and often risky. 
+                  Traditional platforms charged sellers hefty fees, and buyers had no way 
+                  to verify vehicle conditions.
+                </p>
+                <p>
+                  We asked ourselves: <strong className="text-gray-900">what if car trading could be free, 
+                  transparent, and trustworthy?</strong>
+                </p>
+                <p>
+                  Today, Auto Eden is Zimbabwe's leading car marketplace where sellers list 
+                  for free, every vehicle is verified, and secure transactions are guaranteed. 
+                  We've helped thousands of Zimbabweans find their perfect cars and get fair 
+                  value for their vehicles.
+                </p>
+              </div>
+              
+              {/* Quick Stats */}
+              <div className="grid grid-cols-3 gap-6 mt-8 pt-8 border-t border-gray-200">
+                <div>
+                  <div className="text-2xl lg:text-3xl font-bold text-red-600">1000+</div>
+                  <div className="text-sm text-gray-500">Happy Customers</div>
+                </div>
+                <div>
+                  <div className="text-2xl lg:text-3xl font-bold text-red-600">100%</div>
+                  <div className="text-sm text-gray-500">Verified Cars</div>
+                </div>
+                <div>
+                  <div className="text-2xl lg:text-3xl font-bold text-red-600">$0</div>
+                  <div className="text-sm text-gray-500">Listing Fee</div>
+                </div>
+              </div>
             </motion.div>
+
             <motion.div 
-              className="md:w-1/2"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.2 }}
+              {...fadeInUp}
+              className="relative"
             >
-              <div className="relative rounded-xl overflow-hidden shadow-xl">
+              <div className="aspect-[4/3] rounded-2xl overflow-hidden bg-gray-100">
                 <img 
-                  src="/about.png" 
-                  alt="Auto Eden headquarters" 
-                  className="w-full h-auto"
+                  src="/about-hero.jpg" 
+                  alt="Auto Eden team helping customers find their perfect car in Harare"
+                  className="w-full h-full object-cover"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.target.src = "/placeholder-about.jpg";
+                  }}
                 />
-                <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/70 to-transparent p-6">
-                  <p className="text-white font-medium">Our headquarters</p>
+              </div>
+              {/* Floating Card */}
+              <div className="absolute -bottom-6 -left-6 bg-white p-4 rounded-xl shadow-lg border border-gray-100 hidden sm:block">
+                <div className="flex items-center gap-3">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
+                    <CheckCircle className="w-6 h-6 text-green-600" />
+                  </div>
+                  <div>
+                    <div className="font-semibold text-gray-900">Trusted Platform</div>
+                    <div className="text-sm text-gray-500">Since 2019</div>
+                  </div>
                 </div>
               </div>
             </motion.div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Core Values Section */}
-      <div className="py-20 bg-gray-50">
+      {/* Why Choose Us */}
+      <section className="py-16 lg:py-24 bg-gray-50" aria-labelledby="why-choose-us">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            {...fadeIn}
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Core Values</h2>
-            <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-              These principles guide every decision we make and define who we are as a company.
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-12">
+            <h2 id="why-choose-us" className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              Why Auto Eden?
+            </h2>
+            <p className="text-lg text-gray-600">
+              We're not just another marketplace. We're changing how Zimbabwe buys and sells cars.
             </p>
           </motion.div>
-          
-          <motion.div 
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-8"
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-          >
-            {values.map((value, index) => (
-              <motion.div
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {whyChooseUs.map((item, index) => (
+              <motion.article
                 key={index}
-                variants={fadeIn}
-                className="bg-white p-8 rounded-xl shadow-sm border border-gray-100 hover:shadow-md transition-shadow"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="bg-white p-6 rounded-xl border border-gray-100 hover:shadow-lg transition-shadow"
               >
-                <div className="w-12 h-12 bg-red-100 rounded-full flex items-center justify-center mb-6">
-                  {value.icon}
+                <div className="w-14 h-14 bg-red-50 rounded-xl flex items-center justify-center text-red-600 mb-4">
+                  {item.icon}
                 </div>
-                <h3 className="text-xl font-semibold mb-3 text-gray-900">{value.title}</h3>
-                <p className="text-gray-700">{value.description}</p>
-              </motion.div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
+              </motion.article>
             ))}
-          </motion.div>
-        </div>
-      </div>
-
-      {/* Timeline Section */}
-      <div className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            {...fadeIn}
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Our Timeline</h2>
-            <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-              A journey of growth, innovation, and dedication to excellence.
-            </p>
-          </motion.div>
-
-          <div className="relative">
-            {/* Vertical Line */}
-            <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-0.5 bg-red-600"></div>
-            
-            <motion.div
-              className="space-y-16"
-              variants={staggerContainer}
-              initial="initial"
-              animate="animate"
-            >
-              {milestones.map((milestone, index) => (
-                <motion.div
-                  key={index}
-                  variants={fadeIn}
-                  className={`flex ${index % 2 === 0 ? 'md:flex-row' : 'md:flex-row-reverse'} items-center`}
-                >
-                  <div className={`md:w-1/2 ${index % 2 === 0 ? 'md:text-right md:pr-16' : 'md:text-left md:pl-16'} mb-6 md:mb-0`}>
-                    <div className="bg-red-600 text-white inline-block px-4 py-1 rounded-full mb-3">
-                      {milestone.year}
-                    </div>
-                    <h3 className="text-2xl font-bold text-gray-900 mb-2">{milestone.title}</h3>
-                    <p className="text-lg text-gray-700">{milestone.description}</p>
-                  </div>
-                  <div className="absolute left-1/2 transform -translate-x-1/2 w-12 h-12 bg-white border-4 border-red-600 rounded-full flex items-center justify-center">
-                    <Clock className="w-5 h-5 text-red-600" />
-                  </div>
-                  <div className="md:w-1/2"></div>
-                </motion.div>
-              ))}
-            </motion.div>
           </div>
         </div>
-      </div>
+      </section>
 
-      {/* Team Section */}
-      <div className="py-20 bg-gray-50">
+      {/* How to Sell - Step by Step */}
+      <section className="py-16 lg:py-24 bg-white" aria-labelledby="how-to-sell">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div 
-            className="text-center mb-16"
-            {...fadeIn}
-          >
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">Leadership Team</h2>
-            <p className="text-lg text-gray-700 max-w-3xl mx-auto">
-              Meet the experts driving Auto Eden's vision and success.
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-12">
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-green-100 text-green-700 text-sm font-medium mb-4">
+              For Sellers
+            </span>
+            <h2 id="how-to-sell" className="text-3xl lg:text-4xl font-bold text-gray-900 mb-4">
+              How to Sell Your Car
+            </h2>
+            <p className="text-lg text-gray-600">
+              List your vehicle in minutes. No fees, no hassle, just results.
             </p>
           </motion.div>
-          
-          <motion.div 
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-            variants={staggerContainer}
-            initial="initial"
-            animate="animate"
-          >
-            {teamMembers.map((member, index) => (
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+            {sellerSteps.map((item, index) => (
               <motion.div
                 key={index}
-                variants={fadeIn}
-                className="bg-white rounded-xl overflow-hidden shadow-md hover:shadow-lg transition-shadow"
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="relative"
               >
-                <div className="aspect-w-1 aspect-h-1">
-                  <img 
-                    src={member.image} 
-                    alt={member.name} 
-                    className="w-full h-70 object-cover"
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold text-gray-900">{member.name}</h3>
-                  <p className="text-red-600 font-medium mb-4">{member.position}</p>
-                  <p className="text-gray-700">{member.description}</p>
+                {/* Connector Line */}
+                {index < sellerSteps.length - 1 && (
+                  <div className="hidden lg:block absolute top-10 left-full w-full h-0.5 bg-gray-200 -translate-x-1/2 z-0" />
+                )}
+                
+                <div className="relative bg-white p-6 rounded-xl border-2 border-gray-100 hover:border-green-200 transition-colors z-10">
+                  {/* Step Number */}
+                  <div className="absolute -top-4 left-6 w-8 h-8 bg-green-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    {item.step}
+                  </div>
+                  
+                  <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center text-green-600 mb-4 mt-2">
+                    {item.icon}
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">{item.title}</h3>
+                  <p className="text-gray-600 text-sm leading-relaxed">{item.description}</p>
                 </div>
               </motion.div>
             ))}
+          </div>
+
+          <motion.div {...fadeInUp} className="text-center mt-10">
+            <Link
+              to="/sell"
+              className="inline-flex items-center px-8 py-3 bg-green-600 hover:bg-green-700 text-white font-medium rounded-lg transition-colors"
+            >
+              Start Selling — It's Free
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
           </motion.div>
         </div>
-      </div>
+      </section>
 
-      {/* CTA Section */}
-      <div className="py-16 bg-gradient-to-r from-black to-red-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div 
-            className="max-w-3xl mx-auto"
-            {...fadeIn}
-          >
-            <h2 className="text-3xl font-bold text-white mb-6">Ready to Experience Auto Eden?</h2>
-            <p className="text-xl text-gray-200 mb-8">
-              Join us in redefining the car buying and selling experience.
+      {/* How to Buy - Step by Step */}
+      <section className="py-16 lg:py-24 bg-gray-900 text-white" aria-labelledby="how-to-buy">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div {...fadeInUp} className="text-center max-w-2xl mx-auto mb-12">
+            <span className="inline-flex items-center px-3 py-1 rounded-full bg-blue-500/20 text-blue-400 text-sm font-medium mb-4">
+              For Buyers
+            </span>
+            <h2 id="how-to-buy" className="text-3xl lg:text-4xl font-bold mb-4">
+              How to Buy Your Dream Car
+            </h2>
+            <p className="text-lg text-gray-400">
+              Find verified vehicles from trusted sellers. Browse free, buy with confidence.
             </p>
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <Button
-                variant="contained"
-                size="large"
-                className="!bg-white !text-red-600 !hover:bg-gray-100 !rounded-lg !px-8 !py-3 !font-medium"
-                startIcon={<Car className="w-5 h-5" />}
+          </motion.div>
+
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+            {buyerSteps.map((item, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: index * 0.1 }}
+                className="relative"
               >
-                Browse Marketplace
-              </Button>
-              <Button
-                variant="outlined"
-                size="large"
-                className="!text-white !border-white !rounded-lg !px-8 !py-3 !hover:bg-white/10 !font-medium"
+                {/* Connector Line */}
+                {index < buyerSteps.length - 1 && (
+                  <div className="hidden lg:block absolute top-10 left-full w-full h-0.5 bg-gray-700 -translate-x-1/2 z-0" />
+                )}
+                
+                <div className="relative bg-gray-800 p-6 rounded-xl border border-gray-700 hover:border-blue-500/50 transition-colors z-10">
+                  {/* Step Number */}
+                  <div className="absolute -top-4 left-6 w-8 h-8 bg-blue-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                    {item.step}
+                  </div>
+                  
+                  <div className="w-12 h-12 bg-blue-500/20 rounded-lg flex items-center justify-center text-blue-400 mb-4 mt-2">
+                    {item.icon}
+                  </div>
+                  <h3 className="text-lg font-semibold mb-2">{item.title}</h3>
+                  <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+
+          <motion.div {...fadeInUp} className="text-center mt-10">
+            <Link
+              to="/marketplace"
+              className="inline-flex items-center px-8 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
+            >
+              Browse Marketplace
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Final CTA */}
+      <section className="py-16 lg:py-20 bg-red-600 text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div {...fadeInUp}>
+            <h2 className="text-3xl lg:text-4xl font-bold mb-4">
+              Ready to Get Started?
+            </h2>
+            <p className="text-lg text-red-100 mb-8 max-w-2xl mx-auto">
+              Join thousands of Zimbabweans who trust Auto Eden for buying and selling vehicles. 
+              It's free, it's simple, and it works.
+            </p>
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+              <Link
+                to="/marketplace"
+                className="w-full sm:w-auto px-8 py-4 bg-white text-red-600 font-semibold rounded-lg hover:bg-gray-100 transition-colors"
               >
-                Contact Us
-              </Button>
+                Find Your Car
+              </Link>
+              <Link
+                to="/sell"
+                className="w-full sm:w-auto px-8 py-4 bg-red-700 text-white font-semibold rounded-lg hover:bg-red-800 transition-colors border border-red-500"
+              >
+                Sell Your Car
+              </Link>
             </div>
           </motion.div>
         </div>
-      </div>
-    </div>
+      </section>
+
+      {/* SEO Structured Data */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "Organization",
+          "name": "Auto Eden",
+          "description": "Zimbabwe's first truly free car marketplace. List vehicles for free, browse for free, verified cars, secure transactions.",
+          "url": "https://autoeden.co.zw",
+          "logo": "https://autoeden.co.zw/logo.png",
+          "foundingDate": "2019",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Harare",
+            "addressCountry": "ZW"
+          },
+          "contactPoint": {
+            "@type": "ContactPoint",
+            "telephone": "+263782222032",
+            "contactType": "customer service"
+          }
+        })}
+      </script>
+    </main>
   );
 }

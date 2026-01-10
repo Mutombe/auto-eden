@@ -131,7 +131,7 @@ export default function BuyMyCarPage() {
 
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen bg-gray-50">
+      <div className="pacaembu-font min-h-screen bg-gray-50">
         <div className="bg-gradient-to-b from-gray-900 to-red-800 text-white">
           <div className="max-w-7xl mx-auto px-4 pt-32 pb-16">
             <motion.div
