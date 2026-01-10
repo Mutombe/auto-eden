@@ -155,7 +155,7 @@ export default function LearnPage() {
       </h1>
 
       {/* Hero Section with Blended Background */}
-      <section className="relative overflow-hidden">
+      <section className="relative min-h-[80vh] overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img 
@@ -175,7 +175,7 @@ export default function LearnPage() {
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <motion.div {...fadeInUp} className="max-w-3xl">
+          <motion.div {...fadeInUp} className="max-w-3xl pt-15">
             <div className="flex items-center gap-2 text-red-600 mb-4">
               <BookOpen className="w-5 h-5" />
               <span className="text-sm font-medium uppercase tracking-wider">Learning Center</span>

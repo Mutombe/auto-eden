@@ -67,14 +67,14 @@ export default function NewsPage() {
   const otherNews = newsArticles.filter(n => !n.featured);
 
   return (
-    <main className="pacaembu-font min-h-screen bg-gray-50">
+    <main className="pacaembu-font bg-gray-50">
       {/* SEO Hidden Heading */}
       <h1 className="sr-only">
         Auto Eden News - Latest Updates, Announcements & Market Insights Zimbabwe
       </h1>
 
       {/* Hero with Blended Background */}
-      <section className="relative overflow-hidden">
+      <section className="relative min-h-[80vh] overflow-hidden">
         {/* Background Image */}
         <div className="absolute inset-0">
           <img 
@@ -95,7 +95,7 @@ export default function NewsPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl"
+            className="max-w-2xl pt-15"
           >
             <div className="flex items-center gap-2 text-red-400 mb-4">
               <Newspaper className="w-5 h-5" />
