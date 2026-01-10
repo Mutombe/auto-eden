@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
-import { Helmet } from "react-helmet";
+import { Helmet } from 'react-helmet-async';
 import {
   fetchMarketplace,
   fetchVehicleDetails,
@@ -258,125 +258,84 @@ const Button = ({
   );
 };
 
+
 function VehicleMetaTags({ vehicle }) {
   if (!vehicle) return null;
 
-  const title = `${vehicle.year} ${vehicle.make} ${vehicle.model} - Auto Eden`;
-  const description = `${vehicle.year} ${vehicle.make} ${
-    vehicle.model
-  } for $${vehicle.price?.toLocaleString()} - ${
-    vehicle.body_type || "Sedan"
-  } with ${vehicle.mileage?.toLocaleString()}km. ${
-    vehicle.is_physically_verified
-      ? "Physically verified"
-      : "Digitally verified"
-  } vehicle on Auto Eden.`;
-
   const baseUrl = "https://autoeden.co.zw";
-  const defaultImage = `${baseUrl}/default-car-image.jpg`;
-
-  const getImageUrl = () => {
-    if (vehicle.images && vehicle.images.length > 0) {
-      const firstImage = vehicle.images[0]?.image;
-      if (firstImage) {
-        return firstImage.startsWith("http")
-          ? firstImage
-          : `${baseUrl}${firstImage}`;
-      }
-    }
-    return defaultImage;
-  };
-
-  const image = getImageUrl();
   const url = `${baseUrl}/vehicles/${vehicle.id}`;
+  const title = `${vehicle.year} ${vehicle.make} ${vehicle.model} for Sale | Auto Eden Zimbabwe`;
+  
+  // Robust Description: Leads with the most important data points for Google snippets
+  const description = `Buy this ${vehicle.year} ${vehicle.make} ${vehicle.model} in ${vehicle.location || 'Zimbabwe'}. ${vehicle.mileage?.toLocaleString()}km, ${vehicle.fuel_type || 'Petrol'}, ${vehicle.transmission || 'Manual'}. ${vehicle.is_physically_verified ? 'Verified Condition.' : ''} Price: $${vehicle.price?.toLocaleString()}.`;
+
+  // Image Logic: Fallback to a default if images are missing
+  const vehicleImage = vehicle.main_image || (vehicle.images?.[0]?.image) || `${baseUrl}/logo2.png`;
 
   return (
     <Helmet>
+      {/* Standard Meta Tags */}
       <title>{title}</title>
       <meta name="description" content={description} />
-      <meta
-        name="keywords"
-        content={`${vehicle.make}, ${vehicle.model}, ${vehicle.year}, car, vehicle, auto, zimbabwe, harare, for sale`}
-      />
-
-      <meta property="og:type" content="website" />
-      <meta property="og:title" content={title} />
-      <meta property="og:description" content={description} />
-      <meta property="og:image" content={image} />
-      <meta property="og:image:secure_url" content={image} />
-      <meta property="og:image:width" content="1200" />
-      <meta property="og:image:height" content="630" />
-      <meta
-        property="og:image:alt"
-        content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`}
-      />
-      <meta property="og:url" content={url} />
-      <meta property="og:site_name" content="Auto Eden" />
-      <meta property="og:locale" content="en_US" />
-
-      <meta name="twitter:card" content="summary_large_image" />
-      <meta name="twitter:site" content="@AutoEdenZW" />
-      <meta name="twitter:creator" content="@AutoEdenZW" />
-      <meta name="twitter:title" content={title} />
-      <meta name="twitter:description" content={description} />
-      <meta name="twitter:image" content={image} />
-      <meta
-        name="twitter:image:alt"
-        content={`${vehicle.year} ${vehicle.make} ${vehicle.model} for sale`}
-      />
-
-      <meta property="og:image:type" content="image/jpeg" />
-      <meta name="robots" content="index, follow" />
-      <meta name="author" content="Auto Eden Motors" />
       <link rel="canonical" href={url} />
 
+      {/* Open Graph / Facebook */}
+      <meta property="og:type" content="website" />
+      <meta property="og:url" content={url} />
+      <meta property="og:title" content={title} />
+      <meta property="og:description" content={description} />
+      <meta property="og:image" content={vehicleImage} />
+
+      {/* WhatsApp specifically looks for these to render the preview instantly */}
+      <meta property="og:image:secure_url" content={vehicleImage} />
+      <meta property="og:image:type" content="image/jpeg" />
+      <meta property="og:image:width" content="1200" />
+      <meta property="og:image:height" content="630" />
+
+      {/* Twitter */}
+      <meta name="twitter:card" content="summary_large_image" />
+      <meta name="twitter:title" content={title} />
+      <meta name="twitter:description" content={description} />
+      <meta name="twitter:image" content={vehicleImage} />
+
+      {/* Structured Data (JSON-LD) for Google Car Search Results */}
       <script type="application/ld+json">
         {JSON.stringify({
-          "@context": "https://schema.org/",
+          "@context": "https://schema.org",
           "@type": "Car",
-          name: `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
-          description: description,
-          image: [image],
-          brand: {
+          "name": `${vehicle.year} ${vehicle.make} ${vehicle.model}`,
+          "image": vehicleImage,
+          "description": description,
+          "brand": {
             "@type": "Brand",
-            name: vehicle.make,
+            "name": vehicle.make
           },
-          model: vehicle.model,
-          vehicleModelDate: vehicle.year,
-          mileageFromOdometer: {
+          "model": vehicle.model,
+          "vehicleModelDate": vehicle.year,
+          "mileageFromOdometer": {
             "@type": "QuantitativeValue",
-            value: vehicle.mileage,
-            unitCode: "KMT",
+            "value": vehicle.mileage,
+            "unitCode": "KMT"
           },
-          offers: {
+          "fuelType": vehicle.fuel_type,
+          "vehicleConfiguration": vehicle.body_type,
+          "offers": {
             "@type": "Offer",
-            url: url,
-            priceCurrency: "USD",
-            price: vehicle.price,
-            priceValidUntil: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-              .toISOString()
-              .split("T")[0],
-            itemCondition: "https://schema.org/UsedCondition",
-            availability: "https://schema.org/InStock",
-            seller: {
+            "url": url,
+            "priceCurrency": "USD",
+            "price": vehicle.price,
+            "itemCondition": "https://schema.org/UsedCondition",
+            "availability": vehicle.is_sold ? "https://schema.org/OutOfStock" : "https://schema.org/InStock",
+            "seller": {
               "@type": "Organization",
-              name: "Auto Eden Motors",
-              url: "https://autoeden.co.zw",
-            },
-          },
-          manufacturer: {
-            "@type": "Organization",
-            name: vehicle.make,
-          },
-          vehicleConfiguration: vehicle.body_type,
-          fuelType: vehicle.fuel_type || "Gasoline",
-          url: url,
+              "name": "Auto Eden"
+            }
+          }
         })}
       </script>
     </Helmet>
   );
 }
-
 export default function CarDetailsPage() {
   const { vehicleId } = useParams();
   const navigate = useNavigate();

@@ -56,6 +56,7 @@ from xhtml2pdf import pisa
 from PIL import Image, ImageDraw
 import uuid
 from datetime import datetime, timedelta
+from rest_framework.decorators import api_view, permission_classes
 
 
 logger = logging.getLogger(__name__)
@@ -349,6 +350,18 @@ class VehicleSearchViewSet(viewsets.ModelViewSet):
         search.save()
         return Response({"status": "search activated"})
 
+
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def vehicle_id_list(request):
+    # Only get vehicles that are verified and visible
+    vehicle_ids = Vehicle.objects.filter(
+        verification_state="physical", 
+        is_visible=True
+    ).values_list('id', flat=True)
+    
+    # Return as strings for URL construction: ["1", "2", "3"]
+    return Response([str(id) for id in vehicle_ids])
 
 class BidViewSet(viewsets.ModelViewSet):
     serializer_class = BidSerializer

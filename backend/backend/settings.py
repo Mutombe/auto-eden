@@ -28,6 +28,8 @@ INSTALLED_APPS = [
     #local
     "rest_framework",
     "rest_framework_simplejwt",
+    'django.contrib.sitemaps',
+    'django.contrib.sites',
     "corsheaders",
     'django_filters',
     'storages',

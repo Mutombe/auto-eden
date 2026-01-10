@@ -1,429 +1,601 @@
 import React, { useEffect, useState } from "react";
-import { motion, useAnimation } from "framer-motion";
+import { motion } from "framer-motion";
 import { 
-  Car, ShieldCheck, DollarSign, ArrowRight, 
-  Star, Clock, Shield, Check, ChevronRight,
-  Users, Award, Zap, Heart, Quote, TrendingUp,
-  MessageCircle, Phone, Mail
+  ArrowRight, ChevronLeft, ChevronRight,
+  Shield, Check, Zap, DollarSign, Users,
+  Car, BadgeCheck, Handshake, Eye
 } from "lucide-react";
-import { useInView } from "react-intersection-observer";
-import StatsSection from "./stats";
+import { useSelector, useDispatch } from "react-redux";
+import { Link } from "react-router-dom";
+import { fetchMarketplace } from "../../redux/slices/vehicleSlice";
+import { SiFsecure } from "react-icons/si";
+import { IoCarSportOutline } from "react-icons/io5";
+import { TbCarSuv } from "react-icons/tb";
+import { PiArrowsOutCardinalLight } from "react-icons/pi";
+import { PiHandshake } from "react-icons/pi";
+import { MdEmojiPeople } from "react-icons/md";
+import { TiThListOutline } from "react-icons/ti";
 
-// Import the enhanced hero component
-import EnhancedHeroCarousel from "./hero";
+// Import the hero component
+import HeroCarousel from "./hero";
 
-export default function EnhancedHomePage() {
-  const [isVisible, setIsVisible] = useState(false);
+/**
+ * Vehicle Card Skeleton - Shows while loading
+ */
+const VehicleCardSkeleton = () => (
+  <div className="flex-shrink-0 w-[320px] sm:w-[380px] lg:w-[420px] bg-white rounded-2xl overflow-hidden shadow-lg animate-pulse">
+    <div className="aspect-[16/10] bg-gray-200" />
+    <div className="p-6">
+      <div className="h-4 bg-gray-200 rounded w-1/3 mb-3" />
+      <div className="h-6 bg-gray-200 rounded w-2/3 mb-4" />
+      <div className="flex gap-3">
+        <div className="h-10 bg-gray-200 rounded-lg flex-1" />
+        <div className="h-10 bg-gray-200 rounded-lg flex-1" />
+      </div>
+    </div>
+  </div>
+);
+
+/**
+ * Vehicle Card Component - Tesla-inspired design
+ */
+const VehicleCard = ({ vehicle }) => {
+  // Use main_image like marketplace page does, fallback to images array
+  const mainImage = vehicle.main_image || vehicle.images?.[0]?.image || "/placeholder-car.jpg";
+  const price = vehicle.price || vehicle.proposed_price;
   
-  // Animation controls
-  const statsControls = useAnimation();
-  const featuresControls = useAnimation();
-  const testimonialsControls = useAnimation();
-  const ctaControls = useAnimation();
-  
-  // Intersection observers
-  const [statsRef, statsInView] = useInView({ triggerOnce: true, threshold: 0.2 });
-  const [featuresRef, featuresInView] = useInView({ triggerOnce: true, threshold: 0.1 });
-  const [testimonialsRef, testimonialsInView] = useInView({ triggerOnce: true, threshold: 0.1 });
-  const [ctaRef, ctaInView] = useInView({ triggerOnce: true, threshold: 0.1 });
-  
-  // Trigger animations when sections come into view
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5 }}
+      className="flex-shrink-0 w-[320px] sm:w-[380px] lg:w-[420px] group"
+    >
+      <div className="pacaembu-font relative bg-gray-100 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
+        {/* Vehicle Category Tag */}
+        <div className="absolute top-4 left-4 z-10">
+          <span className="px-3 py-1.5 bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-medium rounded-full">
+            {vehicle.body_type || "Vehicle"}
+          </span>
+        </div>
+
+        {/* Verification Badge */}
+        {vehicle.is_physically_verified && (
+          <div className="absolute top-4 right-4 z-10">
+            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
+              <BadgeCheck className="w-5 h-5 text-white" />
+            </div>
+          </div>
+        )}
+
+        {/* Vehicle Image */}
+        <div className="aspect-[16/10] overflow-hidden">
+          <img
+            src={mainImage}
+            alt={`${vehicle.make} ${vehicle.model} - Buy at Auto Eden Zimbabwe`}
+            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+            loading="lazy"
+            onError={(e) => {
+              e.target.src = "/placeholder-car.jpg";
+            }}
+          />
+        </div>
+
+        {/* Card Content - Bottom aligned like Tesla */}
+        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
+          {/* Vehicle Name */}
+          <h3 className="text-2xl font-medium text-white mb-1">
+            {vehicle.make} {vehicle.model}
+          </h3>
+          
+          {/* Year & Price */}
+          <p className="text-white/80 text-sm mb-4">
+            {vehicle.year} • From ${price?.toLocaleString() || "TBA"}
+          </p>
+
+          {/* CTA Buttons */}
+          <div className="flex gap-3">
+            <Link
+              to={`/vehicles/${vehicle.id}`}
+              className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg text-center transition-colors"
+            >
+              View Details
+            </Link>
+            <Link
+              to={`/vehicles/${vehicle.id}`}
+              className="flex-1 px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-900 text-sm font-medium rounded-lg text-center transition-colors"
+            >
+              Learn More
+            </Link>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+/**
+ * Featured Vehicles Section - Horizontal scroll like Tesla
+ */
+const FeaturedVehicles = () => {
+  const dispatch = useDispatch();
+  const { marketplace, loading } = useSelector((state) => state.vehicles);
+  const [scrollPosition, setScrollPosition] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const scrollContainerRef = React.useRef(null);
+
   useEffect(() => {
-    if (statsInView) statsControls.start("visible");
-    if (featuresInView) featuresControls.start("visible");
-    if (testimonialsInView) testimonialsControls.start("visible");
-    if (ctaInView) ctaControls.start("visible");
-  }, [statsInView, featuresInView, testimonialsInView, ctaInView]);
+    setIsLoading(true);
+    // Fetch with default filters to get marketplace vehicles
+    const defaultFilters = {
+      page: 1,
+      page_size: 12,
+    };
+    dispatch(fetchMarketplace(defaultFilters))
+      .then(() => setIsLoading(false))
+      .catch(() => setIsLoading(false));
+  }, [dispatch]);
 
-  useEffect(() => {
-    setIsVisible(true);
-  }, []);
-  
-  const features = [
-    {
-      icon: <ShieldCheck className="w-8 h-8 text-red-500" />,
-      title: "Verified Listings",
-      description: "Every vehicle undergoes rigorous digital and physical verification with detailed inspection reports.",
-      color: "from-blue-500/10 to-cyan-500/10",
-      borderColor: "border-blue-500/20",
-      hoverColor: "hover:border-blue-500/40"
-    },
-    {
-      icon: <DollarSign className="w-8 h-8 text-emerald-500" />,
-      title: "Best Pricing",
-      description: "AI-powered market analysis ensures you get the most competitive prices in the market.",
-      color: "from-emerald-500/10 to-green-500/10",
-      borderColor: "border-emerald-500/20",
-      hoverColor: "hover:border-emerald-500/40"
-    },
-    {
-      icon: <Zap className="w-8 h-8 text-yellow-500" />,
-      title: "Lightning Fast",
-      description: "Complete your transaction in minutes with our streamlined digital process.",
-      color: "from-yellow-500/10 to-orange-500/10",
-      borderColor: "border-yellow-500/20",
-      hoverColor: "hover:border-yellow-500/40"
-    },
-    {
-      icon: <Shield className="w-8 h-8 text-purple-500" />,
-      title: "Full Protection",
-      description: "Comprehensive buyer protection with money-back guarantee and extended warranties.",
-      color: "from-purple-500/10 to-pink-500/10",
-      borderColor: "border-purple-500/20",
-      hoverColor: "hover:border-purple-500/40"
-    }
-  ];
+  // Get 5 random vehicles from marketplace.results
+  const featuredVehicles = React.useMemo(() => {
+    const vehicles = marketplace?.results || [];
+    if (!vehicles.length) return [];
+    const shuffled = [...vehicles].sort(() => 0.5 - Math.random());
+    return shuffled.slice(0, 5);
+  }, [marketplace]);
 
-  const testimonials = [
-    {
-      name: "Simbarashe Mutombe",
-      role: "Software Engineer",
-      company: "TechCorp",
-      image: "/user.jpg",
-      quote: "The mobile experience was seamless. I found my dream car while on my lunch break and completed the purchase the same day! The entire process was incredibly smooth.",
-      rating: 5,
-      verified: true
-    },
-    {
-      name: "Tenda Chabarwa", 
-      role: "Marketing Director",
-      company: "Creative Agency",
-      image: "/user.jpg",
-      quote: "Selling my car was incredibly easy. The valuation was fair, and I had multiple offers within 24 hours. I'll never go back to traditional dealerships again.",
-      rating: 5,
-      verified: true
-    },
-    {
-      name: "Takunda Tapfuma",
-      role: "Business Owner",
-      company: "Tapfuma Enterprises",
-      image: "/user.jpg", 
-      quote: "The verification process gave me complete peace of mind. Knowing every vehicle is thoroughly checked made the entire experience stress-free and trustworthy.",
-      rating: 5,
-      verified: true
-    }
-  ];
-
-  // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-        delayChildren: 0.1
-      }
-    }
-  };
-  
-  const itemVariants = {
-    hidden: { opacity: 0, y: 30, scale: 0.95 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      scale: 1,
-      transition: { 
-        duration: 0.6,
-        ease: [0.22, 1, 0.36, 1]
-      }
-    }
-  };
-
-  const statsVariants = {
-    hidden: { opacity: 0, scale: 0.8 },
-    visible: {
-      opacity: 1,
-      scale: 1,
-      transition: {
-        duration: 0.5,
-        ease: "backOut"
-      }
-    }
+  const scroll = (direction) => {
+    const container = scrollContainerRef.current;
+    if (!container) return;
+    
+    const scrollAmount = 400;
+    const newPosition = direction === 'left' 
+      ? container.scrollLeft - scrollAmount 
+      : container.scrollLeft + scrollAmount;
+    
+    container.scrollTo({ left: newPosition, behavior: 'smooth' });
+    setScrollPosition(newPosition);
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 overflow-x-hidden">
-      {/* Enhanced Hero Section */}
-      <EnhancedHeroCarousel />
-
-      <StatsSection/> 
-
-      {/* Features Section - Enhanced with modern cards */}
-      <div ref={featuresRef} className="py-16 lg:py-24 bg-gradient-to-br from-gray-50 via-white to-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate={featuresControls}
-            className="text-center mb-16"
-          >
-            <motion.div variants={itemVariants}>
-              <span className="inline-flex items-center px-4 py-2 rounded-full bg-gradient-to-r from-blue-500/10 to-purple-500/10 text-blue-600 text-sm font-bold border border-blue-200/50 mb-4">
-                <Star className="w-4 h-4 mr-2" />
-                Premium Experience
-              </span>
-            </motion.div>
-            <motion.h2 
-              variants={itemVariants}
-              className="text-3xl lg:text-5xl text-gray-900 mb-6 leading-tight"
-            >
-              Why Choose <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-600 to-orange-600">Auto Eden</span>
-            </motion.h2>
-            <motion.p 
-              variants={itemVariants}
-              className="text-lg lg:text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed"
-            >
-              We provide an exceptional car buying and selling experience with premium services, 
-              cutting-edge technology, and unmatched customer support.
-            </motion.p>
-          </motion.div>
+    <section className="pacaembu-font py-12 lg:py-16 bg-white" aria-labelledby="featured-vehicles-heading">
+      <div className="max-w-[1600px] mx-auto">
+        {/* Section Header */}
+        <div className="px-4 sm:px-6 lg:px-8 mb-8 flex items-center justify-between">
+          <div>
+            <h2 id="featured-vehicles-heading" className="text-2xl lg:text-3xl font-medium text-gray-900">
+              Featured Vehicles
+            </h2>
+            <p className="text-gray-500 mt-1">Verified and ready for you</p>
+          </div>
           
-          <motion.div
-            variants={containerVariants}
-            className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8"
+          {/* Navigation Arrows */}
+          <div className="hidden sm:flex items-center gap-2">
+            <button
+              onClick={() => scroll('left')}
+              className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              aria-label="Scroll left"
+            >
+              <ChevronLeft className="w-5 h-5 text-gray-700" />
+            </button>
+            <button
+              onClick={() => scroll('right')}
+              className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
+              aria-label="Scroll right"
+            >
+              <ChevronRight className="w-5 h-5 text-gray-700" />
+            </button>
+          </div>
+        </div>
+
+        {/* Scrollable Cards Container */}
+        <div
+          ref={scrollContainerRef}
+          className="flex gap-4 lg:gap-6 overflow-x-auto scrollbar-hide px-4 sm:px-6 lg:px-8 pb-4"
+          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+        >
+          {isLoading ? (
+            // Show skeletons while loading
+            <>
+              <VehicleCardSkeleton />
+              <VehicleCardSkeleton />
+              <VehicleCardSkeleton />
+              <VehicleCardSkeleton />
+              <VehicleCardSkeleton />
+            </>
+          ) : featuredVehicles.length > 0 ? (
+            // Show actual vehicles
+            featuredVehicles.map((vehicle, index) => (
+              <VehicleCard key={vehicle.id} vehicle={vehicle} />
+            ))
+          ) : (
+            // Fallback if no vehicles
+            <div className="w-full text-center py-12 text-gray-500">
+              <Car className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <p>No vehicles available at the moment</p>
+            </div>
+          )}
+        </div>
+
+        {/* View All Link */}
+        <div className="px-4 sm:px-6 lg:px-8 mt-6">
+          <Link
+            to="/marketplace"
+            className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors"
           >
-            {features.map((feature, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                whileHover={{ 
-                  y: -10, 
-                  transition: { duration: 0.3, ease: "backOut" }
-                }}
-                className={`group relative p-8 rounded-3xl bg-white shadow-lg hover:shadow-2xl transition-all duration-500 border ${feature.borderColor} ${feature.hoverColor} overflow-hidden`}
-              >
-                {/* Background gradient */}
-                <div className={`absolute inset-0 bg-gradient-to-br ${feature.color} opacity-0 group-hover:opacity-100 transition-opacity duration-500`} />
-                
-                {/* Decorative elements */}
-                <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-gray-100/50 to-transparent rounded-bl-3xl opacity-50" />
-                <div className="absolute -bottom-4 -right-4 w-20 h-20 bg-gradient-to-tl from-gray-50 to-transparent rounded-full opacity-30" />
-                
-                <div className="relative z-10">
-                  {/* Icon container */}
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-gray-50 group-hover:bg-white/80 transition-all duration-300 mb-6 group-hover:scale-110 group-hover:rotate-3">
-                    {feature.icon}
-                  </div>
-                  
-                  {/* Title */}
-                  <h3 className="text-xl lg:text-2xl font-bold mb-4 text-gray-900 group-hover:text-gray-800 transition-colors duration-300">
-                    {feature.title}
-                  </h3>
-                  
-                  {/* Description */}
-                  <p className="text-gray-600 group-hover:text-gray-700 transition-colors duration-300 leading-relaxed mb-6">
-                    {feature.description}
-                  </p>
-                  
-                  {/* Learn more link */}<a href="/marketplace">
-                  <div className="flex items-center text-red-600 group-hover:text-red-700 font-bold text-sm transition-all duration-300 cursor-pointer">
-                    
-                    <span className="group-hover:mr-3 transition-all duration-300">Learn more</span>
-                    <ChevronRight className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform duration-300" />
-                  </div></a>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
+            View all vehicles
+            <ArrowRight className="w-4 h-4 ml-2" />
+          </Link>
         </div>
       </div>
+    </section>
+  );
+};
 
-      {/* Testimonials Section - Enhanced design */}
-      <div ref={testimonialsRef} className="py-16 lg:py-24 bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white relative overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-900/20 via-transparent to-transparent" />
-          <div className="absolute top-0 right-0 w-96 h-96 bg-blue-500/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-0 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl" />
-        </div>
+/**
+ * Brand Logos Marquee - Auto-scrolling brand logos
+ */
+const BrandLogosMarquee = () => {
+  const brands = [
+    { name: "Toyota", logo: "/logos/autoeden-toyota-logo.png" },
+    { name: "Honda", logo: "/logos/autoeden-honda-logo.png" },
+    { name: "Mercedes-Benz", logo: "/logos/autoeden-mercedes-logo.png" },
+    { name: "Nissan", logo: "/logos/autoeden-nissan-logo.png" },
+    { name: "Isuzu", logo: "/logos/autoeden-isuzu-logo.png" },
+    { name: "Haval", logo: "/logos/autoeden-haval-logo.png" },
+    { name: "BMW", logo: "/logos/autoeden-bmw-logo.png" },
+    { name: "Mazda", logo: "/logos/autoeden-mazda-logo.png" },
+    { name: "Volkswagen", logo: "/logos/autoeden-vw-logo.png" },
+    { name: "Ford", logo: "/logos/autoeden-ford-logo.png" },
+  ];
 
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate={testimonialsControls}
-            className="text-center mb-16"
-          >
-            <motion.div variants={itemVariants}>
-              <span className="inline-flex items-center px-4 py-2 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-bold border border-white/20 mb-4">
-                <MessageCircle className="w-4 h-4 mr-2" />
-                Customer Stories
-              </span>
-            </motion.div>
-            <motion.h2 
-              variants={itemVariants}
-              className="text-3xl lg:text-5xl mb-6 leading-tight"
-            >
-              What Our Customers <span className="text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">Say</span>
-            </motion.h2>
-            <motion.p 
-              variants={itemVariants}
-              className="text-lg lg:text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed"
-            >
-              Don't just take our word for it. Here's what real customers have to say about their Auto Eden experience.
-            </motion.p>
-          </motion.div>
-          
-          <motion.div
-            variants={containerVariants}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
-          >
-            {testimonials.map((testimonial, index) => (
-              <motion.div
-                key={index}
-                variants={itemVariants}
-                whileHover={{ 
-                  y: -5,
-                  transition: { duration: 0.3 }
-                }}
-                className="group relative p-8 rounded-3xl bg-white/10 backdrop-blur-xl border border-white/20 hover:border-white/30 shadow-2xl hover:shadow-white/5 transition-all duration-500 overflow-hidden"
-              >
-                {/* Background gradient */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
-                
-                {/* Quote icon */}
-                <div className="absolute top-6 right-6 opacity-20 group-hover:opacity-30 transition-opacity duration-300">
-                  <Quote className="w-8 h-8 text-red-400" />
-                </div>
-                
-                <div className="relative z-10">
-                  {/* User info */}
-                  <div className="flex items-center gap-4 mb-6">
-                    <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-gray-300 to-gray-400 overflow-hidden shadow-lg">
-                      <img 
-                        src={testimonial.image} 
-                        alt={testimonial.name}
-                        className="w-full h-full object-cover" 
-                      />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <h4 className="font-bold text-white text-lg">{testimonial.name}</h4>
-                        {testimonial.verified && (
-                          <div className="w-5 h-5 rounded-full bg-green-500 flex items-center justify-center">
-                            <Check className="w-3 h-3 text-white" />
-                          </div>
-                        )}
-                      </div>
-                      <p className="text-sm text-gray-300">{testimonial.role}</p>
-                      <p className="text-xs text-gray-400">{testimonial.company}</p>
-                    </div>
-                  </div>
-                  
-                  {/* Rating */}
-                  <div className="flex items-center gap-1 mb-4">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-5 h-5 text-yellow-400 fill-yellow-400" />
-                    ))}
-                  </div>
-                  
-                  {/* Quote */}
-                  <blockquote className="text-gray-200 leading-relaxed text-lg italic group-hover:text-white transition-colors duration-300">
-                    "{testimonial.quote}"
-                  </blockquote>
-                </div>
-              </motion.div>
-            ))}
-          </motion.div>
-        </div>
+  // Double the brands array for seamless loop
+  const duplicatedBrands = [...brands, ...brands];
+
+  return (
+    <section className="pacaembu-font py-10 bg-gray-50 overflow-hidden" aria-label="Popular car brands in Zimbabwe">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mb-6">
+        <p className="text-center text-sm text-gray-500 uppercase tracking-wider font-medium">
+          Popular Brands in Zimbabwe
+        </p>
       </div>
+      
+      {/* Marquee Container */}
+      <div className="relative">
+        <motion.div
+          className="flex gap-12 items-center"
+          animate={{ x: [0, -1920] }}
+          transition={{
+            x: {
+              repeat: Infinity,
+              repeatType: "loop",
+              duration: 30,
+              ease: "linear",
+            },
+          }}
+        >
+          {duplicatedBrands.map((brand, index) => (
+            <Link
+              key={`${brand.name}-${index}`}
+              to={`/marketplace?make=${brand.name}`}
+              className="flex-shrink-0 flex items-center justify-center w-32 h-16 grayscale hover:grayscale-0 opacity-60 hover:opacity-100 transition-all duration-300"
+            >
+              <img
+                src={brand.logo}
+                alt={`${brand.name} vehicles for sale in Zimbabwe`}
+                className="max-h-10 max-w-full object-contain"
+                loading="lazy"
+                onError={(e) => {
+                  // Fallback to text if logo doesn't load
+                  e.target.style.display = 'none';
+                  e.target.nextSibling.style.display = 'block';
+                }}
+              />
+              <span className="text-gray-600 font-medium text-lg hidden">{brand.name}</span>
+            </Link>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+};
 
-      {/* CTA Section - Enhanced with modern design */}
-      <div ref={ctaRef} className="relative bg-gradient-to-r from-black via-gray-900 to-red-900 py-16 lg:py-24 overflow-hidden">
-        {/* Background effects */}
-        <div className="absolute inset-0">
-          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,_var(--tw-gradient-stops))] from-red-500/20 via-transparent to-transparent" />
-          <div className="absolute top-0 left-1/4 w-72 h-72 bg-red-500/10 rounded-full blur-3xl animate-pulse" />
-          <div className="absolute bottom-0 right-1/4 w-96 h-96 bg-orange-500/10 rounded-full blur-3xl" />
-        </div>
+/**
+ * Value Proposition / Narrative Section
+ * SEO-optimized content explaining Auto Eden's unique selling points
+ */
+const NarrativeSection = () => {
+  const steps = [
+    {
+      icon: <IoCarSportOutline className="w-8 h-8" />,
+      title: "List for Free",
+      description: "Sellers upload vehicles at zero cost. No listing fees, no hidden charges.",
+      forWho: "For Sellers"
+    },
+    {
+      icon: <SiFsecure className="w-8 h-8" />,
+      title: "Free Verification",
+      description: "We verify every vehicle digitally and physically at no cost to you.",
+      forWho: "Our Promise"
+    },
+    {
+      icon: <PiArrowsOutCardinalLight className="w-8 h-8" />,
+      title: "Browse Freely",
+      description: "Buyers explore our entire marketplace without any viewing fees.",
+      forWho: "For Buyers"
+    },
+    {
+      icon: <PiHandshake className="w-8 h-8" />,
+      title: "Secure Transaction",
+      description: "We handle the payment. Seller gets paid, buyer gets their car safely.",
+      forWho: "The Deal"
+    }
+  ];
 
-        <div className="relative max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            variants={containerVariants}
-            initial="hidden"
-            animate={ctaControls}
-            className="text-center"
-          >
-            {/* Badge */}
-            <motion.div variants={itemVariants}
-            onClick={() => window.location.href = '/marketplace'}>
-              <span className="inline-flex items-center px-6 py-3 rounded-full bg-white/10 backdrop-blur-md text-white text-sm font-bold border border-white/20 mb-8 shadow-2xl">
-                <Zap className="w-4 h-4 mr-2 text-yellow-400" />
-                Get Started Today
-              </span>
-            </motion.div>
-            
-            {/* Main title */}
-            <motion.h2
-              variants={itemVariants}
-              className="text-4xl lg:text-6xl text-white mb-6 leading-tight"
+  return (
+    <section className="pacaembu-font py-16 lg:py-24 bg-white" aria-labelledby="how-it-works-heading">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        {/* SEO-rich header */}
+        <header className="text-center max-w-3xl mx-auto mb-16">
+          <span className="inline-flex items-center px-4 py-2 rounded-full bg-red-50 text-red-600 text-sm font-medium mb-4">
+            <Zap className="w-4 h-4 mr-2" />
+            Why We're Different
+          </span>
+          
+          <h2 id="how-it-works-heading" className="text-3xl lg:text-4xl font-medium text-gray-900 mb-6">
+            Zimbabwe's First Truly Free Car Marketplace
+          </h2>
+          
+          {/* SEO narrative paragraph */}
+          <p className="text-lg text-gray-600 leading-relaxed">
+            Unlike other platforms that charge sellers to list vehicles, 
+            <strong className="text-gray-900"> Auto Eden is 100% free for sellers</strong>. 
+            We verify every car at no cost, and buyers can browse without restrictions. 
+            When you find your perfect car, we handle the secure transaction — 
+            sellers get paid, buyers drive away happy.
+          </p>
+        </header>
+
+        {/* Steps Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-8">
+          {steps.map((step, index) => (
+            <motion.article
+              key={index}
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: index * 0.1 }}
+              className="relative p-6 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group"
             >
-              Ready to Find Your 
-              <span className="block text-transparent bg-clip-text bg-gradient-to-r from-red-400 to-orange-400">
-                Dream Car?
-              </span>
-            </motion.h2>
-            
-            {/* Description */}
-            <motion.p
-              variants={itemVariants}
-              className="text-xl lg:text-2xl text-gray-300 mb-10 max-w-3xl mx-auto leading-relaxed"
-            >
-              Join thousands of satisfied customers who found their perfect vehicle through Auto Eden. 
-              Your dream car is just a click away.
-            </motion.p>
-            
-            {/* CTA buttons */}
-            <motion.div
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row justify-center gap-6 mb-10"
-            >
-              <motion.button
-                whileHover={{ scale: 1.05, y: -3 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => window.location.href = '/marketplace'}
-                className="group relative bg-gradient-to-r from-red-600 to-red-700 hover:from-red-700 hover:to-red-800 text-white px-10 py-5 rounded-2xl font-bold text-xl transition-all duration-300 shadow-2xl hover:shadow-red-500/25 flex items-center justify-center overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/20 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                <span className="relative z-10">Get Started Now</span>
-                <ArrowRight className="w-6 h-6 ml-3 group-hover:translate-x-1 transition-transform relative z-10" />
-              </motion.button>
+              {/* Step Number */}
+              <div className="absolute -top-3 -left-3 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+                {index + 1}
+              </div>
               
-              <motion.button
-                whileHover={{ scale: 1.05, y: -3 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => window.location.href = 'tel:+263782222032'}
-                className="group relative border-2 border-white/30 hover:border-white/50 text-white hover:bg-white/10 px-10 py-5 rounded-2xl font-bold text-xl transition-all duration-300 backdrop-blur-md flex items-center justify-center overflow-hidden"
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-white/0 via-white/10 to-white/0 -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                <span className="relative z-10">Learn More</span>
-                <Phone className="w-6 h-6 ml-3 group-hover:rotate-12 transition-transform relative z-10" />
-              </motion.button>
-            </motion.div>
-            
-            {/* Trust indicators */}
-            <motion.div 
-              variants={itemVariants}
-              className="flex flex-col sm:flex-row items-center justify-center gap-6 text-white/80 text-sm"
+              {/* For Who Badge */}
+              <span className="text-xs font-medium text-red-600 uppercase tracking-wider">
+                {step.forWho}
+              </span>
+              
+              {/* Icon */}
+              <div className="w-14 h-14 rounded-xl bg-white shadow-sm flex items-center justify-center text-gray-700 my-4 group-hover:scale-110 transition-transform">
+                {step.icon}
+              </div>
+              
+              {/* Content */}
+              <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                {step.title}
+              </h3>
+              <p className="text-gray-600 text-sm leading-relaxed">
+                {step.description}
+              </p>
+            </motion.article>
+          ))}
+        </div>
+
+        {/* CTA */}
+        <div className="text-center mt-12">
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+            <Link
+              to="/sell"
+              className="px-8 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors inline-flex items-center"
             >
-              <div className="flex items-center">
-                <Check className="w-5 h-5 mr-2 text-green-400" /> 
-                No obligation, cancel anytime
+              Sell Your Car Free
+              <ArrowRight className="w-4 h-4 ml-2" />
+            </Link>
+            <Link
+              to="/marketplace"
+              className="px-8 py-3 bg-gray-100 hover:bg-gray-200 text-gray-900 font-medium rounded-lg transition-colors"
+            >
+              Browse Marketplace
+            </Link>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/**
+ * Top Sellers Section - Shows popular makes/models in Zimbabwe
+ */
+const TopSellersSection = () => {
+  const topSellers = [
+    { make: "Toyota", model: "Hilux", image: "/top-sellers/autoeden-hilux.avif", count: 45 },
+    { make: "Honda", model: "Fit", image: "/top-sellers/autoeden-c-class.jpg", count: 38 },
+    { make: "Nissan", model: "X-Trail", image: "/top-sellers/autoeden-xtrail.webp", count: 32 },
+    { make: "Toyota", model: "Aqua", image: "/top-sellers/2023-toyota-aqua-gr-sport.jpg", count: 28 },
+    { make: "Mercedes", model: "C-Class", image: "/top-sellers/autoeden-c-class.jpg", count: 24 },
+    { make: "Toyota", model: "Fortuner", image: "/top-sellers/Autoeden-Toyota-Fortuner.avif", count: 21 },
+  ];
+
+  return (
+    <section className="pacaembu-font py-16 lg:py-20 bg-gray-50" aria-labelledby="top-sellers-heading">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <header className="flex items-center justify-between mb-10">
+          <div>
+            <h2 id="top-sellers-heading" className="text-2xl lg:text-3xl font-medium text-gray-900">
+              Top Sellers in Zimbabwe
+            </h2>
+            <p className="text-gray-500 mt-1">Most popular vehicles on our platform</p>
+          </div>
+          <Link
+            to="/marketplace"
+            className="hidden sm:inline-flex items-center text-red-600 hover:text-red-700 font-medium"
+          >
+            View all
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </Link>
+        </header>
+
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+          {topSellers.map((car, index) => (
+            <Link
+              key={index}
+              to={`/marketplace?make=${car.make}&model=${car.model}`}
+              className="group relative aspect-square rounded-2xl overflow-hidden bg-gray-200"
+            >
+              {/* Rank Badge */}
+              <div className="absolute top-3 left-3 z-10 w-7 h-7 bg-red-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">
+                {index + 1}
               </div>
-              <div className="hidden sm:block w-px h-4 bg-white/20" />
-              <div className="flex items-center">
-                <Shield className="w-5 h-5 mr-2 text-blue-400" /> 
-                100% secure & verified
+
+              {/* Image */}
+              <img
+                src={car.image}
+                alt={`${car.make} ${car.model} for sale in Zimbabwe`}
+                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                loading="lazy"
+                onError={(e) => {
+                  e.target.src = "/placeholder-car.jpg";
+                }}
+              />
+
+              {/* Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
+
+              {/* Info */}
+              <div className="absolute bottom-0 left-0 right-0 p-4">
+                <p className="text-white font-semibold">{car.make}</p>
+                <p className="text-white/80 text-sm">{car.model}</p>
               </div>
-              <div className="hidden sm:block w-px h-4 bg-white/20" />
-              <div className="flex items-center">
-                <Star className="w-5 h-5 mr-2 text-yellow-400" /> 
-                4.9/5 customer rating
-              </div>
-            </motion.div>
-          </motion.div>
+            </Link>
+          ))}
+        </div>
+
+        <div className="sm:hidden text-center mt-6">
+          <Link
+            to="/marketplace"
+            className="inline-flex items-center text-red-600 hover:text-red-700 font-medium"
+          >
+            View all vehicles
+            <ArrowRight className="w-4 h-4 ml-1" />
+          </Link>
+        </div>
+      </div>
+    </section>
+  );
+};
+
+/**
+ * Simple CTA Section
+ */
+const SimpleCTA = () => (
+  <section className="pacaembu-font py-16 lg:py-20 bg-gray-900 text-white">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h2 className="text-3xl lg:text-4xl font-medium mb-4">
+        Ready to Find Your Next Car?
+      </h2>
+      <p className="text-gray-400 text-lg mb-8 max-w-2xl mx-auto">
+        Join thousands of Zimbabweans who trust Auto Eden for buying and selling vehicles. 
+        Zero fees, verified cars, secure transactions.
+      </p>
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
+        <Link
+          to="/marketplace"
+          className="w-full sm:w-auto px-8 py-4 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors inline-flex items-center justify-center"
+        >
+          Browse Cars
+          <ArrowRight className="w-5 h-5 ml-2" />
+        </Link>
+        <Link
+          to="/sell"
+          className="w-full sm:w-auto px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-medium rounded-lg transition-colors border border-white/20"
+        >
+          Sell Your Car
+        </Link>
+      </div>
+      
+      {/* Trust Badges */}
+      <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-gray-400">
+        <div className="flex items-center">
+          <TiThListOutline className="w-5 h-5 mr-2 text-green-400" />
+          100% Free Listing
+        </div>
+        <div className="flex items-center">
+          <SiFsecure className="w-5 h-5 mr-2 text-blue-400" />
+          Verified Vehicles
+        </div>
+        <div className="flex items-center">
+          <MdEmojiPeople className="w-5 h-5 mr-2 text-purple-400" />
+          1000+ Happy Customers
         </div>
       </div>
     </div>
+  </section>
+);
+
+/**
+ * Main Homepage Component
+ */
+export default function HomePage() {
+  return (
+    <main className="pacaembu-font min-h-screen bg-white">
+      {/* SEO Meta Content - Hidden but crawlable */}
+      <h1 className="sr-only">
+        Auto Eden - Zimbabwe's Free Car Marketplace | Buy & Sell Vehicles Online
+      </h1>
+      
+      {/* Hero Section */}
+      <HeroCarousel />
+
+      {/* Featured Vehicles - Tesla-style horizontal scroll */}
+      <FeaturedVehicles />
+
+      {/* Brand Logos Marquee */}
+      <BrandLogosMarquee />
+
+      {/* Value Proposition / How It Works */}
+      <NarrativeSection />
+
+      {/* Top Sellers in Zimbabwe */}
+      <TopSellersSection />
+
+      {/* Simple CTA */}
+      <SimpleCTA />
+
+      {/* SEO Structured Data */}
+      <script type="application/ld+json">
+        {JSON.stringify({
+          "@context": "https://schema.org",
+          "@type": "AutoDealer",
+          "name": "Auto Eden",
+          "description": "Zimbabwe's first truly free car marketplace. List vehicles for free, browse for free, verified cars, secure transactions.",
+          "url": "https://autoeden.co.zw",
+          "address": {
+            "@type": "PostalAddress",
+            "addressLocality": "Harare",
+            "addressCountry": "ZW"
+          },
+          "priceRange": "Free to list",
+          "openingHours": "Mo-Su 00:00-24:00",
+          "sameAs": [
+            "https://facebook.com/autoedenzw",
+            "https://instagram.com/autoedenzw",
+            "https://twitter.com/autoedenzw"
+          ]
+        })}
+      </script>
+    </main>
   );
 }

@@ -1,245 +1,225 @@
-import React from 'react';
+// src/components/Footer.jsx
+import React, { useState } from "react";
+import { Link } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
-  Car, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Facebook, 
-  Twitter, 
-  Instagram, 
-  Linkedin,
-  ShoppingCart,
-  DollarSign,
-  Info,
-  Shield,
-  User,
-  FileText,
-  HelpCircle,
-  ArrowRight
-} from 'lucide-react';
+  Facebook, Twitter, Instagram, Linkedin, 
+  X, ExternalLink 
+} from "lucide-react";
+import { FaXTwitter } from "react-icons/fa6";
 
+
+// Privacy & Legal Modal Component
+export const PrivacyLegalModal = ({ isOpen, onClose }) => {
+  const [activeTab, setActiveTab] = useState("privacy");
+
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
+        onClick={onClose}
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          onClick={(e) => e.stopPropagation()}
+          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between p-4 border-b border-gray-100">
+            <div className="flex gap-1">
+              <button
+                onClick={() => setActiveTab("privacy")}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === "privacy" 
+                    ? "bg-red-600 text-white" 
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                Privacy Policy
+              </button>
+              <button
+                onClick={() => setActiveTab("terms")}
+                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
+                  activeTab === "terms" 
+                    ? "bg-red-600 text-white" 
+                    : "text-gray-600 hover:bg-gray-100"
+                }`}
+              >
+                Terms of Service
+              </button>
+            </div>
+            <button
+              onClick={onClose}
+              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
+
+          {/* Content */}
+          <div className="p-6 overflow-y-auto max-h-[60vh]">
+            {activeTab === "privacy" ? (
+              <div className="prose prose-sm max-w-none">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Privacy Policy</h2>
+                <p className="text-gray-600 mb-4">Last updated: January 2026</p>
+                
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">1. Information We Collect</h3>
+                <p className="text-gray-600 mb-4">
+                  Auto Eden collects information you provide directly, including your name, email address, 
+                  phone number, and vehicle information when you create listings or make inquiries.
+                </p>
+
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">2. How We Use Your Information</h3>
+                <p className="text-gray-600 mb-4">
+                  We use your information to facilitate vehicle listings, connect buyers and sellers, 
+                  process transactions, and improve our services. We never sell your personal data.
+                </p>
+
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">3. Data Security</h3>
+                <p className="text-gray-600 mb-4">
+                  We implement industry-standard security measures to protect your personal information. 
+                  All data is encrypted in transit and at rest.
+                </p>
+
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">4. Your Rights</h3>
+                <p className="text-gray-600 mb-4">
+                  You have the right to access, correct, or delete your personal data at any time. 
+                  Contact us at privacy@autoeden.co.zw for any privacy-related requests.
+                </p>
+
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">5. Contact Us</h3>
+                <p className="text-gray-600">
+                  For questions about this Privacy Policy, please contact us at admin@autoeden.co.zw 
+                  or call +263 78 222 2032.
+                </p>
+              </div>
+            ) : (
+              <div className="prose prose-sm max-w-none">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Terms of Service</h2>
+                <p className="text-gray-600 mb-4">Last updated: January 2026</p>
+                
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">1. Acceptance of Terms</h3>
+                <p className="text-gray-600 mb-4">
+                  By accessing and using Auto Eden, you agree to be bound by these Terms of Service. 
+                  If you do not agree, please do not use our platform.
+                </p>
+
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">2. User Responsibilities</h3>
+                <p className="text-gray-600 mb-4">
+                  Users must provide accurate information when creating listings. Sellers are responsible 
+                  for the accuracy of vehicle descriptions and images. Misrepresentation may result in 
+                  account suspension.
+                </p>
+
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">3. Listing Policy</h3>
+                <p className="text-gray-600 mb-4">
+                  Listings are free for all users. Auto Eden reserves the right to remove listings 
+                  that violate our policies or contain fraudulent information.
+                </p>
+
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">4. Transaction Handling</h3>
+                <p className="text-gray-600 mb-4">
+                  Auto Eden facilitates secure transactions between buyers and sellers. We act as an 
+                  intermediary to ensure both parties fulfill their obligations.
+                </p>
+
+                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">5. Limitation of Liability</h3>
+                <p className="text-gray-600">
+                  Auto Eden is not liable for disputes between buyers and sellers beyond our role as 
+                  a marketplace facilitator. We encourage all parties to conduct due diligence.
+                </p>
+              </div>
+            )}
+          </div>
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
+
+/**
+ * Slim Footer Component
+ * Minimal, single-row footer with essential links
+ */
 export default function Footer() {
+  const [showLegalModal, setShowLegalModal] = useState(false);
   const currentYear = new Date().getFullYear();
 
-  const footerLinks = {
-    services: [
-      { name: 'Buy Cars', href: '/marketplace', icon: ShoppingCart },
-      { name: 'Sell Your Car', href: '/sell', icon: DollarSign },
-      { name: 'Instant Valuation', href: '/sell', icon: FileText },
-      { name: 'Car History Reports', href: '/marketplace', icon: Info },
-    ],
-    company: [
-      { name: 'About Us', href: '/about', icon: Info },
-      { name: 'Our Team', href: '/about', icon: User },
-      { name: 'Careers', href: '#', icon: ArrowRight },
-      { name: 'Press & Media', href: '#', icon: FileText },
-    ],
-    support: [
-      { name: 'Help Center', href: '#', icon: HelpCircle },
-      { name: 'Contact Us', href: 'tel:+263782222032', icon: Mail },
-      { name: 'FAQs', href: '#', icon: HelpCircle },
-      { name: 'Live Chat', href: 'tel:+263782222032', icon: Phone },
-    ],
-    legal: [
-      { name: 'Privacy Policy', href: '#', icon: Shield },
-      { name: 'Terms of Service', href: '#', icon: FileText },
-      { name: 'Cookie Policy', href: '#', icon: Info },
-      { name: 'Data Protection', href: '#', icon: Shield },
-    ]
-  };
-
   const socialLinks = [
-    { name: 'Facebook', href: '#', icon: Facebook, color: 'hover:text-blue-600' },
-    { name: 'Twitter', href: '#', icon: Twitter, color: 'hover:text-blue-400' },
-    { name: 'Instagram', href: '#', icon: Instagram, color: 'hover:text-pink-600' },
-    { name: 'LinkedIn', href: '#', icon: Linkedin, color: 'hover:text-blue-700' },
+    { name: "Facebook", href: "https://facebook.com/autoedenzw", icon: Facebook },
+    { name: "Twitter", href: "https://twitter.com/autoedenzw", icon: FaXTwitter },
+    { name: "Instagram", href: "https://instagram.com/autoedenzw", icon: Instagram },
+    { name: "LinkedIn", href: "https://linkedin.com/company/autoeden", icon: Linkedin },
   ];
 
   return (
-    <footer className="bg-gray-900 text-white">
-      {/* Main Footer Content */}
-      <div className="max-w-7xl mx-auto px-4 py-16">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-8">
-          {/* Company Info */}
-          <div className="lg:col-span-2 space-y-6">
-            <div className="flex items-center space-x-3">
-              <div>
-                <h3 className="text-2xl font-bold text-white">Auto Eden</h3>
-                <p className="text-gray-400 text-sm">Your Trusted Car Partner</p>
-              </div>
-            </div>
-            
-            <p className="text-gray-300 leading-relaxed">
-              Auto Eden is your premier destination for buying and selling quality vehicles. 
-              We connect buyers and sellers with transparent pricing, instant valuations, 
-              and exceptional service.
-            </p>
-
-            {/* Contact Info */}
-            <div className="space-y-3">
-              <div className="flex items-center space-x-3 text-gray-300">
-                <Phone className="w-5 h-5 text-red-500" />
-                <span>+263 78 222 2032</span>
-              </div>
-              <div className="flex items-center space-x-3 text-gray-300">
-                <Mail className="w-5 h-5 text-red-500" />
-                <span>admin@autoeden.co.zw</span>
-              </div>
-              <div className="flex items-center space-x-3 text-gray-300">
-                <MapPin className="w-5 h-5 text-red-500" />
-                <span>Harare Zimbabwe</span>
-              </div>
+    <>
+      <footer className="pacaembu-font bg-gray-900 text-gray-400 py-4" role="contentinfo">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            {/* Left: Copyright */}
+            <div className="flex items-center gap-2 text-sm">
+              <span className="font-semibold text-white">Auto Eden</span>
+              <span className="hidden sm:inline">•</span>
+              <span>© {currentYear}</span>
             </div>
 
-            {/* Social Links */}
-            <div className="flex space-x-4">
-              {socialLinks.map((social) => {
-                const IconComponent = social.icon;
-                return (
-                  <a
-                    key={social.name}
-                    href={social.href}
-                    className={`w-10 h-10 bg-gray-800 rounded-full flex items-center justify-center text-gray-400 transition-colors ${social.color}`}
-                    aria-label={social.name}
-                  >
-                    <IconComponent className="w-5 h-5" />
-                  </a>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Services */}
-          <div>
-            <h4 className="text-lg font-semibold mb-6 text-white">Services</h4>
-            <ul className="space-y-3">
-              {footerLinks.services.map((link) => {
-                const IconComponent = link.icon;
-                return (
-                  <li key={link.name}>
-                    <a
-                      href={link.href}
-                      className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors group"
-                    >
-                      <IconComponent className="w-4 h-4 group-hover:text-red-400" />
-                      <span>{link.name}</span>
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {/* Company */}
-          <div>
-            <h4 className="text-lg font-semibold mb-6 text-white">Company</h4>
-            <ul className="space-y-3">
-              {footerLinks.company.map((link) => {
-                const IconComponent = link.icon;
-                return (
-                  <li key={link.name}>
-                    <a
-                      href={link.href}
-                      className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors group"
-                    >
-                      <IconComponent className="w-4 h-4 group-hover:text-red-400" />
-                      <span>{link.name}</span>
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-
-          {/* Support & Legal */}
-          <div>
-            <h4 className="text-lg font-semibold mb-6 text-white">Support</h4>
-            <ul className="space-y-3 mb-8">
-              {footerLinks.support.map((link) => {
-                const IconComponent = link.icon;
-                return (
-                  <li key={link.name}>
-                    <a
-                      href={link.href}
-                      className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors group"
-                    >
-                      <IconComponent className="w-4 h-4 group-hover:text-red-400" />
-                      <span>{link.name}</span>
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-
-            <h4 className="text-lg font-semibold mb-6 text-white">Legal</h4>
-            <ul className="space-y-3">
-              {footerLinks.legal.map((link) => {
-                const IconComponent = link.icon;
-                return (
-                  <li key={link.name}>
-                    <a
-                      href={link.href}
-                      className="flex items-center space-x-2 text-gray-300 hover:text-red-400 transition-colors group"
-                    >
-                      <IconComponent className="w-4 h-4 group-hover:text-red-400" />
-                      <span>{link.name}</span>
-                    </a>
-                  </li>
-                );
-              })}
-            </ul>
-          </div>
-        </div>
-      </div>
-
-      {/* Newsletter Signup */}
-      <div className="border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-8">
-          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-            <div className="text-center md:text-left">
-              <h4 className="text-lg font-semibold text-white mb-2">
-                Stay Updated with Auto Eden
-              </h4>
-              <p className="text-gray-400">
-                Get the latest car deals, market insights, and exclusive offers delivered to your inbox.
-              </p>
-            </div>
-            <div className="flex w-full md:w-auto max-w-md">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-l-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-              <button className="bg-red-600 hover:bg-red-700 px-6 py-3 rounded-r-lg transition-colors flex items-center">
-                <Mail className="w-5 h-5" />
+            {/* Center: Navigation Links */}
+            <nav className="flex flex-wrap items-center justify-center gap-x-4 gap-y-2 text-sm" aria-label="Footer navigation">
+              <Link to="/learn" className="hover:text-white transition-colors">
+                Learn
+              </Link>
+              <Link to="/hiring" className="hover:text-white transition-colors">
+                Hiring
+              </Link>
+              <button 
+                onClick={() => setShowLegalModal(true)}
+                className="hover:text-white transition-colors"
+              >
+                Privacy & Legal
               </button>
-            </div>
-          </div>
-        </div>
-      </div>
+              <Link to="/news" className="hover:text-white transition-colors">
+                News
+              </Link>
+              <Link to="/contact" className="hover:text-white transition-colors">
+                Contact
+              </Link>
+              <Link to="/suggestions" className="hover:text-white transition-colors">
+                Suggestions
+              </Link>
+              <Link to="/reviews" className="hover:text-white transition-colors">
+                Reviews
+              </Link>
+            </nav>
 
-      {/* Bottom Footer */}
-      <div className="border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 py-6">
-          <div className="flex flex-col md:flex-row items-center justify-between space-y-4 md:space-y-0">
-            <div className="text-gray-400 text-sm text-center md:text-left">
-              <p>&copy; {currentYear} Auto Eden. All rights reserved.</p>
-              <p className="mt-1">Made with ❤️ for car enthusiasts everywhere</p>
-            </div>
-            
-            <div className="flex items-center space-x-6 text-sm text-gray-400">
-              <span className="flex items-center space-x-2">
-                <Shield className="w-4 h-4 text-green-500" />
-                <span>Secure & Trusted</span>
-              </span>
-              <span className="flex items-center space-x-2">
-                <Car className="w-4 h-4 text-red-500" />
-                <span>Licensed Dealer</span>
-              </span>
+            {/* Right: Social Icons */}
+            <div className="flex items-center gap-3">
+              {socialLinks.map((social) => (
+                <a
+                  key={social.name}
+                  href={social.href}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-gray-500 hover:text-white transition-colors"
+                  aria-label={social.name}
+                >
+                  <social.icon className="w-4 h-4" />
+                </a>
+              ))}
             </div>
           </div>
         </div>
-      </div>
-    </footer>
+      </footer>
+
+      {/* Privacy & Legal Modal */}
+      <PrivacyLegalModal isOpen={showLegalModal} onClose={() => setShowLegalModal(false)} />
+    </>
   );
 }
