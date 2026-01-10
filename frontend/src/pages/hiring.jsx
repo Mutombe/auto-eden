@@ -73,7 +73,7 @@ export default function HiringPage() {
       </h1>
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-white py-20 lg:py-28 relative overflow-hidden">
+      <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-[80vh] text-white py-20 lg:py-28 relative overflow-hidden">
         {/* Background Pattern */}
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{
@@ -86,7 +86,7 @@ export default function HiringPage() {
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            className="max-w-3xl"
+            className="max-w-3xl pt-15"
           >
             <div className="flex items-center gap-2 text-red-400 mb-4">
               <Briefcase className="w-5 h-5" />
