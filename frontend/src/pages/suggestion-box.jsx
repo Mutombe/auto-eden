@@ -73,6 +73,7 @@ export default function SuggestionsPage() {
 
       {/* Hero */}
       <section className="bg-gradient-to-br from-purple-900 via-purple-800 to-indigo-900 min-h-[80vh] text-white py-16 lg:py-20">
+        
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

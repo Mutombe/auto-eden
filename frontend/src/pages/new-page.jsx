@@ -80,6 +80,8 @@ export default function NewsPage() {
           <img 
             src="/city.jpg" 
             alt="" 
+            loading='eager' 
+            decoding="async"
             className="w-full h-full object-cover"
             onError={(e) => {
               e.target.style.display = 'none';

@@ -133,6 +133,7 @@ export default function HeroCarousel() {
               <img
                 src={slide.desktopImage}
                 alt={slide.alt}
+                decoding="async"
                 className="absolute inset-0 w-full h-full object-cover"
                 loading={index === 0 ? "eager" : "lazy"}
                 fetchpriority={index === 0 ? "high" : "auto"}
