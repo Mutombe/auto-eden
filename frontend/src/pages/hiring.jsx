@@ -75,11 +75,21 @@ export default function HiringPage() {
       {/* Hero Section */}
       <section className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-[80vh] text-white py-20 lg:py-28 relative overflow-hidden">
         {/* Background Pattern */}
-        <div className="absolute inset-0 opacity-5">
-          <div className="absolute inset-0" style={{
-            backgroundImage: `radial-gradient(circle at 25px 25px, white 2%, transparent 0%)`,
-            backgroundSize: '50px 50px'
-          }} />
+        <div className="absolute inset-0">
+          <img 
+            src="/city.jpg" 
+            alt="" 
+            loading='eager' 
+            decoding="async"
+            className="w-full h-full object-cover"
+            onError={(e) => {
+              e.target.style.display = 'none';
+            }}
+          />
+          {/* Gradient Overlay - left-aligned content so gradient from left */}
+          <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/70" />
+          {/* Accent glow */}
+          <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-600/20 rounded-full blur-3xl" />
         </div>
 
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

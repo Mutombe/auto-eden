@@ -134,7 +134,9 @@ export default function ReviewsPage() {
         <div className="absolute inset-0">
           <img 
             src="/city.jpg" 
-            alt="" 
+            alt=""
+            loading='eager' 
+            decoding="async"
             className="w-full h-full object-cover"
             onError={(e) => {
               e.target.style.display = 'none';

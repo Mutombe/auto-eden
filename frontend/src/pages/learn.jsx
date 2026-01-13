@@ -161,6 +161,8 @@ export default function LearnPage() {
           <img 
             src="/autoeden-marketplace.png" 
             alt="" 
+            loading='eager' 
+            decoding="async"
             className="w-full h-full object-cover"
             onError={(e) => {
               e.target.style.display = 'none';

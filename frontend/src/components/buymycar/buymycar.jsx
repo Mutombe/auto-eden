@@ -17,6 +17,11 @@ import {
   Upload,
 } from "lucide-react";
 import { motion } from "framer-motion";
+import { GiTakeMyMoney } from "react-icons/gi";
+import { MdStarPurple500 } from "react-icons/md";
+import { IoCheckmarkDone } from "react-icons/io5";
+import { IoCheckmarkDoneCircleOutline } from "react-icons/io5";
+import { IoCarSportOutline } from "react-icons/io5";
 
 export default function BuyMyCarPage() {
   const dispatch = useDispatch();
@@ -158,7 +163,7 @@ export default function BuyMyCarPage() {
             <div className="bg-white p-6 md:p-10 rounded-2xl shadow-lg w-full max-w-3xl">
               <div className="flex justify-center mb-6">
                 <div className="h-16 w-16 bg-red-600 flex items-center justify-center rounded-full">
-                  <Car size={32} className="text-white" />
+                  <IoCarSportOutline size={32} className="text-white" />
                 </div>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
@@ -188,7 +193,7 @@ export default function BuyMyCarPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 w-full">
               {[
                 {
-                  icon: <DollarSign size={24} />,
+                  icon: <GiTakeMyMoney size={24} />,
                   title: "Instant Offer",
                   description:
                     "Receive a competitive offer for your vehicle within minutes of submission",
@@ -200,7 +205,7 @@ export default function BuyMyCarPage() {
                     "Get paid quickly and securely once your vehicle details are verified",
                 },
                 {
-                  icon: <CheckCircle size={24} />,
+                  icon: <IoCheckmarkDone size={24} />,
                   title: "No Fees",
                   description:
                     "Our service is completely free with no hidden costs or obligations",

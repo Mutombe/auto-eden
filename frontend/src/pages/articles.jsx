@@ -3657,6 +3657,7 @@ export default function ArticlePage() {
           <img 
             src={article.heroImage} 
             alt="" 
+            loading='eager'
             className="w-full h-full object-cover opacity-30"
             onError={(e) => e.target.style.display = 'none'}
           />
