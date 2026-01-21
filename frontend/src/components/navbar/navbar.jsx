@@ -1,246 +1,27 @@
 // src/components/Navbar.jsx
 import React, { useState, useEffect } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   ShoppingCart,
   Info,
-  User,
   LogIn,
   UserPlus,
   LogOut,
   X,
   LayoutDashboard,
-  AtSign,
-  Lock,
-  AlertCircle,
   FolderDot,
 } from "lucide-react";
-import { CarFront } from "lucide-react";
-import { TiUserAddOutline } from "react-icons/ti";
-
-import {
-  Dialog,
-  Button,
-  TextField,
-  Divider,
-  Snackbar,
-  Alert,
-  Avatar,
-} from "@mui/material";
-import { logout, login, register } from "../../redux/slices/authSlice";
+import { Button, Avatar } from "@mui/material";
+import { logout } from "../../redux/slices/authSlice";
 import { TbCarSuv } from "react-icons/tb";
+import NotificationCenter from "../notifications/NotificationCenter";
+import { AuthModals } from "../auth/AuthModals";
+import { useSidebar } from "../../contexts/SidebarContext";
 
-/**
- * Auth Modal Component
- * Handles login and registration flows
- */
-export const AuthModals = ({ openType, onClose }) => {
-  const dispatch = useDispatch();
-  const navigate = useNavigate();
-  const { status, error } = useSelector((state) => state.auth);
-  const [view, setView] = useState(openType);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "info",
-  });
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-    username: "",
-  });
-
-  useEffect(() => {
-    setView(openType);
-  }, [openType]);
-
-  useEffect(() => {
-    if (openType) {
-      setFormData({ email: "", password: "", username: "" });
-    }
-  }, [openType]);
-
-  const handleSubmit = () => {
-    if (view === "login") {
-      dispatch(login({ username: formData.username, password: formData.password }))
-        .unwrap()
-        .then(() => {
-          setSnackbar({ open: true, message: "You are logged in!", severity: "success" });
-          onClose();
-        })
-        .catch((err) => console.error("Login Failed:", err));
-    } else {
-      dispatch(register(formData))
-        .unwrap()
-        .then(() => {
-          setSnackbar({ open: true, message: "Registration successful. Please Login!", severity: "success" });
-          onClose();
-          navigate("/");
-        })
-        .catch((err) => console.error("Registration Failed:", err));
-    }
-  };
-
-  const getRegistrationError = () => {
-    if (!error) return null;
-    if (typeof error === "object") {
-      if (error.username) return error.username[0];
-      if (error.email) return error.email[0];
-      if (error.detail) return error.detail;
-    }
-    return error.toString();
-  };
-
-  return (
-    <>
-      <Dialog
-        open={!!openType}
-        onClose={onClose}
-        maxWidth="xs"
-        fullWidth
-        sx={{
-          "& .MuiPaper-root": {
-            backgroundColor: "#f9fafb !important",
-            color: "#1f2937 !important",
-          },
-        }}
-      >
-        <motion.div
-          initial={{ scale: 0.95 }}
-          animate={{ scale: 1 }}
-          className="pacaembu-font p-6 space-y-6"
-          style={{ backgroundColor: "#f9fafb" }}
-        >
-          <div className="text-center">
-            <div className="mx-auto w-30 h-20 mb-4">
-              <img src="/Auto-eden-favicon.png" alt="Auto Eden Logo" className="rounded-2xl w-full h-full" />
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">
-              {view === "login" ? "Welcome Back!" : "Join Auto Eden"}
-            </h2>
-            <p className="text-gray-600">
-              {view === "login" ? "Sign in to continue" : "Create your free account"}
-            </p>
-          </div>
-
-          {error && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              className="bg-red-50 p-3 rounded-lg text-red-700 text-sm"
-            >
-              {view === "register"
-                ? getRegistrationError()
-                : typeof error === "object"
-                ? error.detail || JSON.stringify(error)
-                : error}
-            </motion.div>
-          )}
-
-          <div className="space-y-4">
-            {view === "register" && (
-              <>
-                <TextField
-                  fullWidth
-                  label="Email"
-                  type="email"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  InputProps={{ startAdornment: <AtSign className="text-gray-400 mr-2 w-5 h-5" /> }}
-                  sx={{
-                    "& .MuiOutlinedInput-root": { "&.Mui-focused fieldset": { borderColor: "#dc2626" } },
-                    "& .MuiFormLabel-root.Mui-focused": { color: "#dc2626" },
-                  }}
-                />
-                <Divider className="!my-3" />
-              </>
-            )}
-
-            <TextField
-              fullWidth
-              label="Username"
-              value={formData.username}
-              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-              InputProps={{ startAdornment: <User className="text-gray-400 mr-2 w-5 h-5" /> }}
-              sx={{
-                "& .MuiOutlinedInput-root": { "&.Mui-focused fieldset": { borderColor: "#dc2626" } },
-                "& .MuiFormLabel-root.Mui-focused": { color: "#dc2626" },
-              }}
-            />
-            <Divider className="!my-3" />
-            <TextField
-              fullWidth
-              label="Password"
-              type="password"
-              value={formData.password}
-              onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              InputProps={{ startAdornment: <Lock className="text-gray-400 mr-2 w-5 h-5" /> }}
-              sx={{
-                "& .MuiOutlinedInput-root": { "&.Mui-focused fieldset": { borderColor: "#dc2626" } },
-                "& .MuiFormLabel-root.Mui-focused": { color: "#dc2626" },
-              }}
-            />
-          </div>
-
-          <Button
-            fullWidth
-            variant="contained"
-            size="large"
-            onClick={handleSubmit}
-            disabled={status === "loading"}
-            className="!rounded-lg !py-3 !text-base !font-semibold !shadow-lg"
-            sx={{ backgroundColor: "#dc2626", "&:hover": { backgroundColor: "#b91c1c" } }}
-          >
-            {status === "loading" ? (
-              <span className="animate-pulse">Processing...</span>
-            ) : view === "login" ? (
-              "Sign In"
-            ) : (
-              "Create Account"
-            )}
-          </Button>
-
-          <Divider className="!my-6">or</Divider>
-
-          <Button
-            fullWidth
-            variant="outlined"
-            onClick={() => setView(view === "login" ? "register" : "login")}
-            className="!rounded-lg !py-2.5"
-            sx={{
-              color: "#1f2937",
-              borderColor: "#d1d5db",
-              "&:hover": { borderColor: "#dc2626", backgroundColor: "rgba(220, 38, 38, 0.04)" },
-            }}
-          >
-            {view === "login" ? "Create New Account" : "Already have an account? Sign In"}
-          </Button>
-        </motion.div>
-      </Dialog>
-
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={6000}
-        onClose={() => setSnackbar((prev) => ({ ...prev, open: false }))}
-      >
-        <Alert
-          severity={snackbar.severity}
-          className="!items-center"
-          iconMapping={{ error: <AlertCircle className="w-5 h-5" /> }}
-          sx={{
-            backgroundColor: snackbar.severity === "success" ? "#f0fdf4" : undefined,
-            color: snackbar.severity === "success" ? "#16a34a" : undefined,
-            "& .MuiAlert-icon": { color: snackbar.severity === "success" ? "#16a34a" : undefined },
-          }}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
-    </>
-  );
-};
+// Re-export AuthModals for backward compatibility
+export { AuthModals } from "../auth/AuthModals";
 
 /**
  * Logo Component
@@ -266,10 +47,14 @@ export function Logo({ variant = "default" }) {
 export const Navbar = () => {
   const dispatch = useDispatch();
   const { isAuthenticated, user } = useSelector((state) => state.auth);
+  const { sidebarCollapsed, isDashboardPage } = useSidebar();
   const [authModal, setAuthModal] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const isAdmin = user?.is_superuser;
+
+  // Calculate navbar left offset for dashboard pages on desktop
+  const sidebarWidth = sidebarCollapsed ? "lg:pl-20" : "lg:pl-64 xl:pl-72";
 
   // Handle scroll effect - transparent at top, solid when scrolled
   useEffect(() => {
@@ -309,13 +94,17 @@ export const Navbar = () => {
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className={`transition-all duration-300 px-4 sm:px-6 lg:px-8 ${
+          isDashboardPage ? sidebarWidth : "max-w-7xl mx-auto"
+        }`}>
           <div className="flex justify-between items-center h-14 sm:h-16">
-            {/* Logo */}
-            <Logo variant={scrolled ? "default" : "light"} />
+            {/* Logo - Hidden on dashboard pages on desktop since sidebar has logo */}
+            <div className={isDashboardPage ? "lg:hidden" : ""}>
+              <Logo variant={scrolled ? "default" : "light"} />
+            </div>
 
-            {/* Desktop Navigation - Hidden on mobile */}
-            <div className="hidden md:flex md:items-center md:gap-8">
+            {/* Desktop Navigation - Hidden on mobile, with left margin on dashboard pages */}
+            <div className={`hidden md:flex md:items-center md:gap-8 ${isDashboardPage ? "lg:ml-4" : ""}`}>
               {navItems.map((item) => (
                 <Link
                   key={item.to}
@@ -358,6 +147,10 @@ export const Navbar = () => {
             <div className="hidden md:flex items-center gap-3">
               {isAuthenticated ? (
                 <div className="flex items-center gap-3">
+                  {/* Notification Center */}
+                  <div className={scrolled ? "text-gray-800" : "text-white"}>
+                    <NotificationCenter />
+                  </div>
                   <Link to="/profile">
                     <Avatar
                       className="!h-8 !w-8 border-2 border-red-600"

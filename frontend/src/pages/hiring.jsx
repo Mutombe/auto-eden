@@ -1,11 +1,11 @@
 // src/pages/HiringPage.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { 
-  Briefcase, Users, Heart, Zap, 
+import {
+  Briefcase, Users, Heart, Zap,
   MapPin, Clock, ArrowRight, Mail,
-  Coffee, Laptop, Globe
+  Coffee, Laptop, Globe, Loader2
 } from "lucide-react";
 import { IoIosLaptop } from "react-icons/io";
 import { TbHealthRecognition } from "react-icons/tb";
@@ -14,6 +14,7 @@ import { PiCoffeeLight } from "react-icons/pi";
 import { HiArrowTrendingUp } from "react-icons/hi2";
 import { GiEarthAfricaEurope } from "react-icons/gi";
 import { GiWorld } from "react-icons/gi";
+import api from "../utils/api";
 
 
 /**
@@ -21,6 +22,23 @@ import { GiWorld } from "react-icons/gi";
  * SEO-optimized careers page (currently no open positions)
  */
 export default function HiringPage() {
+  const [openPositions, setOpenPositions] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchJobs = async () => {
+      try {
+        const { data } = await api.get("/core/jobs/");
+        setOpenPositions(data.results || data);
+      } catch (err) {
+        console.error("Failed to fetch jobs:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchJobs();
+  }, []);
+
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     whileInView: { opacity: 1, y: 0 },
@@ -62,8 +80,6 @@ export default function HiringPage() {
     }
   ];
 
-  // Empty jobs array - will be populated when positions open
-  const openPositions = [];
 
   return (
     <main className="pacaembu-font min-h-screen bg-gray-50">
@@ -160,11 +176,15 @@ export default function HiringPage() {
             </p>
           </motion.div>
 
-          {openPositions.length > 0 ? (
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
+            </div>
+          ) : openPositions.length > 0 ? (
             <div className="space-y-4">
               {openPositions.map((job, index) => (
                 <motion.div
-                  key={index}
+                  key={job.id}
                   initial={{ opacity: 0, y: 10 }}
                   whileInView={{ opacity: 1, y: 0 }}
                   viewport={{ once: true }}
@@ -180,7 +200,7 @@ export default function HiringPage() {
                         </span>
                         <span className="flex items-center gap-1">
                           <Clock className="w-4 h-4" />
-                          {job.type}
+                          {job.employment_type}
                         </span>
                         <span className="flex items-center gap-1">
                           <Briefcase className="w-4 h-4" />

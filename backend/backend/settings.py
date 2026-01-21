@@ -2,11 +2,15 @@
 from pathlib import Path
 from datetime import timedelta
 import os
- 
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
 BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = "django-insecure-rg5$^x0nm)lmj0v6-2^x#nhk9uewd&k=lc@%jsu3^f^y3##34)"
 
-DEBUG = False
+DEBUG = os.getenv('DJANGO_ENV', 'production') == 'development'
 
 ALLOWED_HOSTS = [
     'auto-eden-backend.onrender.com',
@@ -24,17 +28,38 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
-
-    #local
-    "rest_framework",
-    "rest_framework_simplejwt",
     'django.contrib.sitemaps',
     'django.contrib.sites',
+
+    # Third party
+    "rest_framework",
+    "rest_framework.authtoken",
+    "rest_framework_simplejwt",
+    "rest_framework_simplejwt.token_blacklist",
     "corsheaders",
     'django_filters',
     'storages',
+
+    # Authentication
+    'allauth',
+    'allauth.account',
+    'allauth.socialaccount',
+    'allauth.socialaccount.providers.google',
+    'dj_rest_auth',
+    'dj_rest_auth.registration',
+
+    # Admin features
+    'hijack',
+    'import_export',
+
+    # WebSockets
+    'channels',
+
+    # Local
     'core'
 ]
+
+SITE_ID = 1
 
 MIDDLEWARE = [
     "corsheaders.middleware.CorsMiddleware",
@@ -45,19 +70,38 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    "allauth.account.middleware.AccountMiddleware",
+    "hijack.middleware.HijackUserMiddleware",
 ]
 
 CORS_ALLOWED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:5174',
     'http://localhost:5175',
+    'http://localhost:5176',
+    'http://localhost:5177',
+    'http://localhost:5178',
+    'http://localhost:5179',
+    'http://localhost:5180',
+    'http://localhost:5181',
+    'http://localhost:5182',
+    'http://localhost:5183',
+    'http://localhost:5184',
+    'http://localhost:5185',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:5175',
+    'http://127.0.0.1:5184',
     'https://auto-eden.onrender.com',
     'https://autoeden.co.zw',
-    'http://127.0.0.1:5175',
 ]
 
 CORS_TRUSTED_ORIGINS = [
     'https://auto-eden.onrender.com/',
     'https://autoeden.co.zw/',
+    'http://localhost:5173',
     'http://localhost:5175',
+    'http://localhost:5184',
 ]
 
 CORS_ALLOW_CREDENTIALS = True
@@ -84,10 +128,19 @@ CORS_ALLOW_HEADERS = [
 ]
 
 CORS_EXPOSE_HEADERS = ['content-type', 'authorization']
-CORS_ALLOW_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = True
 CORS_ALLOW_CREDENTIALS = True
-CSRF_COOKIE_SECURE = True
-SESSION_COOKIE_SECURE = True
+CSRF_COOKIE_SECURE = not DEBUG
+SESSION_COOKIE_SECURE = not DEBUG
+CSRF_TRUSTED_ORIGINS = [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5176',
+    'http://127.0.0.1:5173',
+    'http://127.0.0.1:5174',
+    'http://127.0.0.1:8000',
+]
 
 # For Redis (recommended):
 
@@ -121,10 +174,10 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'simbamtombe@gmail.com'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'itzh jjkc hdmv csih'
-DEFAULT_FROM_EMAIL = 'noreply@hospital.com'
+DEFAULT_FROM_EMAIL = 'noreply@parameter.co.zw'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-SITE_URL = os.environ.get('SITE_URL', 'https://autoeden.co.zw')
+SITE_URL = os.environ.get('SITE_URL', 'https://parameter.co.zw')
 
 
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -136,11 +189,60 @@ SITE_URL = os.environ.get('SITE_URL', 'https://autoeden.co.zw')
 #EMAIL_HOST_PASSWORD = 'Admin@AutoEden2060'  # Password you set in Hostinger email account
 #DEFAULT_FROM_EMAIL = 'Auto Eden <admin@autoeden.co.zw>'
 
-SERVER_EMAIL = 'admin@autoeden.co.zw'  
-ADMIN_EMAIL = ['autoedemedia25@gmail.com', 'simbamtombe@gmail.com', 'simbarashemutombe1@gmail.com', 'admin@autoeden.co.zw'] 
+SERVER_EMAIL = 'admin@autoeden.co.zw'
+ADMIN_EMAIL = ['autoedemedia25@gmail.com', 'simbamtombe@gmail.com', 'simbarashemutombe1@gmail.com', 'admin@autoeden.co.zw']
+
+# Authentication Backends
 AUTHENTICATION_BACKENDS = [
-   'django.contrib.auth.backends.ModelBackend',
+    'django.contrib.auth.backends.ModelBackend',
+    'allauth.account.auth_backends.AuthenticationBackend',
 ]
+
+# Django Allauth Configuration
+ACCOUNT_EMAIL_REQUIRED = True
+ACCOUNT_USERNAME_REQUIRED = True
+ACCOUNT_AUTHENTICATION_METHOD = 'email'
+ACCOUNT_EMAIL_VERIFICATION = 'optional'
+ACCOUNT_CONFIRM_EMAIL_ON_GET = True
+ACCOUNT_LOGIN_ON_EMAIL_CONFIRMATION = True
+ACCOUNT_UNIQUE_EMAIL = True
+ACCOUNT_USER_MODEL_USERNAME_FIELD = 'username'
+ACCOUNT_USER_MODEL_EMAIL_FIELD = 'email'
+ACCOUNT_LOGOUT_ON_GET = True
+
+# dj-rest-auth Configuration
+REST_AUTH = {
+    'USE_JWT': True,
+    'JWT_AUTH_COOKIE': 'auto-eden-auth',
+    'JWT_AUTH_REFRESH_COOKIE': 'auto-eden-refresh',
+    'JWT_AUTH_HTTPONLY': False,
+    'SESSION_LOGIN': False,
+    'REGISTER_SERIALIZER': 'core.auth.serializers.CustomRegisterSerializer',
+    'USER_DETAILS_SERIALIZER': 'core.serializers.UserSerializer',
+}
+
+# Google OAuth Configuration (set these in environment variables)
+SOCIALACCOUNT_PROVIDERS = {
+    'google': {
+        'APP': {
+            'client_id': os.environ.get('GOOGLE_CLIENT_ID', ''),
+            'secret': os.environ.get('GOOGLE_CLIENT_SECRET', ''),
+            'key': ''
+        },
+        'SCOPE': [
+            'profile',
+            'email',
+        ],
+        'AUTH_PARAMS': {
+            'access_type': 'online',
+        }
+    }
+}
+
+# Hijack Settings (Admin Impersonation)
+HIJACK_PERMISSION_CHECK = lambda hijacker, hijacked: hijacker.is_superuser
+HIJACK_INSERT_BEFORE = None
+HIJACK_ALLOW_GET_REQUESTS = True
 
 ROOT_URLCONF = "backend.urls"
 
@@ -161,6 +263,17 @@ TEMPLATES = [
 ]
 
 WSGI_APPLICATION = "backend.wsgi.application"
+ASGI_APPLICATION = "backend.asgi.application"
+
+# Channels Configuration
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            'hosts': [('127.0.0.1', 6379)],
+        },
+    },
+}
 
 DATABASES = {
     'default': {
@@ -262,3 +375,52 @@ STORAGES = {
 
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+# WhatsApp Cloud API Configuration (Meta)
+WHATSAPP_PHONE_NUMBER_ID = os.getenv('WHATSAPP_PHONE_NUMBER_ID', '')
+WHATSAPP_ACCESS_TOKEN = os.getenv('WHATSAPP_ACCESS_TOKEN', '')
+WHATSAPP_VERIFY_TOKEN = os.getenv('WHATSAPP_VERIFY_TOKEN', 'auto_eden_verify_token')
+
+# Claude AI Configuration
+ANTHROPIC_API_KEY = os.getenv('ANTHROPIC_API_KEY', '')
+
+# Sentry Error Tracking
+SENTRY_DSN = os.getenv('SENTRY_DSN', '')
+
+if SENTRY_DSN:
+    import sentry_sdk
+    from sentry_sdk.integrations.django import DjangoIntegration
+    from sentry_sdk.integrations.celery import CeleryIntegration
+    from sentry_sdk.integrations.redis import RedisIntegration
+
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(
+                transaction_style='url',
+                middleware_spans=True,
+            ),
+            CeleryIntegration(),
+            RedisIntegration(),
+        ],
+        # Set traces_sample_rate to 1.0 to capture 100% of transactions for performance monitoring.
+        traces_sample_rate=0.1,  # 10% of transactions
+        # Set profiles_sample_rate to 1.0 to profile 100% of sampled transactions.
+        profiles_sample_rate=0.1,
+        # Send error messages to Sentry
+        send_default_pii=True,
+        # Environment
+        environment=os.getenv('DJANGO_ENV', 'development'),
+        # Release tracking
+        release=os.getenv('APP_VERSION', '1.0.0'),
+    )
+
+# Elasticsearch Configuration
+ELASTICSEARCH_DSL = {
+    'default': {
+        'hosts': os.getenv('ELASTICSEARCH_URL', 'http://localhost:9200'),
+    },
+}
+
+# Optional: Disable Elasticsearch auto-sync (use signals instead)
+ELASTICSEARCH_DSL_AUTOSYNC = False

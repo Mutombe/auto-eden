@@ -1,9 +1,9 @@
 # vehicles/views.py
 from urllib.parse import urlencode
 from django.core.cache import cache
-from rest_framework import viewsets, permissions
-from .models import QuoteRequest, Vehicle, Bid, Profile, User, VehicleSearch
-from .models import VehicleView
+from rest_framework import viewsets, permissions, serializers
+from .models import QuoteRequest, Vehicle, Bid, Profile, User, VehicleSearch, NotificationPreference, VehicleDraft
+from .models import VehicleView, VehicleImage
 from rest_framework.permissions import AllowAny
 from rest_framework.views import APIView
 from .serializers import (
@@ -17,6 +17,7 @@ from .serializers import (
     BidSerializer,
     ProfileSerializer,
     UserSerializer,
+    NotificationPreferenceSerializer,
 )
 from django.utils import timezone
 from rest_framework import status, permissions
@@ -57,9 +58,28 @@ from PIL import Image, ImageDraw
 import uuid
 from datetime import datetime, timedelta
 from rest_framework.decorators import api_view, permission_classes
+from rest_framework.pagination import PageNumberPagination
 
 
 logger = logging.getLogger(__name__)
+
+
+class StandardPagination(PageNumberPagination):
+    """Standard pagination for all list endpoints."""
+    page_size = 10
+    page_size_query_param = 'page_size'
+    max_page_size = 100
+
+    def get_paginated_response(self, data):
+        return Response({
+            'count': self.page.paginator.count,
+            'total_pages': self.page.paginator.num_pages,
+            'current_page': self.page.number,
+            'page_size': self.get_page_size(self.request),
+            'next': self.get_next_link(),
+            'previous': self.get_previous_link(),
+            'results': data
+        })
 
 
 class RegisterView(APIView):
@@ -68,10 +88,17 @@ class RegisterView(APIView):
     def post(self, request):
         serializer = UserSerializer(data=request.data)
         if serializer.is_valid():
-            user = serializer.save(is_active=False)
-            print("Username", user.username)
+            user = serializer.save()
+            # Set user as active immediately (email verification can be added later)
+            user.is_active = True
+            user.save()
+
+            # Create profile for the user
+            Profile.objects.get_or_create(user=user)
+
+            logger.info(f"New user registered: {user.username}")
             return Response(
-                {"detail": "You're now registered to Auto Eden"},
+                {"detail": "You're now registered to Auto Eden. You can now login."},
                 status=status.HTTP_201_CREATED,
             )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -96,42 +123,62 @@ class ProfileView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def get(self, request):
-        try:
-            profile = request.user.profile
-            serializer = ProfileSerializer(profile)
-            return Response(serializer.data, status=status.HTTP_200_OK)
-        except Profile.DoesNotExist:
-            return Response(
-                {"detail": "Profile not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-    def put(self, request):
-        try:
-            profile = request.user.profile
-            serializer = ProfileSerializer(profile, data=request.data, partial=True)
-            if serializer.is_valid():
-                serializer.save()
-                return Response(serializer.data, status=status.HTTP_200_OK)
-            return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-        except Profile.DoesNotExist:
-            return Response(
-                {"detail": "Profile not found"}, status=status.HTTP_404_NOT_FOUND
-            )
-
-    def get(self, request):
+        """Get or create user profile."""
         try:
             profile = request.user.profile
         except Profile.DoesNotExist:
-            # Temporary fix until signals work
+            # Auto-create profile if it doesn't exist
             profile = Profile.objects.create(user=request.user)
 
         serializer = ProfileSerializer(profile)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        """Update user profile."""
+        try:
+            profile = request.user.profile
+        except Profile.DoesNotExist:
+            profile = Profile.objects.create(user=request.user)
+
+        serializer = ProfileSerializer(profile, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+class NotificationPreferencesView(APIView):
+    """API view for managing user notification preferences."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        """Get user's notification preferences."""
+        try:
+            preferences = request.user.notification_preferences
+        except NotificationPreference.DoesNotExist:
+            # Create default preferences if they don't exist
+            preferences = NotificationPreference.objects.create(user=request.user)
+
+        serializer = NotificationPreferenceSerializer(preferences)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    def put(self, request):
+        """Update user's notification preferences."""
+        try:
+            preferences = request.user.notification_preferences
+        except NotificationPreference.DoesNotExist:
+            preferences = NotificationPreference.objects.create(user=request.user)
+
+        serializer = NotificationPreferenceSerializer(preferences, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
 
 class PublicVehicleViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [permissions.AllowAny]
-    
+
     def get_queryset(self):
         return Vehicle.objects.select_related('owner').prefetch_related('images', 'bids__bidder')
 
@@ -139,15 +186,32 @@ class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [permissions.AllowAny]
     parser_classes = [MultiPartParser, JSONParser]
+    pagination_class = StandardPagination
 
     def get_queryset(self):
-        
         if self.request.user.is_staff:
-            return Vehicle.objects.all()
-        return Vehicle.objects.filter(owner=self.request.user)
+            return Vehicle.objects.all().select_related('owner').prefetch_related('images')
+        return Vehicle.objects.filter(owner=self.request.user).select_related('owner').prefetch_related('images')
 
     def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        # Allow admin users to set verification_state during creation
+        extra_kwargs = {'owner': self.request.user}
+
+        if self.request.user.is_staff:
+            verification_state = self.request.data.get('verification_state')
+            if verification_state in ['pending', 'digital', 'physical']:
+                extra_kwargs['verification_state'] = verification_state
+                # Also set the corresponding boolean flags
+                if verification_state == 'digital':
+                    extra_kwargs['is_digitally_verified'] = True
+                    extra_kwargs['digitally_verified_by'] = self.request.user
+                    extra_kwargs['digitally_verified_at'] = timezone.now()
+                elif verification_state == 'physical':
+                    extra_kwargs['is_physically_verified'] = True
+                    extra_kwargs['physically_verified_by'] = self.request.user
+                    extra_kwargs['physically_verified_at'] = timezone.now()
+
+        serializer.save(**extra_kwargs)
 
     @action(
         detail=True, methods=["patch"], permission_classes=[permissions.IsAdminUser]
@@ -224,27 +288,23 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def pending_verification(self, request):
-        queryset = self.get_queryset().filter(
-            is_digitally_verified=False, is_physically_verified=False, is_rejected=False
-        )
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
-
-    @action(
-        detail=True, methods=["patch"], permission_classes=[permissions.IsAdminUser]
-    )
-    def review(self, request, pk=None):
-        return self.verify(request, pk) 
-
-    @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
-    def pending_verification(self, request):
-        queryset = Vehicle.objects.filter(verification_state="pending")
+        """Get vehicles pending verification with pagination."""
+        queryset = Vehicle.objects.filter(verification_state="pending").order_by('-created_at')
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"])
     def my_vehicles(self, request):
-        queryset = Vehicle.objects.filter(owner=request.user)
+        """Get current user's vehicles with pagination."""
+        queryset = Vehicle.objects.filter(owner=request.user).order_by('-created_at')
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -258,15 +318,23 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], url_path="instant-sales")
     def instant_sales(self, request):
-        queryset = self.filter_queryset(self.get_queryset())
+        """Get instant sale vehicles with pagination."""
+        queryset = Vehicle.objects.filter(listing_type="instant_sale").order_by('-created_at')
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def pending_review(self, request):
-        queryset = self.filter_queryset(
-            self.get_queryset().filter(verification_state="pending")
-        )
+        """Get vehicles pending review with pagination."""
+        queryset = Vehicle.objects.filter(verification_state="pending").order_by('-created_at')
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -317,13 +385,97 @@ class VehicleViewSet(viewsets.ModelViewSet):
         logger.debug(f"Request data: {request.data}")
         try:
             return super().create(request, *args, **kwargs)
+        except serializers.ValidationError as e:
+            # Return validation errors with proper status code
+            logger.warning(f"Vehicle creation validation failed: {e.detail}")
+            return Response(
+                e.detail,
+                status=status.HTTP_400_BAD_REQUEST
+            )
         except Exception as e:
             logger.error(f"Vehicle creation failed: {str(e)}")
             logger.exception("Full traceback:")
             return Response(
-                {"detail": "Internal server error"}, 
+                {"detail": str(e) if str(e) else "Internal server error"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+
+class VehicleDraftViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing vehicle drafts (incomplete listings)."""
+    permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardPagination
+
+    def get_queryset(self):
+        # Only return non-expired drafts for the current user
+        return VehicleDraft.objects.filter(
+            owner=self.request.user,
+            expires_at__gt=timezone.now()
+        )
+
+    def get_serializer_class(self):
+        from .serializers import VehicleDraftSerializer
+        return VehicleDraftSerializer
+
+    def perform_create(self, serializer):
+        serializer.save(owner=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def publish(self, request, pk=None):
+        """Convert draft to a real vehicle listing."""
+        draft = self.get_object()
+
+        if draft.completion_percentage < 80:
+            return Response(
+                {'error': 'Draft must be at least 80% complete to publish'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        try:
+            # Create vehicle from draft data
+            vehicle_data = draft.data.copy()
+            vehicle = Vehicle.objects.create(
+                owner=request.user,
+                **{k: v for k, v in vehicle_data.items() if hasattr(Vehicle, k)}
+            )
+
+            # Handle images
+            for i, image_url in enumerate(draft.images):
+                VehicleImage.objects.create(
+                    vehicle=vehicle,
+                    image=image_url,
+                    is_primary=(i == 0)
+                )
+
+            # Delete the draft
+            draft.delete()
+
+            from .serializers import VehicleSerializer
+            return Response(
+                VehicleSerializer(vehicle).data,
+                status=status.HTTP_201_CREATED
+            )
+        except Exception as e:
+            logger.error(f"Failed to publish draft: {str(e)}")
+            return Response(
+                {'error': 'Failed to publish draft'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+    @action(detail=False, methods=['delete'])
+    def cleanup_expired(self, request):
+        """Admin action to delete all expired drafts."""
+        if not request.user.is_staff:
+            return Response(
+                {'error': 'Admin only'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        deleted_count, _ = VehicleDraft.objects.filter(
+            expires_at__lt=timezone.now()
+        ).delete()
+
+        return Response({'deleted': deleted_count})
 
 
 class VehicleSearchViewSet(viewsets.ModelViewSet):
@@ -366,9 +518,10 @@ def vehicle_id_list(request):
 class BidViewSet(viewsets.ModelViewSet):
     serializer_class = BidSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardPagination
 
     def get_queryset(self):
-        return Bid.objects.filter(bidder=self.request.user)
+        return Bid.objects.filter(bidder=self.request.user).select_related('vehicle', 'bidder').order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(bidder=self.request.user)
@@ -377,15 +530,35 @@ class BidViewSet(viewsets.ModelViewSet):
         detail=False, methods=["get"], url_path="vehicle-bids/(?P<vehicle_pk>[^/.]+)"
     )
     def vehicle_bids(self, request, vehicle_pk=None):
+        """Get bids for a specific vehicle with pagination."""
         vehicle = get_object_or_404(Vehicle, pk=vehicle_pk)
-        # You might want to add permission check here
-        queryset = Bid.objects.filter(vehicle=vehicle)
+        queryset = Bid.objects.filter(vehicle=vehicle).select_related('bidder').order_by('-created_at')
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def all_bids(self, request):
-        queryset = Bid.objects.all()
+        """Get all bids with pagination (admin only)."""
+        queryset = Bid.objects.all().select_related('vehicle', 'bidder').order_by('-created_at')
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = self.get_serializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"])
+    def my_bids(self, request):
+        """Get current user's bids with pagination."""
+        queryset = Bid.objects.filter(bidder=request.user).select_related('vehicle').order_by('-created_at')
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = self.get_serializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
@@ -395,11 +568,10 @@ class BidViewSet(viewsets.ModelViewSet):
         except Exception as e:
             logger.error(f"Bid creation failed: {str(e)}")
             return Response(
-                {"detail": "Error creating bid"}, 
+                {"detail": "Error creating bid"},
                 status=status.HTTP_400_BAD_REQUEST
             )
-    
-from rest_framework.pagination import PageNumberPagination
+
 
 class MarketplacePagination(PageNumberPagination):
     page_size = 12
@@ -891,3 +1063,265 @@ class VehicleViewsView(APIView):
             "recent_views": recent_views,
             "views_by_day": list(views_by_day)
         })
+
+
+class DashboardStatsView(APIView):
+    """Combined dashboard statistics for admin dashboard."""
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        from django.db.models import Sum, Avg
+
+        thirty_days_ago = timezone.now() - timedelta(days=30)
+        seven_days_ago = timezone.now() - timedelta(days=7)
+
+        # Vehicle statistics
+        total_vehicles = Vehicle.objects.count()
+        pending_vehicles = Vehicle.objects.filter(verification_state='pending').count()
+        verified_vehicles = Vehicle.objects.filter(verification_state='physical').count()
+        rejected_vehicles = Vehicle.objects.filter(verification_state='rejected').count()
+        marketplace_vehicles = Vehicle.objects.filter(listing_type='marketplace').count()
+        instant_sale_vehicles = Vehicle.objects.filter(listing_type='instant_sale').count()
+
+        # Bid statistics
+        total_bids = Bid.objects.count()
+        pending_bids = Bid.objects.filter(status='pending').count()
+        accepted_bids = Bid.objects.filter(status='accepted').count()
+        total_bid_value = Bid.objects.aggregate(total=Sum('amount'))['total'] or 0
+
+        # User statistics
+        total_users = User.objects.count()
+        active_users = User.objects.filter(is_active=True).count()
+        new_users_this_month = User.objects.filter(date_joined__gte=thirty_days_ago).count()
+
+        # Traffic statistics
+        marketplace_visits = WebsiteVisit.objects.filter(
+            timestamp__gte=thirty_days_ago,
+            path__contains="/marketplace"
+        ).count()
+        vehicle_views = VehicleView.objects.filter(
+            timestamp__gte=thirty_days_ago
+        ).count()
+
+        # Recent activity (last 7 days)
+        new_vehicles_this_week = Vehicle.objects.filter(created_at__gte=seven_days_ago).count()
+        new_bids_this_week = Bid.objects.filter(created_at__gte=seven_days_ago).count()
+        new_users_this_week = User.objects.filter(date_joined__gte=seven_days_ago).count()
+
+        # Vehicles by state breakdown
+        vehicles_by_state = list(Vehicle.objects.values('verification_state').annotate(
+            count=Count('id')
+        ))
+
+        # Top vehicles by views
+        top_vehicles = list(VehicleView.objects.filter(
+            timestamp__gte=thirty_days_ago
+        ).values(
+            'vehicle__id',
+            'vehicle__make',
+            'vehicle__model',
+            'vehicle__year'
+        ).annotate(
+            view_count=Count('id')
+        ).order_by('-view_count')[:5])
+
+        return Response({
+            'vehicles': {
+                'total': total_vehicles,
+                'pending': pending_vehicles,
+                'verified': verified_vehicles,
+                'rejected': rejected_vehicles,
+                'marketplace': marketplace_vehicles,
+                'instant_sale': instant_sale_vehicles,
+                'new_this_week': new_vehicles_this_week,
+                'by_state': vehicles_by_state,
+            },
+            'bids': {
+                'total': total_bids,
+                'pending': pending_bids,
+                'accepted': accepted_bids,
+                'total_value': total_bid_value,
+                'new_this_week': new_bids_this_week,
+            },
+            'users': {
+                'total': total_users,
+                'active': active_users,
+                'new_this_month': new_users_this_month,
+                'new_this_week': new_users_this_week,
+            },
+            'traffic': {
+                'marketplace_visits': marketplace_visits,
+                'vehicle_views': vehicle_views,
+                'top_vehicles': top_vehicles,
+            }
+        })
+
+
+class ExportVehiclesView(APIView):
+    """Export vehicles to CSV, Excel, or PDF."""
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        from .exports import ExportService, log_export
+        from .models import ExportConfiguration
+
+        export_format = request.query_params.get('format', 'csv')
+        config_id = request.query_params.get('config_id')
+
+        # Get columns to export
+        if config_id:
+            try:
+                config = ExportConfiguration.objects.get(id=config_id, user=request.user)
+                columns = config.columns
+            except ExportConfiguration.DoesNotExist:
+                columns = list(ExportService.VEHICLE_COLUMNS.keys())
+        else:
+            columns = list(ExportService.VEHICLE_COLUMNS.keys())
+
+        column_headers = [ExportService.VEHICLE_COLUMNS.get(col, col) for col in columns]
+
+        # Build queryset with filters
+        queryset = Vehicle.objects.select_related('owner').order_by('-created_at')
+
+        # Apply filters
+        verification_state = request.query_params.get('verification_state')
+        if verification_state:
+            queryset = queryset.filter(verification_state=verification_state)
+
+        listing_type = request.query_params.get('listing_type')
+        if listing_type:
+            queryset = queryset.filter(listing_type=listing_type)
+
+        # Generate export
+        filename = f"vehicles_export_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
+        record_count = queryset.count()
+
+        if export_format == 'excel':
+            response = ExportService.export_to_excel(queryset, columns, column_headers, filename)
+        elif export_format == 'pdf':
+            response = ExportService.export_to_pdf(queryset, columns, column_headers, filename, "Vehicle Export")
+        else:
+            response = ExportService.export_to_csv(queryset, columns, column_headers, filename)
+
+        # Log the export
+        log_export(
+            user=request.user,
+            export_type=export_format,
+            data_type='vehicles',
+            record_count=record_count,
+            filters={
+                'verification_state': verification_state,
+                'listing_type': listing_type,
+            },
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return response
+
+
+class ExportBidsView(APIView):
+    """Export bids to CSV, Excel, or PDF."""
+    permission_classes = [permissions.IsAdminUser]
+
+    def get(self, request):
+        from .exports import ExportService, log_export
+
+        export_format = request.query_params.get('format', 'csv')
+        columns = list(ExportService.BID_COLUMNS.keys())
+        column_headers = [ExportService.BID_COLUMNS.get(col, col) for col in columns]
+
+        # Build queryset
+        queryset = Bid.objects.select_related('vehicle', 'bidder').order_by('-created_at')
+
+        # Apply filters
+        status_filter = request.query_params.get('status')
+        if status_filter:
+            queryset = queryset.filter(status=status_filter)
+
+        # Generate export
+        filename = f"bids_export_{timezone.now().strftime('%Y%m%d_%H%M%S')}"
+        record_count = queryset.count()
+
+        if export_format == 'excel':
+            response = ExportService.export_to_excel(queryset, columns, column_headers, filename)
+        elif export_format == 'pdf':
+            response = ExportService.export_to_pdf(queryset, columns, column_headers, filename, "Bids Export")
+        else:
+            response = ExportService.export_to_csv(queryset, columns, column_headers, filename)
+
+        # Log the export
+        log_export(
+            user=request.user,
+            export_type=export_format,
+            data_type='bids',
+            record_count=record_count,
+            filters={'status': status_filter},
+            ip_address=request.META.get('REMOTE_ADDR'),
+        )
+
+        return response
+
+
+class ExportConfigurationViewSet(viewsets.ModelViewSet):
+    """ViewSet for managing export configurations."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        from .models import ExportConfiguration
+        return ExportConfiguration.objects.filter(user=self.request.user)
+
+    def get_serializer_class(self):
+        from rest_framework import serializers
+        from .models import ExportConfiguration
+
+        class ExportConfigurationSerializer(serializers.ModelSerializer):
+            class Meta:
+                model = ExportConfiguration
+                fields = ['id', 'name', 'columns', 'export_type', 'is_default', 'created_at', 'updated_at']
+                read_only_fields = ['created_at', 'updated_at']
+
+        return ExportConfigurationSerializer
+
+    def perform_create(self, serializer):
+        from .models import ExportConfiguration
+        # If this is set as default, unset other defaults
+        if serializer.validated_data.get('is_default'):
+            ExportConfiguration.objects.filter(
+                user=self.request.user,
+                export_type=serializer.validated_data.get('export_type', 'vehicles')
+            ).update(is_default=False)
+        serializer.save(user=self.request.user)
+
+    def perform_update(self, serializer):
+        from .models import ExportConfiguration
+        # If this is set as default, unset other defaults
+        if serializer.validated_data.get('is_default'):
+            ExportConfiguration.objects.filter(
+                user=self.request.user,
+                export_type=serializer.instance.export_type
+            ).exclude(pk=serializer.instance.pk).update(is_default=False)
+        serializer.save()
+
+
+class ExportLogsView(APIView):
+    """View export logs for the current user."""
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        from .models import ExportLog
+
+        if request.user.is_staff:
+            logs = ExportLog.objects.all().order_by('-created_at')[:50]
+        else:
+            logs = ExportLog.objects.filter(user=request.user).order_by('-created_at')[:50]
+
+        data = [{
+            'id': log.id,
+            'export_type': log.export_type,
+            'data_type': log.data_type,
+            'record_count': log.record_count,
+            'created_at': log.created_at,
+            'user': log.user.username,
+        } for log in logs]
+
+        return Response(data)
