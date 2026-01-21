@@ -1,9 +1,9 @@
 import os
+from datetime import timedelta
 from .settings import *
 from .settings import BASE_DIR
-import os
 from dotenv import load_dotenv
- 
+
 load_dotenv()
 
 # SECURITY SETTINGS
@@ -73,6 +73,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'allauth.account.middleware.AccountMiddleware',
+    'hijack.middleware.HijackUserMiddleware',
 ]
 
 AWS_ACCESS_KEY_ID = 'DO8013WV2RVKZMWWT8NJ'
