@@ -140,6 +140,10 @@ CSRF_TRUSTED_ORIGINS = [
     'http://127.0.0.1:5173',
     'http://127.0.0.1:5174',
     'http://127.0.0.1:8000',
+    'https://auto-eden.onrender.com',
+    'https://auto-eden-backend.onrender.com',
+    'https://autoeden.co.zw',
+    'https://www.autoeden.co.zw',
 ]
 
 # For Redis (recommended):
