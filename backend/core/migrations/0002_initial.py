@@ -430,7 +430,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="vehicle",
             constraint=models.CheckConstraint(
-                condition=models.Q(
+                check=models.Q(
                     models.Q(("verification_state", "rejected"), _negated=True),
                     ("rejection_reason__isnull", False),
                     _connector="OR",
@@ -441,7 +441,7 @@ class Migration(migrations.Migration):
         migrations.AddConstraint(
             model_name="vehicle",
             constraint=models.CheckConstraint(
-                condition=models.Q(
+                check=models.Q(
                     models.Q(("listing_type", "marketplace"), ("price__isnull", False)),
                     models.Q(
                         ("listing_type", "instant_sale"),

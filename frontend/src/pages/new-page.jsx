@@ -1,17 +1,57 @@
 // src/pages/NewsPage.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { 
+import {
   Newspaper, Calendar, ArrowRight, Tag,
-  TrendingUp, Award, Users, Zap
+  TrendingUp, Award, Users, Zap, Loader2
 } from "lucide-react";
+import api from "../utils/api";
 
 /**
  * News Page - Auto Eden Updates & Announcements
  * SEO-optimized news/blog page
  */
+// Map category to icon
+const getCategoryIcon = (category) => {
+  const icons = {
+    announcement: <Zap className="w-5 h-5" />,
+    "product update": <Award className="w-5 h-5" />,
+    milestone: <Users className="w-5 h-5" />,
+    "market insights": <TrendingUp className="w-5 h-5" />,
+  };
+  return icons[category?.toLowerCase()] || <Newspaper className="w-5 h-5" />;
+};
+
+// Format date
+const formatDate = (dateStr) => {
+  if (!dateStr) return "";
+  const date = new Date(dateStr);
+  return date.toLocaleDateString("en-US", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+};
+
 export default function NewsPage() {
+  const [articles, setArticles] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const { data } = await api.get("/core/articles/");
+        setArticles(data.results || data);
+      } catch (err) {
+        console.error("Failed to fetch articles:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchArticles();
+  }, []);
+
   const fadeInUp = {
     initial: { opacity: 0, y: 20 },
     whileInView: { opacity: 1, y: 0 },
@@ -19,52 +59,8 @@ export default function NewsPage() {
     transition: { duration: 0.5 }
   };
 
-  // News articles
-  const newsArticles = [
-    {
-      id: "free-listings-launch",
-      category: "Announcement",
-      date: "January 5, 2026",
-      title: "Auto Eden Launches 100% Free Vehicle Listings",
-      excerpt: "We're excited to announce that listing your vehicle on Auto Eden is now completely free. No hidden fees, no commissions, just results.",
-      image: "/news/free-listings.jpg",
-      featured: true,
-      icon: <Zap className="w-5 h-5" />
-    },
-    {
-      id: "verification-upgrade",
-      category: "Product Update",
-      date: "December 15, 2025",
-      title: "Enhanced Vehicle Verification Process",
-      excerpt: "We've upgraded our verification system to include comprehensive 50-point inspections and detailed vehicle history reports.",
-      image: "/news/verification.jpg",
-      featured: true,
-      icon: <Award className="w-5 h-5" />
-    },
-    {
-      id: "milestone-1000",
-      category: "Milestone",
-      date: "November 28, 2025",
-      title: "Celebrating 1,000 Happy Customers",
-      excerpt: "We've reached an incredible milestone — over 1,000 satisfied buyers and sellers have trusted Auto Eden for their car transactions.",
-      image: "/news/milestone.jpg",
-      featured: false,
-      icon: <Users className="w-5 h-5" />
-    },
-    {
-      id: "market-insights-q4",
-      category: "Market Insights",
-      date: "October 10, 2025",
-      title: "Zimbabwe Car Market Trends Q4 2025",
-      excerpt: "Toyota Hilux remains the top seller, while electric vehicles see growing interest. Here's what's trending in the local market.",
-      image: "/news/market-trends.jpg",
-      featured: false,
-      icon: <TrendingUp className="w-5 h-5" />
-    }
-  ];
-
-  const featuredNews = newsArticles.filter(n => n.featured);
-  const otherNews = newsArticles.filter(n => !n.featured);
+  const featuredNews = articles.filter(a => a.is_featured);
+  const otherNews = articles.filter(a => !a.is_featured);
 
   return (
     <main className="pacaembu-font bg-gray-50">
@@ -124,55 +120,67 @@ export default function NewsPage() {
             Featured
           </motion.h2>
 
-          <div className="grid md:grid-cols-2 gap-6">
-            {featuredNews.map((article, index) => (
-              <motion.article
-                key={article.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.1 }}
-                className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow"
-              >
-                <div className="aspect-[16/9] bg-gray-100 overflow-hidden">
-                  <img
-                    src={article.image}
-                    alt={article.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    loading="lazy"
-                    onError={(e) => {
-                      e.target.style.display = 'none';
-                      e.target.parentElement.classList.add('flex', 'items-center', 'justify-center');
-                      e.target.parentElement.innerHTML = `<div class="text-gray-400">${article.icon.type.render()}</div>`;
-                    }}
-                  />
-                </div>
-                <div className="p-6">
-                  <div className="flex items-center gap-3 mb-3">
-                    <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full">
-                      {article.icon}
-                      {article.category}
-                    </span>
-                    <span className="text-sm text-gray-500 flex items-center gap-1">
-                      <Calendar className="w-3.5 h-3.5" />
-                      {article.date}
-                    </span>
+          {loading ? (
+            <div className="flex items-center justify-center py-12">
+              <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
+            </div>
+          ) : featuredNews.length > 0 ? (
+            <div className="grid md:grid-cols-2 gap-6">
+              {featuredNews.map((article, index) => (
+                <motion.article
+                  key={article.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.1 }}
+                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow"
+                >
+                  <div className="aspect-[16/9] bg-gray-100 overflow-hidden flex items-center justify-center">
+                    {article.featured_image ? (
+                      <img
+                        src={article.featured_image}
+                        alt={article.title}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
+                        onError={(e) => {
+                          e.target.style.display = 'none';
+                        }}
+                      />
+                    ) : (
+                      <div className="text-gray-400">{getCategoryIcon(article.category)}</div>
+                    )}
                   </div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
-                    {article.title}
-                  </h3>
-                  <p className="text-gray-600 mb-4 line-clamp-2">{article.excerpt}</p>
-                  <Link
-                    to={`/news/${article.id}`}
-                    className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-700"
-                  >
-                    Read More
-                    <ArrowRight className="w-4 h-4 ml-1" />
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
-          </div>
+                  <div className="p-6">
+                    <div className="flex items-center gap-3 mb-3">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full">
+                        {getCategoryIcon(article.category)}
+                        {article.category}
+                      </span>
+                      <span className="text-sm text-gray-500 flex items-center gap-1">
+                        <Calendar className="w-3.5 h-3.5" />
+                        {formatDate(article.published_at)}
+                      </span>
+                    </div>
+                    <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
+                      {article.title}
+                    </h3>
+                    <p className="text-gray-600 mb-4 line-clamp-2">{article.excerpt}</p>
+                    <Link
+                      to={`/news/${article.slug || article.id}`}
+                      className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-700"
+                    >
+                      Read More
+                      <ArrowRight className="w-4 h-4 ml-1" />
+                    </Link>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              No featured articles yet. Check back soon!
+            </div>
+          )}
         </div>
       </section>
 
@@ -187,40 +195,46 @@ export default function NewsPage() {
             More Updates
           </motion.h2>
 
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-            {otherNews.map((article, index) => (
-              <motion.article
-                key={article.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                className="group bg-gray-50 rounded-xl p-5 hover:bg-gray-100 transition-colors"
-              >
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-600">
-                    {article.icon}
-                  </span>
-                  <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    {article.category}
-                  </span>
-                </div>
-                <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
-                  {article.title}
-                </h3>
-                <p className="text-gray-600 text-sm mb-3 line-clamp-2">{article.excerpt}</p>
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-gray-500">{article.date}</span>
-                  <Link
-                    to={`/news/${article.id}`}
-                    className="text-sm font-medium text-red-600 hover:text-red-700"
-                  >
-                    Read →
-                  </Link>
-                </div>
-              </motion.article>
-            ))}
-          </div>
+          {!loading && otherNews.length > 0 ? (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+              {otherNews.map((article, index) => (
+                <motion.article
+                  key={article.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: index * 0.05 }}
+                  className="group bg-gray-50 rounded-xl p-5 hover:bg-gray-100 transition-colors"
+                >
+                  <div className="flex items-center gap-2 mb-3">
+                    <span className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-600">
+                      {getCategoryIcon(article.category)}
+                    </span>
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      {article.category}
+                    </span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
+                    {article.title}
+                  </h3>
+                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{article.excerpt}</p>
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs text-gray-500">{formatDate(article.published_at)}</span>
+                    <Link
+                      to={`/news/${article.slug || article.id}`}
+                      className="text-sm font-medium text-red-600 hover:text-red-700"
+                    >
+                      Read →
+                    </Link>
+                  </div>
+                </motion.article>
+              ))}
+            </div>
+          ) : !loading && (
+            <div className="text-center py-12 text-gray-500">
+              No additional articles yet.
+            </div>
+          )}
         </div>
       </section>
 

@@ -211,9 +211,10 @@ const vehicleSlice = createSlice({
     userVehiclesLoading: false,
     allVehicles: [],
     pendingVehicles: [],
+    pendingReview: [],
     loading: false,
     error: null,
-    marketplace: {  // Add this marketplace object
+    marketplace: {
       results: [],
       count: 0,
       currentPage: 1,
@@ -277,20 +278,38 @@ const vehicleSlice = createSlice({
         state.instantSaleVehicles = action.payload;
       })
       .addCase(fetchPendingReview.fulfilled, (state, action) => {
-        state.pendingVehicles = action.payload;
+        // Handle both array and paginated response formats
+        const data = Array.isArray(action.payload)
+          ? action.payload
+          : (action.payload?.results || []);
+        state.pendingVehicles = data;
+        state.pendingReview = data;
       })
       .addCase(fetchAllVehicles.fulfilled, (state, action) => {
-        state.allVehicles = Array.isArray(action.payload)
-          ? action.payload.results
-          : [];
-        console.log("all vehicles payload", state.allVehicles);
+        // Handle both array and paginated response formats
+        if (Array.isArray(action.payload)) {
+          state.allVehicles = action.payload;
+        } else if (action.payload?.results) {
+          state.allVehicles = action.payload.results;
+        } else {
+          state.allVehicles = [];
+        }
       })
       .addCase(createVehicle.pending, (state) => {
         state.loading = true;
       })
       .addCase(createVehicle.fulfilled, (state, action) => {
         state.loading = false;
-        state.items.push(action.payload);
+        const newVehicle = action.payload;
+        // Add to items
+        state.items.unshift(newVehicle);
+        // Add to allVehicles at the beginning
+        state.allVehicles.unshift(newVehicle);
+        // If pending, add to pendingVehicles and pendingReview
+        if (newVehicle.verification_state === 'pending') {
+          state.pendingVehicles.unshift(newVehicle);
+          state.pendingReview.unshift(newVehicle);
+        }
       })
       .addCase(createVehicle.rejected, (state, action) => {
         state.loading = false;
@@ -316,7 +335,10 @@ const vehicleSlice = createSlice({
         state.userVehiclesLoading = true;
       })
       .addCase(fetchUserVehicles.fulfilled, (state, action) => {
-        state.userVehicles = action.payload;
+        // Handle both array and paginated response formats
+        state.userVehicles = Array.isArray(action.payload)
+          ? action.payload
+          : (action.payload?.results || []);
         state.userVehiclesLoading = false;
       })
       .addCase(fetchUserVehicles.rejected, (state, action) => {

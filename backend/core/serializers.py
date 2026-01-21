@@ -1,6 +1,6 @@
 #serializers.py
 from rest_framework import serializers
-from .models import QuoteRequest, Vehicle, VehicleImage, Bid, Profile, User, VehicleSearch
+from .models import QuoteRequest, Vehicle, VehicleImage, Bid, Profile, User, VehicleSearch, NotificationPreference, VehicleDraft
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -34,6 +34,7 @@ class ProfileSerializer(serializers.ModelSerializer):
             "email",
             "first_name",
             "last_name",
+            "phone",
             "profile_picture",
             "created_at",
             "updated_at",
@@ -50,6 +51,7 @@ class ProfileSerializer(serializers.ModelSerializer):
         # Update profile fields
         instance.first_name = validated_data.get("first_name", instance.first_name)
         instance.last_name = validated_data.get("last_name", instance.last_name)
+        instance.phone = validated_data.get("phone", instance.phone)
         instance.profile_picture = validated_data.get(
             "profile_picture", instance.profile_picture
         )
@@ -57,6 +59,30 @@ class ProfileSerializer(serializers.ModelSerializer):
 
         return instance
     
+class NotificationPreferenceSerializer(serializers.ModelSerializer):
+    """Serializer for user notification preferences."""
+
+    class Meta:
+        model = NotificationPreference
+        fields = [
+            'email_vehicle_approved',
+            'email_new_bid',
+            'email_quote_ready',
+            'push_enabled',
+            'whatsapp_enabled',
+            'whatsapp_number',
+        ]
+
+    def validate_whatsapp_number(self, value):
+        """Validate WhatsApp number format if provided."""
+        if value:
+            import re
+            # Basic phone number validation
+            if not re.match(r'^[\+]?[\d\s\-\(\)]{8,20}$', value):
+                raise serializers.ValidationError("Invalid phone number format")
+        return value
+
+
 class VehicleImageSerializer(serializers.ModelSerializer):
     image = serializers.SerializerMethodField()
 
@@ -64,7 +90,7 @@ class VehicleImageSerializer(serializers.ModelSerializer):
         if obj.image:
             return f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{obj.image.name}"
         return None
-    
+
     class Meta:
         model = VehicleImage
         fields = ['image']
@@ -225,4 +251,37 @@ class QuoteRequestSerializer(serializers.ModelSerializer):
         model = QuoteRequest
         fields = '__all__'
         read_only_fields = ('vehicle', 'is_processed', 'created_at')
+
+
+class VehicleDraftSerializer(serializers.ModelSerializer):
+    """Serializer for vehicle drafts (incomplete listings)."""
+    completion_percentage = serializers.ReadOnlyField()
+    is_expired = serializers.ReadOnlyField()
+
+    class Meta:
+        model = VehicleDraft
+        fields = [
+            'id', 'data', 'images', 'step', 'is_complete',
+            'draft_title', 'expires_at', 'completion_percentage',
+            'is_expired', 'created_at', 'updated_at'
+        ]
+        read_only_fields = ['id', 'draft_title', 'expires_at', 'created_at', 'updated_at']
+
+    def validate_step(self, value):
+        """Ensure step is between 1 and 5."""
+        if not 1 <= value <= 5:
+            raise serializers.ValidationError("Step must be between 1 and 5")
+        return value
+
+    def validate_data(self, value):
+        """Validate the draft data structure."""
+        if not isinstance(value, dict):
+            raise serializers.ValidationError("Data must be a JSON object")
+        return value
+
+    def validate_images(self, value):
+        """Validate images is a list."""
+        if not isinstance(value, list):
+            raise serializers.ValidationError("Images must be a list")
+        return value
         

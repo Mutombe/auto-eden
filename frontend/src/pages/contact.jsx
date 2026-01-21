@@ -1,10 +1,11 @@
 // src/pages/ContactPage.jsx
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  Mail, Phone, MapPin, Clock, Send, 
+import {
+  Mail, Phone, MapPin, Clock, Send,
   MessageCircle, CheckCircle, AlertCircle
 } from "lucide-react";
+import api from "../utils/api";
 
 /**
  * Contact Page - Auto Eden
@@ -24,13 +25,18 @@ export default function ContactPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    
-    // Simulate form submission
-    setTimeout(() => {
+    setStatus(null);
+
+    try {
+      await api.post("/core/contact/", formData);
       setStatus("success");
-      setLoading(false);
       setFormData({ name: "", email: "", phone: "", subject: "", message: "" });
-    }, 1500);
+    } catch (err) {
+      console.error("Contact form error:", err);
+      setStatus("error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const contactInfo = [

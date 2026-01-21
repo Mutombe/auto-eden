@@ -46,7 +46,7 @@ export const fetchUserBids = createAsyncThunk(
   "bids/fetchUserBids",
   async (_, { rejectWithValue }) => {
     try {
-      const { data } = await api.get("/core/bids/my-bids/");
+      const { data } = await api.get("/core/bids/my_bids/");
       return data;
     } catch (err) {
       return rejectWithValue(err.response.data);
@@ -81,8 +81,11 @@ const bidSlice = createSlice({
       })
       .addCase(fetchBids.fulfilled, (state, action) => {
         state.loading = false;
-        //state.items = action.payload;
-        state.allBids = action.payload;
+        // Handle both array and paginated response formats
+        const data = Array.isArray(action.payload)
+          ? action.payload
+          : (action.payload?.results || []);
+        state.allBids = data;
       })
       .addCase(fetchBids.rejected, (state, action) => {
         state.loading = false;
@@ -105,7 +108,10 @@ const bidSlice = createSlice({
       })
       .addCase(fetchUserBids.fulfilled, (state, action) => {
         state.loading = false;
-        state.items = action.payload;
+        // Handle both array and paginated response formats
+        state.items = Array.isArray(action.payload)
+          ? action.payload
+          : (action.payload?.results || []);
       })
       .addCase(fetchUserBids.rejected, (state, action) => {
         state.loading = false;

@@ -1,11 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useNavigate } from "react-router-dom";
 import {
   fetchProfile,
   updateProfile,
   clearProfileError,
 } from "../../redux/slices/profileSlice";
+import { logout } from "../../redux/slices/authSlice";
+import { fetchUserVehicles } from "../../redux/slices/vehicleSlice";
+import { fetchUserBids } from "../../redux/slices/bidSlice";
 import { motion, AnimatePresence } from "framer-motion";
+import ChangePasswordModal from "./ChangePasswordModal";
+import ChangeEmailModal from "./ChangeEmailModal";
+import NotificationPreferences from "./NotificationPreferences";
 import {
   Avatar,
   Button,
@@ -140,9 +147,12 @@ const theme = createTheme({
 
 const ProfilePage = () => {
   const dispatch = useDispatch();
+  const navigate = useNavigate();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const { profileData, loading, error } = useSelector((state) => state.profile);
   const { user } = useSelector((state) => state.auth);
+  const { userVehicles, userVehiclesLoading } = useSelector((state) => state.vehicles);
+  const { items: userBids, status: bidsStatus } = useSelector((state) => state.bids);
   const [activeTab, setActiveTab] = useState("profile");
   const [editMode, setEditMode] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -152,6 +162,11 @@ const ProfilePage = () => {
   });
   const [selectedFile, setSelectedFile] = useState(null);
   const [previewUrl, setPreviewUrl] = useState("");
+
+  // Modal states
+  const [passwordModalOpen, setPasswordModalOpen] = useState(false);
+  const [emailModalOpen, setEmailModalOpen] = useState(false);
+  const [notificationModalOpen, setNotificationModalOpen] = useState(false);
 
   // Form validation schema
   const profileSchema = Yup.object().shape({
@@ -204,6 +219,22 @@ const ProfilePage = () => {
   useEffect(() => {
     dispatch(fetchProfile());
   }, [dispatch]);
+
+  // Load vehicles and bids when switching tabs
+  useEffect(() => {
+    if (activeTab === "tasks") {
+      dispatch(fetchUserVehicles());
+    }
+    if (activeTab === "applications") {
+      dispatch(fetchUserBids());
+    }
+  }, [activeTab, dispatch]);
+
+  // Handle logout
+  const handleLogout = () => {
+    dispatch(logout());
+    navigate("/");
+  };
 
   // Update form values when profile data changes
   useEffect(() => {
@@ -488,6 +519,7 @@ const ProfilePage = () => {
           <Button
             fullWidth
             variant="outlined"
+            onClick={() => setPasswordModalOpen(true)}
             sx={{
               justifyContent: "flex-start",
               py: 1.5,
@@ -501,6 +533,7 @@ const ProfilePage = () => {
           <Button
             fullWidth
             variant="outlined"
+            onClick={() => setEmailModalOpen(true)}
             sx={{
               justifyContent: "flex-start",
               py: 1.5,
@@ -514,6 +547,7 @@ const ProfilePage = () => {
           <Button
             fullWidth
             variant="outlined"
+            onClick={() => setNotificationModalOpen(true)}
             sx={{
               justifyContent: "flex-start",
               py: 1.5,
@@ -568,6 +602,7 @@ const ProfilePage = () => {
         fullWidth
         variant="contained"
         color="error"
+        onClick={handleLogout}
         sx={{
           mt: 4,
           py: 1.5,
@@ -745,26 +780,164 @@ const ProfilePage = () => {
                   {activeTab === "profile" && <ProfileTab />}
                   {activeTab === "settings" && <SettingsTab />}
                   {activeTab === "tasks" && (
-                    <Box sx={{ p: 4, textAlign: "center" }}>
-                      <BriefcaseBusiness className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                      <Typography variant="h6" gutterBottom>
-                        No Tasks Available
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Your tasks will appear here once assigned
-                      </Typography>
-                    </Box>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {userVehiclesLoading ? (
+                        <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                          <CircularProgress sx={{ color: "#e60000" }} />
+                        </Box>
+                      ) : !userVehicles || userVehicles.length === 0 ? (
+                        <Box sx={{ p: 4, textAlign: "center" }}>
+                          <Car className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                          <Typography variant="h6" gutterBottom>
+                            No Vehicles Listed
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            You haven't listed any vehicles yet
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            onClick={() => navigate("/dashboard")}
+                            sx={{
+                              bgcolor: "#e60000",
+                              "&:hover": { bgcolor: "#cc0000" },
+                            }}
+                          >
+                            Go to Dashboard
+                          </Button>
+                        </Box>
+                      ) : (
+                        <div className="space-y-4">
+                          <Typography variant="h6" sx={{ mb: 2 }}>
+                            Your Vehicles ({userVehicles.length})
+                          </Typography>
+                          {userVehicles.map((vehicle) => (
+                            <Paper
+                              key={vehicle.id}
+                              sx={{
+                                p: 3,
+                                borderRadius: 2,
+                                border: "1px solid #eee",
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                },
+                              }}
+                            >
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div>
+                                  <Typography variant="subtitle1" fontWeight={600}>
+                                    {vehicle.make} {vehicle.model} ({vehicle.year})
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    ${Number(vehicle.price || vehicle.proposed_price).toLocaleString()}
+                                  </Typography>
+                                </div>
+                                <div className="flex items-center gap-2">
+                                  <Chip
+                                    label={vehicle.verification_state === "physical" ? "Verified" : vehicle.verification_state}
+                                    size="small"
+                                    color={
+                                      vehicle.verification_state === "physical"
+                                        ? "success"
+                                        : vehicle.verification_state === "rejected"
+                                        ? "error"
+                                        : "warning"
+                                    }
+                                  />
+                                  <Chip
+                                    label={vehicle.listing_type === "marketplace" ? "Marketplace" : "Instant Sale"}
+                                    size="small"
+                                    variant="outlined"
+                                  />
+                                </div>
+                              </div>
+                            </Paper>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
                   )}
                   {activeTab === "applications" && (
-                    <Box sx={{ p: 4, textAlign: "center" }}>
-                      <ArrowBigUp className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                      <Typography variant="h6" gutterBottom>
-                        No Applications Yet
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Your applications will appear here
-                      </Typography>
-                    </Box>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      {bidsStatus === "loading" ? (
+                        <Box sx={{ display: "flex", justifyContent: "center", py: 6 }}>
+                          <CircularProgress sx={{ color: "#e60000" }} />
+                        </Box>
+                      ) : !userBids || userBids.length === 0 ? (
+                        <Box sx={{ p: 4, textAlign: "center" }}>
+                          <ArrowBigUp className="w-16 h-16 mx-auto mb-4 text-gray-300" />
+                          <Typography variant="h6" gutterBottom>
+                            No Bids Yet
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+                            You haven't placed any bids on vehicles
+                          </Typography>
+                          <Button
+                            variant="contained"
+                            onClick={() => navigate("/marketplace")}
+                            sx={{
+                              bgcolor: "#e60000",
+                              "&:hover": { bgcolor: "#cc0000" },
+                            }}
+                          >
+                            Browse Marketplace
+                          </Button>
+                        </Box>
+                      ) : (
+                        <div className="space-y-4">
+                          <Typography variant="h6" sx={{ mb: 2 }}>
+                            Your Bids ({userBids.length})
+                          </Typography>
+                          {userBids.map((bid) => (
+                            <Paper
+                              key={bid.id}
+                              sx={{
+                                p: 3,
+                                borderRadius: 2,
+                                border: "1px solid #eee",
+                                transition: "all 0.2s",
+                                "&:hover": {
+                                  boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
+                                },
+                              }}
+                            >
+                              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3">
+                                <div>
+                                  <Typography variant="subtitle1" fontWeight={600}>
+                                    Bid: ${Number(bid.amount).toLocaleString()}
+                                  </Typography>
+                                  <Typography variant="body2" color="text.secondary">
+                                    {bid.message || "No message"}
+                                  </Typography>
+                                  <Typography variant="caption" color="text.secondary">
+                                    {new Date(bid.created_at).toLocaleDateString()}
+                                  </Typography>
+                                </div>
+                                <Chip
+                                  label={bid.status.charAt(0).toUpperCase() + bid.status.slice(1)}
+                                  size="small"
+                                  color={
+                                    bid.status === "accepted"
+                                      ? "success"
+                                      : bid.status === "rejected"
+                                      ? "error"
+                                      : "warning"
+                                  }
+                                />
+                              </div>
+                            </Paper>
+                          ))}
+                        </div>
+                      )}
+                    </motion.div>
                   )}
                 </>
               )}
@@ -800,6 +973,20 @@ const ProfilePage = () => {
             {snackbar.message}
           </Alert>
         </Snackbar>
+
+        {/* Modals */}
+        <ChangePasswordModal
+          open={passwordModalOpen}
+          onClose={() => setPasswordModalOpen(false)}
+        />
+        <ChangeEmailModal
+          open={emailModalOpen}
+          onClose={() => setEmailModalOpen(false)}
+        />
+        <NotificationPreferences
+          open={notificationModalOpen}
+          onClose={() => setNotificationModalOpen(false)}
+        />
       </Box>
     </ThemeProvider>
   );
