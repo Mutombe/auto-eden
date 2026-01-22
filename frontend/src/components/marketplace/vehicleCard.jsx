@@ -1,215 +1,162 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import {
-  Button,
-  Chip,
-  Badge,
-  IconButton,
-  Tooltip,
-  useMediaQuery,
-} from "@mui/material";
-import {
   Shield,
   Award,
   TrendingUp,
   Clock,
   Gauge,
-  Map,
+  MapPin,
   Tag,
-  DollarSign,
+  Fuel,
+  ChevronRight,
 } from "lucide-react";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 import ImageWithFallback from "../../utils/smartImage";
 
 const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
-  const isMobile = useMediaQuery("(max-width:768px)");
   const { user, isAuthenticated } = useSelector((state) => state.auth);
 
-  const cardContent = (
+  const isOwner = isAuthenticated && user?.id === vehicle.owner?.id;
+  const canBid = vehicle.listing_type === "marketplace" && isAuthenticated && !isOwner;
+
+  return (
     <motion.div
-      className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${
-        viewMode === "list" ? "flex flex-col md:flex-row" : ""
+      className={`bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 overflow-hidden group ${
+        viewMode === "list" ? "flex flex-col sm:flex-row" : ""
       }`}
-      whileHover={{ y: -5 }}
+      whileHover={{ y: -4 }}
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
     >
-      <div className={`relative ${viewMode === "list" ? "md:w-1/3" : ""}`}>
-        <ImageWithFallback
-          src={vehicle.main_image}
-          alt={`${vehicle.make} ${vehicle.model}`}
-          className={`w-full object-cover ${
-            viewMode === "list"
-              ? "h-56 md:h-full md:rounded-l-xl"
-              : "h-52 rounded-t-xl"
-          }`}
-          loading={viewMode === "list" ? "eager" : "lazy"}
-          fetchpriority={viewMode === "list" ? "high" : "auto"}
-        />
+      {/* Image Section */}
+      <div className={`relative overflow-hidden ${viewMode === "list" ? "sm:w-2/5 lg:w-1/3" : ""}`}>
+        <div className={`relative ${viewMode === "list" ? "aspect-[4/3] sm:aspect-auto sm:h-full sm:min-h-[200px]" : "aspect-[4/3]"}`}>
+          <ImageWithFallback
+            src={vehicle.main_image}
+            alt={`${vehicle.make} ${vehicle.model}`}
+            className="absolute inset-0 w-full h-full object-cover"
+            loading="lazy"
+          />
+        </div>
 
         {/* Featured Badge */}
         {vehicle.featured && (
-          <div className="absolute top-4 left-0 bg-yellow-500 text-white px-3 py-1 rounded-r-full shadow-md flex items-center">
-            <Award className="w-4 h-4 mr-1" />
-            <span className="text-xs font-medium">Featured</span>
+          <div className="absolute top-3 left-0 bg-gradient-to-r from-yellow-500 to-amber-500 text-white px-3 py-1 rounded-r-full shadow-md flex items-center text-xs font-semibold">
+            <Award className="w-3.5 h-3.5 mr-1" />
+            Featured
           </div>
         )}
 
-        {/* Chips and badges */}
-        <div className="absolute top-3 right-3 flex flex-col gap-2">
-          <Chip
-            label={
-              vehicle.listing_type === "instant_sale" ? "Buy Now" : "Auction"
-            }
-            color={
-              vehicle.listing_type === "instant_sale" ? "success" : "primary"
-            }
-            size="small"
-            sx={{
-              backgroundColor:
-                vehicle.listing_type === "instant_sale" ? "#059669" : "#1d4ed8",
-              color: "white",
-              fontWeight: 600,
-              fontSize: "0.7rem",
-            }}
-          />
+        {/* Top Right Badges */}
+        <div className="absolute top-3 right-3 flex flex-col gap-1.5">
+          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold text-white shadow-sm ${
+            vehicle.listing_type === "instant_sale"
+              ? "bg-emerald-500"
+              : "bg-blue-600"
+          }`}>
+            {vehicle.listing_type === "instant_sale" ? "Buy Now" : "Auction"}
+          </span>
 
           {vehicle.is_physically_verified && (
-            <Chip
-              icon={<Shield className="w-3 h-3 text-green-700" />}
-              label="Verified"
-              size="small"
-              sx={{
-                backgroundColor: "rgba(240, 253, 244, 0.9)",
-                color: "#15803d",
-                fontWeight: 600,
-                fontSize: "0.7rem",
-                "& .MuiChip-icon": {
-                  color: "#15803d",
-                },
-              }}
-            />
+            <span className="flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-semibold bg-green-100 text-green-700 shadow-sm">
+              <Shield className="w-3 h-3" />
+              Verified
+            </span>
           )}
         </div>
+
+        {/* Bid Count Badge */}
+        {vehicle.bid_count > 0 && (
+          <div className="absolute bottom-3 left-3 flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-sm text-white text-xs font-medium">
+            <TrendingUp className="w-3.5 h-3.5" />
+            {vehicle.bid_count} {vehicle.bid_count === 1 ? 'bid' : 'bids'}
+          </div>
+        )}
       </div>
 
-      <div
-        className={`p-4 flex flex-col ${viewMode === "list" ? "md:w-2/3" : ""}`}
-      >
-        <div className="flex justify-between items-start">
-          <div>
-            <h3 className="text-xl font-bold text-gray-900">
-              {vehicle.make} {vehicle.model}
-            </h3>
-            <p className="text-gray-600">
-              {vehicle.year} • {vehicle.mileage?.toLocaleString() || "0"} km
-            </p>
-          </div>
-          <Badge
-            badgeContent={vehicle.bid_count || 0}
-            color="error"
-            sx={{
-              "& .MuiBadge-badge": {
-                backgroundColor: "#dc2626",
-                color: "white",
-              },
-            }}
-          >
-            <TrendingUp className="text-gray-400 w-5 h-5" />
-          </Badge>
+      {/* Content Section */}
+      <div className={`p-4 flex flex-col ${viewMode === "list" ? "sm:w-3/5 lg:w-2/3 sm:p-5" : ""}`}>
+        {/* Title & Year */}
+        <div className="mb-2">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 line-clamp-1 group-hover:text-red-600 transition-colors">
+            {vehicle.make} {vehicle.model}
+          </h3>
+          <p className="text-sm text-gray-500">
+            {vehicle.year} • {vehicle.mileage?.toLocaleString() || "0"} km
+          </p>
         </div>
 
-        {/* Features */}
-        <div className="grid grid-cols-2 gap-2 mt-3 mb-4">
-          <div className="flex items-center text-sm text-gray-600">
-            <Tag className="w-4 h-4 mr-1.5 text-gray-500" />
-            <span>{vehicle.body_type || "Sedan"}</span>
+        {/* Features Grid */}
+        <div className={`grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs sm:text-sm text-gray-600 mb-3 ${
+          viewMode === "list" ? "sm:grid-cols-4" : ""
+        }`}>
+          <div className="flex items-center">
+            <Tag className="w-3.5 h-3.5 mr-1.5 text-gray-400 flex-shrink-0" />
+            <span className="truncate">{vehicle.body_type || "Sedan"}</span>
           </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <Map className="w-4 h-4 mr-1.5 text-gray-500" />
-            <span>{vehicle.location || "Auto Eden HQ"}</span>
+          <div className="flex items-center">
+            <MapPin className="w-3.5 h-3.5 mr-1.5 text-gray-400 flex-shrink-0" />
+            <span className="truncate">{vehicle.location || "Auto Eden"}</span>
           </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <Gauge className="w-4 h-4 mr-1.5 text-gray-500" />
-            <span>{vehicle.transmission || "Automatic"}</span>
+          <div className="flex items-center">
+            <Gauge className="w-3.5 h-3.5 mr-1.5 text-gray-400 flex-shrink-0" />
+            <span className="truncate">{vehicle.transmission || "Auto"}</span>
           </div>
-          <div className="flex items-center text-sm text-gray-600">
-            <DollarSign className="w-4 h-4 mr-1.5 text-gray-500" />
-            <span>{vehicle.fuel_type || "Petrol"}</span>
+          <div className="flex items-center">
+            <Fuel className="w-3.5 h-3.5 mr-1.5 text-gray-400 flex-shrink-0" />
+            <span className="truncate">{vehicle.fuel_type || "Petrol"}</span>
           </div>
         </div>
 
-        <div className="mt-auto pt-2 flex justify-between items-center">
+        {/* Price & Action */}
+        <div className="mt-auto pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
-            <span className="text-2xl font-bold text-red-600">
+            <span className="text-xl sm:text-2xl font-bold text-red-600">
               ${vehicle.price?.toLocaleString()}
             </span>
             {vehicle.discount_price && (
-              <span className="text-sm text-gray-500 line-through ml-2">
+              <span className="text-sm text-gray-400 line-through ml-2">
                 ${vehicle.discount_price?.toLocaleString()}
               </span>
             )}
           </div>
 
-          {vehicle.listing_type === "marketplace" &&
-          isAuthenticated &&
-          user?.id !== vehicle.owner?.id ? (
-            <Button
-              variant="contained"
-              size={viewMode === "grid" ? "medium" : "large"}
+          {canBid ? (
+            <button
               onClick={onClick}
-              sx={{
-                backgroundColor: "#dc2626",
-                "&:hover": {
-                  backgroundColor: "#b91c1c",
-                },
-              }}
-              className="!rounded-lg !font-medium"
+              className="w-full sm:w-auto px-5 py-2.5 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-lg hover:from-red-700 hover:to-red-600 transition-all shadow-sm hover:shadow-md active:scale-[0.98] flex items-center justify-center gap-1"
             >
               Place Bid
-            </Button>
+              <ChevronRight className="w-4 h-4" />
+            </button>
           ) : (
-            <Button
-              variant="outlined"
-              size={viewMode === "grid" ? "medium" : "large"}
-              component={Link}
+            <Link
               to={`/vehicles/${vehicle.id}`}
-              sx={{
-                color: "#dc2626",
-                borderColor: "#dc2626",
-                "&:hover": {
-                  borderColor: "#b91c1c",
-                  backgroundColor: "rgba(220, 38, 38, 0.04)",
-                },
-              }}
-              className="!rounded-lg !font-medium"
+              className="w-full sm:w-auto px-5 py-2.5 border-2 border-red-500 text-red-600 font-semibold rounded-lg hover:bg-red-50 transition-all text-center flex items-center justify-center gap-1 active:scale-[0.98]"
             >
               View Details
-            </Button>
+              <ChevronRight className="w-4 h-4" />
+            </Link>
           )}
         </div>
 
-        <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
+        {/* Posted Date */}
+        <div className="mt-2.5 flex items-center justify-between text-xs text-gray-400">
           <div className="flex items-center">
             <Clock className="w-3 h-3 mr-1" />
-            <span>
-              Posted {new Date(vehicle.created_at).toLocaleDateString()}
-            </span>
+            Posted {new Date(vehicle.created_at).toLocaleDateString()}
           </div>
           {vehicle.ending_soon && (
-            <div className="flex items-center text-red-500">
+            <div className="flex items-center text-red-500 font-medium">
               <span className="animate-pulse mr-1">●</span>
-              <span>Ending soon</span>
+              Ending soon
             </div>
           )}
         </div>
       </div>
     </motion.div>
-  );
-
-  return isMobile && viewMode === "list" ? (
-    <div className="mb-4">{cardContent}</div>
-  ) : (
-    cardContent
   );
 };
 
