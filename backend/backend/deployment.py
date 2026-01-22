@@ -10,24 +10,31 @@ load_dotenv()
 ALLOWED_HOSTS = [
     os.environ.get('RENDER_EXTERNAL_HOSTNAME'),
     'auto-eden-backend.onrender.com',
-    'https://autoeden.co.zw',
+    'autoeden.co.zw',
+    'www.autoeden.co.zw',
     'auto-eden.onrender.com',
+    'localhost',
+    '127.0.0.1',
 ]
 
-DEBUG = True
-SECRET_KEY = SECRET_KEY
+DEBUG = False
+SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
 
 # CORS SETTINGS
 CORS_ALLOWED_ORIGINS = [
     'https://auto-eden.onrender.com',
     'https://autoeden.co.zw',
+    'https://www.autoeden.co.zw',
     'https://www.auto-eden.onrender.com',
     'https://auto-eden-backend.onrender.com',
     'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
 ]
 
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
-CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization']
+CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization', 'X-CSRFToken']
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -59,7 +66,9 @@ CORS_EXPOSE_HEADERS = [
 CSRF_TRUSTED_ORIGINS = [
     'https://auto-eden.onrender.com',
     'https://autoeden.co.zw',
-    'https://auto-eden-backend.onrender.com'
+    'https://www.autoeden.co.zw',
+    'https://auto-eden-backend.onrender.com',
+    'https://www.auto-eden.onrender.com',
 ]
 
 # MIDDLEWARE CONFIGURATION
@@ -176,7 +185,8 @@ SESSION_ENGINE = 'django.contrib.sessions.backends.db'
 SESSION_COOKIE_AGE = 1209600  # 2 weeks in seconds
 SESSION_COOKIE_HTTPONLY = True
 SESSION_COOKIE_NAME = 'sessionid'
-SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SAMESITE = 'None'  # Required for cross-origin requests
+CSRF_COOKIE_SAMESITE = 'None'  # Required for cross-origin requests
 
 # File Upload Settings
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5242880  # 5MB
