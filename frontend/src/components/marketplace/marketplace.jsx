@@ -421,29 +421,22 @@ export default function MarketplacePage() {
         animate={{ opacity: 1 }}
         transition={{ duration: 0.5 }}
       >
-        {/* Animated Background Elements */}
-        <div className="absolute inset-0 opacity-10">
-          {[...Array(8)].map((_, i) => (
+        {/* Animated Background Elements - simplified for mobile performance */}
+        <div className="absolute inset-0 opacity-10 overflow-hidden">
+          {[...Array(5)].map((_, i) => (
             <motion.div
               key={i}
               className="absolute w-32 h-32 sm:w-64 sm:h-64 lg:w-96 lg:h-96 bg-white rounded-full"
-              initial={{
-                scale: 0.1,
-                x: Math.random() * window.innerWidth,
-                y: Math.random() * 400,
-                opacity: 0.1,
+              style={{
+                left: `${10 + i * 20}%`,
+                top: `${10 + (i % 3) * 30}%`,
               }}
               animate={{
-                scale: [0.1, 0.3 + Math.random() * 0.4],
-                x: [
-                  Math.random() * window.innerWidth,
-                  Math.random() * window.innerWidth,
-                ],
-                y: [Math.random() * 400, Math.random() * 400],
-                opacity: [0.1, 0.15 + Math.random() * 0.1],
+                scale: [0.5, 0.8],
+                opacity: [0.1, 0.2],
               }}
               transition={{
-                duration: 12 + Math.random() * 8,
+                duration: 8 + i * 2,
                 repeat: Infinity,
                 repeatType: "reverse",
               }}
