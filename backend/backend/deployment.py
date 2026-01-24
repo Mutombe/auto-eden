@@ -17,10 +17,14 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
-DEBUG = False
+# Enable DEBUG temporarily to see errors - disable after fixing
+DEBUG = True
 SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
 
-# CORS SETTINGS
+# CORS SETTINGS - Allow all origins temporarily to debug
+CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_CREDENTIALS = True
+
 CORS_ALLOWED_ORIGINS = [
     'https://auto-eden.onrender.com',
     'https://autoeden.co.zw',
@@ -31,10 +35,6 @@ CORS_ALLOWED_ORIGINS = [
     'http://localhost:5174',
     'http://localhost:5175',
 ]
-
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOW_CREDENTIALS = True
-CORS_EXPOSE_HEADERS = ['Content-Type', 'Authorization', 'X-CSRFToken']
 
 CORS_ALLOW_METHODS = [
     'DELETE',
@@ -60,8 +60,10 @@ CORS_ALLOW_HEADERS = [
 CORS_EXPOSE_HEADERS = [
     'content-type',
     'x-csrftoken',
-    'authorization'
+    'authorization',
 ]
+
+CORS_PREFLIGHT_MAX_AGE = 86400
 
 CSRF_TRUSTED_ORIGINS = [
     'https://auto-eden.onrender.com',
