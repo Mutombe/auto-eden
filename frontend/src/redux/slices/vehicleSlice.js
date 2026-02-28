@@ -156,10 +156,13 @@ export const updateVehicle = createAsyncThunk(
   "vehicles/update",
   async ({ id, data }, { rejectWithValue }) => {
     try {
-      const response = await api.patch(`/core/vehicles/${id}/`, data);
+      const isFormData = data instanceof FormData;
+      const response = await api.patch(`/core/vehicles/${id}/`, data, isFormData ? {
+        headers: { "Content-Type": "multipart/form-data" },
+      } : {});
       return response.data;
     } catch (err) {
-      return rejectWithValue(err.response.data);
+      return rejectWithValue(err.response?.data || "Failed to update vehicle");
     }
   }
 );
