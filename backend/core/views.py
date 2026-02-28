@@ -185,7 +185,7 @@ class PublicVehicleViewSet(viewsets.ReadOnlyModelViewSet):
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [permissions.AllowAny]
-    parser_classes = [MultiPartParser, JSONParser]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
     pagination_class = StandardPagination
 
     def get_queryset(self):

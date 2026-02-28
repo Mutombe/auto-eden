@@ -744,6 +744,9 @@ const EditVehicleModal = ({ isOpen, onClose, onSubmit, vehicle }) => {
     location: "",
     description: "",
   });
+  const [existingImages, setExistingImages] = useState([]);
+  const [newImageFiles, setNewImageFiles] = useState([]);
+  const [newImagePreviews, setNewImagePreviews] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
@@ -763,6 +766,13 @@ const EditVehicleModal = ({ isOpen, onClose, onSubmit, vehicle }) => {
         location: vehicle.location || "",
         description: vehicle.description || "",
       });
+      // Load existing images
+      const imgs = (vehicle.images || []).map((img) =>
+        typeof img === "string" ? img : img?.image
+      ).filter(Boolean);
+      setExistingImages(imgs);
+      setNewImageFiles([]);
+      setNewImagePreviews([]);
     }
   }, [vehicle]);
 
@@ -771,12 +781,44 @@ const EditVehicleModal = ({ isOpen, onClose, onSubmit, vehicle }) => {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleFileChange = (e) => {
+    if (e.target.files) {
+      const files = Array.from(e.target.files);
+      setNewImageFiles((prev) => [...prev, ...files]);
+      const previews = files.map((file) => URL.createObjectURL(file));
+      setNewImagePreviews((prev) => [...prev, ...previews]);
+    }
+    e.target.value = "";
+  };
+
+  const removeExistingImage = (index) => {
+    setExistingImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const removeNewImage = (index) => {
+    URL.revokeObjectURL(newImagePreviews[index]);
+    setNewImageFiles((prev) => prev.filter((_, i) => i !== index));
+    setNewImagePreviews((prev) => prev.filter((_, i) => i !== index));
+  };
+
   const handleSubmit = async () => {
     setLoading(true);
     setError(null);
 
     try {
-      await onSubmit(vehicle.id, formData);
+      // Use FormData so we can include image files
+      const fd = new FormData();
+      Object.entries(formData).forEach(([key, val]) => {
+        if (val !== "" && val !== null && val !== undefined) {
+          fd.append(key, val);
+        }
+      });
+      // Append new image files
+      newImageFiles.forEach((file) => {
+        fd.append("image_files", file);
+      });
+
+      await onSubmit(vehicle.id, fd);
       onClose();
     } catch (err) {
       setError(err.message || "Failed to update vehicle");
@@ -785,7 +827,16 @@ const EditVehicleModal = ({ isOpen, onClose, onSubmit, vehicle }) => {
     }
   };
 
+  // Cleanup previews on unmount
+  useEffect(() => {
+    return () => {
+      newImagePreviews.forEach((url) => URL.revokeObjectURL(url));
+    };
+  }, []);
+
   if (!isOpen || !vehicle) return null;
+
+  const totalImages = existingImages.length + newImageFiles.length;
 
   return (
     <AnimatePresence>
@@ -813,7 +864,7 @@ const EditVehicleModal = ({ isOpen, onClose, onSubmit, vehicle }) => {
                 </div>
                 <div>
                   <h3 className="text-lg font-bold text-gray-900">Edit Vehicle</h3>
-                  <p className="text-sm text-gray-500">Update vehicle details</p>
+                  <p className="text-sm text-gray-500">Update vehicle details and images</p>
                 </div>
               </div>
               <button
@@ -834,6 +885,74 @@ const EditVehicleModal = ({ isOpen, onClose, onSubmit, vehicle }) => {
             )}
 
             <div className="space-y-6">
+              {/* Vehicle Images */}
+              <div>
+                <h4 className="text-sm font-semibold text-gray-700 mb-3">
+                  Vehicle Images ({totalImages})
+                </h4>
+
+                {/* Existing Images */}
+                {existingImages.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+                    {existingImages.map((url, index) => (
+                      <div key={`existing-${index}`} className="relative group rounded-lg overflow-hidden border border-gray-200" style={{ aspectRatio: "4/3" }}>
+                        <img
+                          src={url}
+                          alt={`Vehicle ${index + 1}`}
+                          className="w-full h-full object-cover"
+                          onError={(e) => { e.target.src = "/placeholder-car.jpg"; }}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeExistingImage(index)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* New Image Previews */}
+                {newImagePreviews.length > 0 && (
+                  <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mb-3">
+                    {newImagePreviews.map((url, index) => (
+                      <div key={`new-${index}`} className="relative group rounded-lg overflow-hidden border-2 border-amber-300" style={{ aspectRatio: "4/3" }}>
+                        <img
+                          src={url}
+                          alt={`New ${index + 1}`}
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute top-1 left-1 px-1.5 py-0.5 bg-amber-500 text-white text-[10px] font-medium rounded">
+                          NEW
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => removeNewImage(index)}
+                          className="absolute top-1 right-1 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-600"
+                        >
+                          <X className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Upload Button */}
+                <label className="flex items-center justify-center gap-2 w-full px-4 py-3 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition-colors">
+                  <Plus className="w-4 h-4 text-gray-500" />
+                  <span className="text-sm text-gray-600">Add Images</span>
+                  <input
+                    type="file"
+                    accept="image/jpeg,image/png,image/jpg,image/webp"
+                    multiple
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+                </label>
+              </div>
+
               {/* Basic Info */}
               <div>
                 <h4 className="text-sm font-semibold text-gray-700 mb-3">Basic Information</h4>
