@@ -100,10 +100,10 @@ class VehicleSerializer(serializers.ModelSerializer):
     image_files = serializers.ListField(
         child=serializers.FileField(max_length=100000, allow_empty_file=False),
         write_only=True,
-        required=True
+        required=False
     )
     owner = UserSerializer(read_only=True)
-    
+
     class Meta:
         model = Vehicle
         fields = '__all__'
@@ -118,23 +118,35 @@ class VehicleSerializer(serializers.ModelSerializer):
         }
 
     def validate(self, data):
-        if data.get('listing_type') == 'marketplace' and not data.get('price'):
+        listing_type = data.get('listing_type') or (self.instance.listing_type if self.instance else None)
+        if listing_type == 'marketplace' and not data.get('price') and not (self.instance and self.instance.price):
             raise serializers.ValidationError(
                 {"price": "Price is required for marketplace listings"}
             )
-        if data.get('listing_type') == 'instant_sale' and not data.get('proposed_price'):
+        if listing_type == 'instant_sale' and not data.get('proposed_price') and not (self.instance and self.instance.proposed_price):
             raise serializers.ValidationError(
                 {"proposed_price": "Price is required for instant sale"}
             )
         return data
 
-    
     def create(self, validated_data):
-        image_files = validated_data.pop('image_files', [])  # Handle missing images gracefully
+        image_files = validated_data.pop('image_files', [])
         vehicle = super().create(validated_data)
-        
+
         for image_file in image_files:
-            # Add error handling for image creation
+            try:
+                VehicleImage.objects.create(vehicle=vehicle, image=image_file)
+            except Exception as e:
+                logger.error(f"Error creating VehicleImage: {str(e)}")
+
+        return vehicle
+
+    def update(self, instance, validated_data):
+        image_files = validated_data.pop('image_files', [])
+        vehicle = super().update(instance, validated_data)
+
+        # Only create new images if files were provided
+        for image_file in image_files:
             try:
                 VehicleImage.objects.create(vehicle=vehicle, image=image_file)
             except Exception as e:

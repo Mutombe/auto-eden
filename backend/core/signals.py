@@ -35,7 +35,7 @@ def handle_new_vehicle(sender, instance, created, **kwargs):
             settings.DEFAULT_FROM_EMAIL,
             settings.ADMIN_EMAIL,
             html_message=admin_message,
-            fail_silently=False
+            fail_silently=True
         )
 
 # New Bid Notification
@@ -53,7 +53,7 @@ def handle_new_bid(sender, instance, created, **kwargs):
             settings.DEFAULT_FROM_EMAIL,
             settings.ADMIN_EMAIL,
             html_message=admin_message,
-            fail_silently=False
+            fail_silently=True
         )
 
 @receiver(post_save, sender=Vehicle)
@@ -94,7 +94,7 @@ def check_vehicle_matches(sender, instance, created, **kwargs):
             settings.DEFAULT_FROM_EMAIL,
             [search.user.email],
             html_message=user_message,
-            fail_silently=False
+            fail_silently=True
         )
 
 @receiver(post_save, sender=User)
@@ -122,7 +122,7 @@ def handle_new_user_registration(sender, instance, created, **kwargs):
             settings.DEFAULT_FROM_EMAIL,
             settings.ADMIN_EMAIL,
             html_message=admin_message,
-            fail_silently=False
+            fail_silently=True
         )
 
         # Welcome email to user
@@ -136,7 +136,7 @@ def handle_new_user_registration(sender, instance, created, **kwargs):
             settings.DEFAULT_FROM_EMAIL,
             [instance.email],
             html_message=user_message,
-            fail_silently=False
+            fail_silently=True
         )
 
         # Create notification
@@ -160,7 +160,7 @@ def handle_vehicle_deletion(sender, instance, **kwargs):
         settings.DEFAULT_FROM_EMAIL,
         settings.ADMIN_EMAIL,
         html_message=admin_message,
-        fail_silently=False
+        fail_silently=True
     )
 
     # Email to owner if vehicle was verified
@@ -176,7 +176,7 @@ def handle_vehicle_deletion(sender, instance, **kwargs):
             settings.DEFAULT_FROM_EMAIL,
             [instance.owner.email],
             html_message=owner_message,
-            fail_silently=False
+            fail_silently=True
         )
 
 # 3. User Deletion Signal
@@ -193,7 +193,7 @@ def handle_user_deletion(sender, instance, **kwargs):
         settings.DEFAULT_FROM_EMAIL,
         settings.ADMIN_EMAIL,
         html_message=admin_message,
-        fail_silently=False
+        fail_silently=True
     )
 
 # 4. Vehicle Edited Signal
@@ -214,7 +214,7 @@ def handle_vehicle_edited(sender, instance, created, **kwargs):
             settings.DEFAULT_FROM_EMAIL,
             settings.ADMIN_EMAIL,
             html_message=admin_message,
-            fail_silently=False
+            fail_silently=True
         )
 
         # Email to owner if significant changes were made
@@ -232,7 +232,7 @@ def handle_vehicle_edited(sender, instance, created, **kwargs):
                 settings.DEFAULT_FROM_EMAIL,
                 [instance.owner.email],
                 html_message=owner_message,
-                fail_silently=False
+                fail_silently=True
             )
 
 # 5. Vehicle Physical Verification Signal
@@ -251,7 +251,7 @@ def handle_vehicle_physical_verification(sender, instance, created, **kwargs):
             settings.DEFAULT_FROM_EMAIL,
             [instance.owner.email],
             html_message=owner_message,
-            fail_silently=False
+            fail_silently=True
         )
 
         # Create notification
