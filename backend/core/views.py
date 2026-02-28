@@ -440,11 +440,10 @@ class VehicleDraftViewSet(viewsets.ModelViewSet):
             )
 
             # Handle images
-            for i, image_url in enumerate(draft.images):
+            for image_url in draft.images:
                 VehicleImage.objects.create(
                     vehicle=vehicle,
                     image=image_url,
-                    is_primary=(i == 0)
                 )
 
             # Delete the draft
@@ -600,7 +599,7 @@ class MarketplaceView(APIView):
             is_visible=True, 
             listing_type="marketplace"
         ).select_related('owner').prefetch_related('images').only(
-            'id', 'make', 'model', 'year', 'price', 'mileage', 'fuel_type',
+            'id', 'make', 'model', 'year', 'price', 'body_type', 'mileage', 'fuel_type',
             'location', 'created_at', 'owner__username'
         )
 

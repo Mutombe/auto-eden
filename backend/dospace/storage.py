@@ -19,7 +19,7 @@ class MediaStorage(S3Boto3Storage):
     def get_default_settings(self):
         settings = super().get_default_settings()
         settings.update({
-            'querystring_auth': True,
+            'querystring_auth': False,
             'url_protocol': 'https:',
         })
         return settings

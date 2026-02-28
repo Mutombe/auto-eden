@@ -12,6 +12,7 @@ from django.utils.html import format_html
 from django.utils import timezone
 from django.urls import reverse
 from django.http import HttpResponse
+from django.conf import settings
 from hijack.contrib.admin import HijackUserAdminMixin
 from .views import QuoteRequestView
 
@@ -61,22 +62,118 @@ class AdminNotificationOverview(admin.ModelAdmin):
     )
     search_fields = ("user",)
 
+class VehicleImageInline(admin.TabularInline):
+    model = VehicleImage
+    extra = 1
+    readonly_fields = ('image_preview',)
+    fields = ('image', 'image_preview')
+
+    def image_preview(self, obj):
+        if obj.image:
+            url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{obj.image.name}"
+            return format_html(
+                '<img src="{}" style="max-height: 80px; max-width: 120px; object-fit: cover; border-radius: 4px;" />',
+                url
+            )
+        return "No image"
+    image_preview.short_description = "Preview"
+
+
 class AdminVehicleOverview(admin.ModelAdmin):
     list_display = (
-        "id",
-        "owner",
-        "make",
-        "price",
+        'id', 'make', 'model', 'year', 'owner', 'price', 'proposed_price',
+        'listing_type', 'verification_badge', 'is_visible', 'created_at',
     )
-    search_fields = ("make",)
+    list_filter = ('verification_state', 'listing_type', 'is_visible', 'body_type', 'fuel_type', 'created_at')
+    search_fields = ('make', 'model', 'vin', 'owner__username', 'owner__email')
+    list_editable = ('is_visible',)
+    list_per_page = 25
+    date_hierarchy = 'created_at'
+    inlines = [VehicleImageInline]
+    actions = ['approve_digital', 'approve_physical', 'reject_vehicles']
+
+    fieldsets = (
+        ('Vehicle Information', {
+            'fields': ('owner', 'make', 'model', 'year', 'vin', 'body_type', 'fuel_type', 'transmission', 'mileage', 'location', 'description')
+        }),
+        ('Listing & Pricing', {
+            'fields': ('listing_type', 'price', 'proposed_price', 'is_visible')
+        }),
+        ('Verification', {
+            'fields': (
+                'verification_state', 'is_digitally_verified', 'digitally_verified_by', 'digitally_verified_at',
+                'is_physically_verified', 'physically_verified_by', 'physically_verified_at',
+                'is_rejected', 'rejection_reason', 'rejected_at',
+            )
+        }),
+    )
+
+    def verification_badge(self, obj):
+        colors = {
+            'pending': '#fbbf24',
+            'digital': '#3b82f6',
+            'physical': '#10b981',
+            'rejected': '#ef4444',
+        }
+        color = colors.get(obj.verification_state, '#6b7280')
+        return format_html(
+            '<span style="background-color: {}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 11px;">{}</span>',
+            color, obj.get_verification_state_display()
+        )
+    verification_badge.short_description = "Status"
+
+    @admin.action(description="Approve selected vehicles (Digital)")
+    def approve_digital(self, request, queryset):
+        updated = queryset.update(
+            verification_state='digital',
+            is_digitally_verified=True,
+            digitally_verified_by=request.user,
+            digitally_verified_at=timezone.now(),
+            is_rejected=False,
+            rejection_reason='',
+        )
+        self.message_user(request, f"{updated} vehicle(s) digitally verified.")
+
+    @admin.action(description="Approve selected vehicles (Physical)")
+    def approve_physical(self, request, queryset):
+        updated = queryset.update(
+            verification_state='physical',
+            is_physically_verified=True,
+            physically_verified_by=request.user,
+            physically_verified_at=timezone.now(),
+            is_rejected=False,
+            rejection_reason='',
+        )
+        self.message_user(request, f"{updated} vehicle(s) physically verified and now live on marketplace.")
+
+    @admin.action(description="Reject selected vehicles")
+    def reject_vehicles(self, request, queryset):
+        updated = queryset.update(
+            verification_state='rejected',
+            is_rejected=True,
+            rejected_at=timezone.now(),
+        )
+        self.message_user(request, f"{updated} vehicle(s) rejected. Edit each to add rejection reason.")
+
 
 class AdminImageOverview(admin.ModelAdmin):
     list_display = (
         "id",
-        "image",
+        "image_preview",
         "vehicle",
     )
-    search_fields = ("vehicle",)
+    search_fields = ("vehicle__make", "vehicle__model")
+    list_filter = ("vehicle__make",)
+
+    def image_preview(self, obj):
+        if obj.image:
+            url = f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{obj.image.name}"
+            return format_html(
+                '<img src="{}" style="max-height: 60px; max-width: 90px; object-fit: cover; border-radius: 4px;" />',
+                url
+            )
+        return "No image"
+    image_preview.short_description = "Preview"
 
 class AdminBidOverview(admin.ModelAdmin):
     list_display = (
