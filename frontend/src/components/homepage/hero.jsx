@@ -102,11 +102,11 @@ export default function HeroCarousel() {
   const currentData = slides[currentSlide];
 
   return (
-    // White frame around the hero: equal inset on top and sides, scaling with the screen,
-    // and the hero itself ends exactly at the fold.
-    <div className="bg-white px-2 pt-2 sm:px-3 sm:pt-3 lg:px-4 lg:pt-4">
+    // White frame around the hero: the same inset on every side, and the whole framed hero
+    // (bottom margin included) fits the first screen without scrolling.
+    <div className="bg-white p-2 sm:p-3 lg:p-4">
     <section
-      className="pacaembu-font relative isolate h-[calc(100svh-0.5rem)] sm:h-[calc(100svh-0.75rem)] lg:h-[calc(100svh-1rem)] w-full overflow-hidden bg-gray-900 rounded-lg lg:rounded-xl"
+      className="pacaembu-font relative isolate h-[calc(100svh-1rem)] sm:h-[calc(100svh-1.5rem)] lg:h-[calc(100svh-2rem)] w-full overflow-hidden bg-gray-900 rounded-lg lg:rounded-xl"
       aria-label="Featured vehicles carousel"
       role="region"
       onTouchStart={handleTouchStart}
