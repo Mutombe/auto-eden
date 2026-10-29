@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import Pattern from "../ui/Pattern";
+import Pattern, { HeroPattern } from "../ui/Pattern";
 import {
   ArrowRight,
   BadgeCheck,
@@ -65,7 +65,7 @@ export default function AboutPage() {
       {/* Hero */}
       <section className="relative isolate overflow-hidden bg-gray-950 text-white">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(55%_80%_at_85%_20%,rgba(220,38,38,0.35),transparent_65%)]" />
-        <Pattern variant="circuit" fade="right" className="-z-10 text-white/[0.09]" />
+        <HeroPattern />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-28 sm:pt-36 pb-12 sm:pb-16">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }} className="max-w-3xl">
             <span className="inline-flex items-center gap-2 h-7 px-3 rounded-md bg-white/10 ring-1 ring-inset ring-white/15 text-[12.5px] font-medium text-white/85">
@@ -188,7 +188,7 @@ export default function AboutPage() {
 
       {/* How it works */}
       <section className="relative isolate overflow-hidden bg-[#f6f7f9] py-16 lg:py-28" aria-labelledby="how-it-works">
-        <Pattern variant="contour" fade="top" className="-z-10 text-gray-200" />
+        <Pattern variant="grid" fade="radial" className="-z-10 text-gray-200" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-6">
             <div>
@@ -273,7 +273,7 @@ export default function AboutPage() {
       {/* CTA */}
       <section className="px-2 sm:px-3 lg:px-4 pb-2 sm:pb-3 lg:pb-4">
         <div className="relative isolate overflow-hidden rounded-xl bg-red-600 text-white">
-          <Pattern variant="contour" fade="none" className="-z-10 text-white/[0.12]" />
+          <Pattern variant="grid" fade="right" className="-z-10 text-white/[0.12]" />
           <div className="max-w-4xl mx-auto px-5 py-16 lg:py-24 text-center">
             <h2 className="text-3xl sm:text-5xl font-semibold tracking-tight">Ready when you are</h2>
             <p className="mt-4 text-lg text-white/80 max-w-xl mx-auto">Join thousands of Zimbabweans who buy and sell with Auto Eden. It's free, it's simple and it works.</p>

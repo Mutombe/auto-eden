@@ -1,39 +1,29 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'react-toastify';
-import { useMarketplace, useVehicle, prefetchVehicle } from "../../lib/publicApi";
+import { useMarketplace, useVehicle } from "../../lib/publicApi";
 import { formatNumber, formatPrice } from "../../lib/progressive";
 import ProgressiveImage from "../ui/ProgressiveImage";
 import Bone from "../ui/Bone";
-import { SpecsSkeleton, VehicleCardSkeleton, VehicleDetailSkeleton } from "../skeletons/PageSkeletons";
+import { VehicleDetailSkeleton } from "../skeletons/PageSkeletons";
 import { placeBid } from "../../redux/slices/bidSlice";
 import { AuthModals } from "../navbar/navbar";
-import { DollarSign, Gauge, Tag, Shield, TrendingUp, ArrowLeft, X, Share2, Heart, Eye, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight, Phone, Mail, Star, Zap, Info, Camera, MapPin, Fuel, Facebook, Copy, Loader2, Sparkles, MessageCircle, XLogo, WhatsappLogo } from "../ui/icons";
+import {
+  AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, Calendar, Camera, Car, Check, ChevronLeft, ChevronRight, Copy,
+  DollarSign, Facebook, Fuel, Gauge, Loader2, Mail, MapPin, Phone, Settings2, Share2, ShieldCheck,
+  WhatsappLogo, X, XLogo,
+} from "../ui/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import ImagePreview, { useImagePreview } from "../imagePreviewing";
 import useTracking from "../../hooks/useTracking";
-import VehicleCard from "./vehicleCard";
+import ListingCard, { ListingCardSkeleton, titleCase, formatKm } from "../vehicles/ListingCard";
+import { HeroPattern } from "../ui/Pattern";
 import QuoteRequestModal from "./quoteRequestModal";
 
-// Mock data for seller info
-const mockSellerInfo = {
-  name: "Auto Eden Motors",
-  rating: 4.8,
-  reviewCount: 247,
-  verified: true,
-  location: "Harare, Zimbabwe",
-  phone: "+263 77 123 4567",
-  email: "contact@autoeden.co.zw",
-};
-
-const mockHistory = [
-  { date: "2024-01-15", event: "Listed for sale", status: "info" },
-  { date: "2024-01-10", event: "Physically verified", status: "success" },
-  { date: "2024-01-05", event: "Digitally verified", status: "success" },
-  { date: "2024-01-01", event: "Vehicle uploaded", status: "info" },
-];
+// Auto Eden handles every enquiry; these match the contact page.
+const CONTACT = { phone: "+263 78 222 2032", email: "admin@autoeden.co.zw" };
 
 // SEO Meta Tags Component
 function VehicleMetaTags({ vehicle }) {
@@ -91,32 +81,67 @@ function VehicleMetaTags({ vehicle }) {
   );
 }
 
-// Stat Card Component - Mobile Optimized
-const StatCard = ({ icon: Icon, label, value, color = "text-gray-400" }) => (
-  <div className="bg-white/10 backdrop-blur-sm rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-    <div className={`p-1.5 sm:p-2 rounded-lg bg-white/10 ${color}`}>
-      <Icon size={16} className="sm:w-5 sm:h-5" />
-    </div>
-    <div className="min-w-0 flex-1">
-      <p className="text-gray-400 text-[10px] sm:text-xs uppercase tracking-wide truncate">{label}</p>
-      <p className="text-white font-semibold text-sm sm:text-base truncate">{value}</p>
-    </div>
-  </div>
-);
+const capitalise = (s) => s && titleCase(String(s)).replace(/^./, (c) => c.toUpperCase());
+const fmtDate = (d) => d && new Date(d).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" });
 
-// Tab Button Component
-const TabButton = ({ active, children, onClick }) => (
-  <button
-    onClick={onClick}
-    className={`px-4 sm:px-5 py-3 font-medium text-sm transition-all whitespace-nowrap flex-shrink-0 ${
-      active
-        ? "text-red-500 border-b-2 border-red-500 bg-red-50/50"
-        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50 active:bg-gray-100"
-    }`}
-  >
-    {children}
-  </button>
-);
+const card = "bg-white rounded-xl ring-1 ring-gray-200/80";
+
+function verification(vehicle) {
+  if (vehicle.verification_state === "physical" || vehicle.is_physically_verified)
+    return { label: "Inspected by Auto Eden", tone: "bg-emerald-500/15 text-emerald-300 ring-emerald-400/30" };
+  if (vehicle.verification_state === "digital" || vehicle.is_digitally_verified)
+    return { label: "Details checked", tone: "bg-sky-500/15 text-sky-300 ring-sky-400/30" };
+  return null;
+}
+
+function OfferForm({ amount, setAmount, message, setMessage, placing, onSubmit, price }) {
+  const quick = price ? [0.9, 0.95].map((f) => Math.round((price * f) / 50) * 50) : [];
+  return (
+    <form onSubmit={(e) => { e.preventDefault(); onSubmit(); }} className="space-y-3">
+      <label className="block">
+        <span className="block text-[13px] font-medium text-gray-700 mb-1.5">Your offer (USD)</span>
+        <div className="relative">
+          <DollarSign className="absolute left-3.5 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+          <input
+            type="number"
+            inputMode="numeric"
+            min="1"
+            placeholder={price ? String(Math.round(price)) : "Amount"}
+            value={amount}
+            onChange={(e) => setAmount(e.target.value)}
+            className="w-full h-12 pl-10 pr-4 rounded-lg ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 outline-none text-[16px] font-medium tabular-nums"
+          />
+        </div>
+      </label>
+      {quick.length > 0 && (
+        <div className="flex gap-2">
+          {quick.map((q) => (
+            <button key={q} type="button" onClick={() => setAmount(String(q))} className="flex-1 h-9 rounded-lg bg-gray-100 hover:bg-gray-200 text-[13px] font-medium text-gray-700 tabular-nums">
+              {formatPrice(q)}
+            </button>
+          ))}
+        </div>
+      )}
+      <label className="block">
+        <span className="block text-[13px] font-medium text-gray-700 mb-1.5">Message <span className="text-gray-400 font-normal">(optional)</span></span>
+        <textarea
+          placeholder="When could you view it? Paying cash?"
+          value={message}
+          onChange={(e) => setMessage(e.target.value)}
+          rows={3}
+          className="w-full px-3.5 py-3 rounded-lg ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 outline-none resize-none text-[15px]"
+        />
+      </label>
+      <button
+        type="submit"
+        disabled={placing || !amount}
+        className="w-full h-12 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 transition-colors"
+      >
+        {placing ? <><Loader2 className="animate-spin" size={18} /> Sending…</> : "Send offer"}
+      </button>
+    </form>
+  );
+}
 
 export default function CarDetailsPage() {
   const { vehicleId } = useParams();
@@ -133,7 +158,7 @@ export default function CarDetailsPage() {
   const { data: market } = useMarketplace({ page: 1 });
   const marketplaceVehicles = market?.results || [];
 
-  const { isAuthenticated } = useSelector((state) => state.auth);
+  const { isAuthenticated, user } = useSelector((state) => state.auth);
   const { placing } = useSelector((state) => state.bids);
 
   const [bidAmount, setBidAmount] = useState("");
@@ -142,25 +167,21 @@ export default function CarDetailsPage() {
   const [showShareModal, setShowShareModal] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [authModal, setAuthModal] = useState(null);
-  const [activeTab, setActiveTab] = useState(0);
-  const [isWishlisted, setIsWishlisted] = useState(false);
-  const [viewCount] = useState(1247);
   const [showMobileBidSection, setShowMobileBidSection] = useState(false);
+  const [expanded, setExpanded] = useState(false);
 
+  // Same make or body type first, then anything else, so the row is always full.
   const recommendations = useMemo(() => {
     if (!vehicle) return [];
-    return marketplaceVehicles
-      .filter(
-        (v) =>
-          v.id !== vehicle.id &&
-          (v.make === vehicle.make || v.body_type === vehicle.body_type)
-      )
-      .slice(0, 4);
+    const others = marketplaceVehicles.filter((v) => String(v.id) !== String(vehicle.id));
+    const close = others.filter((v) => v.make === vehicle.make || (vehicle.body_type && v.body_type === vehicle.body_type));
+    return [...close, ...others.filter((v) => !close.includes(v))].slice(0, 4);
   }, [marketplaceVehicles, vehicle]);
 
   // New vehicle (e.g. from "Similar vehicles"): start at its first photo.
   useEffect(() => {
     setCurrentImageIndex(0);
+    setExpanded(false);
   }, [vehicleId]);
 
   const images = vehicle?.images?.length ? vehicle.images : [];
@@ -174,6 +195,12 @@ export default function CarDetailsPage() {
       if (src) new Image().src = src;
     });
   }, [currentImageIndex, images]);
+
+  // Keep the active thumbnail in view.
+  const thumbs = useRef(null);
+  useEffect(() => {
+    thumbs.current?.children[currentImageIndex]?.scrollIntoView({ block: "nearest", inline: "nearest", behavior: "smooth" });
+  }, [currentImageIndex]);
 
   // Swipe left/right on the main photo (phones).
   const touch = useRef(null);
@@ -198,7 +225,7 @@ export default function CarDetailsPage() {
       )
         .unwrap()
         .then(() => {
-          toast.success("Your bid has been placed successfully!");
+          toast.success("Offer sent. We'll let you know when the seller replies.");
           setBidAmount("");
           setBidMessage("");
           setShowMobileBidSection(false);
@@ -227,13 +254,13 @@ export default function CarDetailsPage() {
 
     switch (platform) {
       case "facebook":
-        window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, "_blank");
+        window.open(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`, "_blank");
         break;
       case "twitter":
-        window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, "_blank");
+        window.open(`https://twitter.com/intent/tweet?url=${encodeURIComponent(url)}&text=${encodeURIComponent(title)}`, "_blank");
         break;
       case "whatsapp":
-        window.open(`https://wa.me/?text=${title} - ${url}`, "_blank");
+        window.open(`https://wa.me/?text=${encodeURIComponent(`${title} - ${url}`)}`, "_blank");
         break;
       case "copy":
         navigator.clipboard.writeText(url);
@@ -243,27 +270,23 @@ export default function CarDetailsPage() {
     setShowShareModal(false);
   };
 
-  const getVerificationBadge = (vehicle) => {
-    if (vehicle.verification_state === "physical") {
-      return { icon: CheckCircle, text: "Physically Verified", color: "text-green-400", bg: "bg-green-500/20" };
-    } else if (vehicle.is_digitally_verified) {
-      return { icon: Shield, text: "Digitally Verified", color: "text-blue-400", bg: "bg-blue-500/20" };
-    } else if (vehicle.is_rejected) {
-      return { icon: XCircle, text: "Rejected", color: "text-red-400", bg: "bg-red-500/20" };
+  // Phones get the system share sheet; everything else gets ours.
+  const share = () => {
+    if (navigator.share && window.matchMedia("(pointer: coarse)").matches) {
+      navigator.share({ title: `${vehicle.year} ${vehicle.make} ${vehicle.model}`, url: window.location.href }).catch(() => {});
+    } else {
+      setShowShareModal(true);
     }
-    return { icon: AlertCircle, text: "Pending", color: "text-yellow-400", bg: "bg-yellow-500/20" };
   };
-
-  const tabs = ["Overview", "Features", "Seller", "History"];
 
   if (!vehicle && isError) {
     return (
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
-        <div className="bg-white rounded-2xl shadow-sm p-8 text-center max-w-sm w-full">
+      <div className="min-h-screen bg-[#f6f7f9] flex items-center justify-center px-4">
+        <div className={`${card} p-8 text-center max-w-sm w-full`}>
           <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
           <h1 className="text-lg font-semibold text-gray-900 mb-1">Vehicle not available</h1>
           <p className="text-sm text-gray-500 mb-5">It may have been sold or removed.</p>
-          <button onClick={() => navigate("/marketplace")} className="px-5 py-2.5 bg-red-600 text-white rounded-xl font-medium">
+          <button onClick={() => navigate("/marketplace")} className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium">
             Browse the marketplace
           </button>
         </div>
@@ -273,109 +296,115 @@ export default function CarDetailsPage() {
 
   if (!vehicle) return <VehicleDetailSkeleton />;
 
-  const badge = getVerificationBadge(vehicle);
-  const BadgeIcon = badge.icon;
+  const name = titleCase(`${vehicle.make} ${vehicle.model}`);
+  const instant = vehicle.listing_type === "instant_sale";
+  const price = Number(instant ? vehicle.proposed_price || vehicle.price : vehicle.price || vehicle.proposed_price) || 0;
+  const km = formatKm(vehicle.mileage);
+  const badge = verification(vehicle);
+  const isOwner = isAuthenticated && vehicle.owner?.id && user?.id === vehicle.owner.id;
+  const canOffer = vehicle.listing_type === "marketplace" && !isOwner;
+  const description = vehicle.description?.trim();
+  const longDescription = description && description.length > 420;
+
+  const specs = [
+    { icon: Calendar, label: "Year", value: vehicle.year },
+    { icon: Gauge, label: "Mileage", value: km },
+    { icon: Fuel, label: "Fuel", value: capitalise(vehicle.fuel_type) },
+    { icon: Settings2, label: "Gearbox", value: capitalise(vehicle.transmission) },
+    { icon: Car, label: "Body", value: capitalise(vehicle.body_type) },
+    { icon: MapPin, label: "Location", value: capitalise(vehicle.location) },
+  ];
+
+  // Built from the record's own dates; steps not reached yet show as upcoming.
+  const timeline = [
+    { label: "Listed on Auto Eden", date: vehicle.created_at, done: true },
+    { label: "Details and VIN checked", date: vehicle.digitally_verified_at, done: vehicle.is_digitally_verified || vehicle.verification_state === "digital" || vehicle.verification_state === "physical" },
+    { label: "Inspected in person", date: vehicle.physically_verified_at, done: vehicle.is_physically_verified || vehicle.verification_state === "physical" },
+  ];
+
+  const contactRow = (
+    <div className="grid grid-cols-3 gap-2">
+      <a href={`tel:${CONTACT.phone.replace(/\s/g, "")}`} className="flex flex-col items-center gap-1 rounded-lg bg-gray-50 ring-1 ring-gray-200/80 py-2.5 text-[12px] font-medium text-gray-700 hover:bg-gray-100">
+        <Phone size={18} /> Call
+      </a>
+      <a
+        href={`https://wa.me/${CONTACT.phone.replace(/\D/g, "")}?text=${encodeURIComponent(`Hi Auto Eden, I'm interested in the ${vehicle.year} ${name} (${window.location.href})`)}`}
+        target="_blank"
+        rel="noreferrer"
+        className="flex flex-col items-center gap-1 rounded-lg bg-gray-50 ring-1 ring-gray-200/80 py-2.5 text-[12px] font-medium text-gray-700 hover:bg-gray-100"
+      >
+        <WhatsappLogo size={18} className="text-emerald-600" /> WhatsApp
+      </a>
+      <a
+        href={`mailto:${CONTACT.email}?subject=${encodeURIComponent(`${vehicle.year} ${name} (#${vehicle.id})`)}`}
+        className="flex flex-col items-center gap-1 rounded-lg bg-gray-50 ring-1 ring-gray-200/80 py-2.5 text-[12px] font-medium text-gray-700 hover:bg-gray-100"
+      >
+        <Mail size={18} /> Email
+      </a>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-100 pb-28 lg:pb-0">
+    <div className="pacaembu-font min-h-screen bg-[#f6f7f9] pb-28 lg:pb-0">
       <VehicleMetaTags vehicle={vehicle} />
 
-      {/* Dark Hero Header */}
-      <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-red-900 pt-16 sm:pt-20 pb-6 sm:pb-8">
-        <div className="max-w-7xl mx-auto px-3 sm:px-4">
-          {/* Navigation */}
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
+      {/* Header */}
+      <header className="relative isolate overflow-hidden bg-gray-950 text-white">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(70%_120%_at_85%_0%,rgba(220,38,38,0.32),transparent_60%)]" />
+        <HeroPattern />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-6 sm:pb-8">
+          <div className="flex items-center justify-between gap-3">
             <button
-              onClick={() => navigate(-1)}
-              className="flex items-center gap-1.5 sm:gap-2 text-gray-400 hover:text-white transition-colors py-2 -ml-2 pl-2 pr-3 rounded-lg active:bg-white/10"
+              onClick={() => (window.history.length > 1 ? navigate(-1) : navigate("/marketplace"))}
+              className="inline-flex items-center gap-1.5 -ml-2 px-2 py-1.5 rounded-lg text-sm text-white/65 hover:text-white hover:bg-white/10 transition-colors"
             >
-              <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
-              <span className="text-sm sm:text-base">Back</span>
+              <ArrowLeft size={16} /> Back to cars
             </button>
-
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="hidden sm:flex items-center text-gray-400 text-sm">
-                <Eye size={16} className="mr-1" />
-                <span>{viewCount.toLocaleString()} views</span>
-              </div>
-
-              <button
-                onClick={() => setIsWishlisted(!isWishlisted)}
-                className="p-2.5 sm:p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95"
-              >
-                <Heart
-                  size={18}
-                  weight={isWishlisted ? "fill" : "duotone"}
-                  className={`sm:w-5 sm:h-5 ${isWishlisted ? "text-red-500" : "text-gray-400"}`}
-                />
-              </button>
-
-              <button
-                onClick={() => setShowShareModal(true)}
-                className="p-2.5 sm:p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors active:scale-95"
-              >
-                <Share2 size={18} className="sm:w-5 sm:h-5 text-gray-400" />
-              </button>
-            </div>
+            <button
+              onClick={share}
+              className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white/10 hover:bg-white/15 ring-1 ring-white/10 text-sm text-white/90 transition-colors"
+            >
+              <Share2 size={16} /> Share
+            </button>
           </div>
 
-          {/* Vehicle Title & Badge */}
-          <div className="mb-4 sm:mb-6">
-            <div className="flex flex-wrap items-center gap-2 mb-2">
-              <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-full ${badge.bg}`}>
-                <BadgeIcon size={14} className={badge.color} />
-                <span className={`text-xs font-medium ${badge.color}`}>{badge.text}</span>
+          <div className="mt-5 sm:mt-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2 mb-2.5">
+                {badge && (
+                  <span className={`inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] font-medium ring-1 ${badge.tone}`}>
+                    <BadgeCheck size={14} weight="fill" /> {badge.label}
+                  </span>
+                )}
+                <span className="inline-flex items-center rounded-md px-2 py-1 text-[12px] font-medium ring-1 ring-white/15 bg-white/5 text-white/75">
+                  {instant ? "Sold by Auto Eden" : "Open to offers"}
+                </span>
               </div>
-              {vehicle.listing_type === "marketplace" && (
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-red-500/20 text-red-400 text-xs font-medium">
-                  <TrendingUp size={12} />
-                  <span>Marketplace</span>
-                </div>
-              )}
+              <p className="text-white/55 text-sm">{vehicle.year}</p>
+              <h1 className="text-[28px] sm:text-4xl lg:text-5xl font-semibold tracking-tight leading-[1.1]">{name}</h1>
+              <p className="mt-2 text-sm text-white/60 flex flex-wrap gap-x-3 gap-y-1">
+                {[km, capitalise(vehicle.transmission), capitalise(vehicle.location)].filter(Boolean).map((t, i) => (
+                  <span key={i} className="inline-flex items-center gap-3">{i > 0 && <span className="w-1 h-1 rounded-full bg-white/30" />}{t}</span>
+                ))}
+              </p>
             </div>
-
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl xl:text-5xl font-bold text-white mb-3 sm:mb-4 leading-tight">
-              {vehicle.year} {vehicle.make} {vehicle.model}
-            </h1>
-
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4">
-              <div className="bg-gradient-to-r from-red-600 to-red-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold text-xl sm:text-2xl lg:text-3xl shadow-lg shadow-red-500/30">
-                {formatPrice(vehicle.price)}
-              </div>
-              {vehicle.bid_count > 0 && (
-                <div className="flex items-center gap-1.5 text-gray-300 text-sm">
-                  <Sparkles size={16} className="text-yellow-400" />
-                  <span>{vehicle.bid_count} {vehicle.bid_count === 1 ? 'bid' : 'bids'}</span>
-                </div>
-              )}
+            <div className="hidden lg:block text-right shrink-0">
+              <p className="text-[12px] uppercase tracking-[0.14em] text-white/50">{instant ? "Price" : "Asking price"}</p>
+              <p className="text-4xl font-semibold tabular-nums">{price ? formatPrice(price) : "On request"}</p>
             </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-            <StatCard icon={Gauge} label="Mileage" value={`${formatNumber(vehicle.mileage)} km`} color="text-blue-400" />
-            <StatCard icon={Tag} label="Body Type" value={vehicle.body_type || "Sedan"} color="text-green-400" />
-            <StatCard icon={MapPin} label="Location" value={vehicle.location || "Auto Eden"} color="text-purple-400" />
-            <StatCard icon={Fuel} label="Fuel Type" value={vehicle.fuel_type || "Petrol"} color="text-orange-400" />
           </div>
         </div>
-      </div>
+      </header>
 
-      {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-          {/* Left Column - Images & Tabs */}
-          <div className="lg:col-span-2 min-w-0 space-y-4 sm:space-y-6">
-            {/* Image Gallery */}
-            <motion.div
-              className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5 }}
-            >
-              <div className="relative">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px] gap-4 sm:gap-6 lg:gap-8 items-start">
+          {/* Left column */}
+          <div className="min-w-0 space-y-4 sm:space-y-6">
+            {/* Gallery */}
+            <section className={`${card} overflow-hidden p-1.5 sm:p-2`} aria-label="Photos">
+              <div className="relative rounded-lg overflow-hidden bg-gray-100">
                 <div
-                  className="aspect-[4/3] sm:aspect-video cursor-pointer select-none touch-pan-y"
+                  className="aspect-[4/3] sm:aspect-[16/10] cursor-zoom-in select-none touch-pan-y"
                   onClick={() => images.length && handleImageClick(currentImageIndex)}
                   onTouchStart={onTouchStart}
                   onTouchEnd={onTouchEnd}
@@ -389,455 +418,275 @@ export default function CarDetailsPage() {
                   />
                 </div>
 
-                {/* Image Counter */}
-                <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
-                  <div className="bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm flex items-center gap-1">
-                    <Camera size={12} className="sm:w-3.5 sm:h-3.5" />
-                    <span>{currentImageIndex + 1}/{imageCount}</span>
-                  </div>
-                </div>
+                <span className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-md bg-gray-950/70 backdrop-blur px-2 py-1 text-[12px] font-medium text-white tabular-nums">
+                  <Camera size={13} /> {currentImageIndex + 1} / {imageCount}
+                </span>
 
-                {/* Navigation Arrows */}
                 {images.length > 1 && (
                   <>
                     <button
                       aria-label="Previous photo"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        goTo(currentImageIndex - 1);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); goTo(currentImageIndex - 1); }}
                       disabled={currentImageIndex === 0}
-                      className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-2.5 rounded-full bg-black/50 text-white disabled:opacity-30 hover:bg-black/70 active:scale-95 transition-all"
+                      className="absolute left-2 sm:left-3 top-1/2 -translate-y-1/2 grid place-items-center w-10 h-10 rounded-full bg-white/90 text-gray-900 shadow-md disabled:opacity-0 hover:bg-white transition-all"
                     >
-                      <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
+                      <ChevronLeft size={20} />
                     </button>
                     <button
                       aria-label="Next photo"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        goTo(currentImageIndex + 1);
-                      }}
+                      onClick={(e) => { e.stopPropagation(); goTo(currentImageIndex + 1); }}
                       disabled={currentImageIndex === images.length - 1}
-                      className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-2.5 rounded-full bg-black/50 text-white disabled:opacity-30 hover:bg-black/70 active:scale-95 transition-all"
+                      className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 grid place-items-center w-10 h-10 rounded-full bg-white/90 text-gray-900 shadow-md disabled:opacity-0 hover:bg-white transition-all"
                     >
-                      <ChevronRight size={20} className="sm:w-6 sm:h-6" />
+                      <ChevronRight size={20} />
                     </button>
                   </>
                 )}
               </div>
 
-              {/* Thumbnail Strip */}
               {isPartial ? (
-                <div className="p-3 sm:p-4 border-t border-gray-100 flex gap-2 overflow-hidden">
-                  {Array.from({ length: 6 }).map((_, i) => <Bone key={i} className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg shrink-0" />)}
+                <div className="pt-2 flex gap-2 overflow-hidden">
+                  {Array.from({ length: 6 }).map((_, i) => <Bone key={i} className="w-20 sm:w-24 aspect-[4/3] rounded-md shrink-0" />)}
                 </div>
               ) : images.length > 1 && (
-                <div className="p-3 sm:p-4 border-t border-gray-100">
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 py-1">
-                    {images.map((img, index) => (
-                      <button
-                        key={img.id ?? index}
-                        aria-label={`Show photo ${index + 1}`}
-                        onClick={() => setCurrentImageIndex(index)}
-                        className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all active:scale-95 ${
-                          currentImageIndex === index ? "border-red-500 ring-2 ring-red-500/30" : "border-transparent hover:border-gray-300"
-                        }`}
-                      >
-                        <ProgressiveImage src={img.image} className="w-full h-full" alt="" draggable={false} />
-                      </button>
-                    ))}
-                  </div>
+                <div ref={thumbs} className="pt-2 flex gap-2 overflow-x-auto no-scrollbar">
+                  {images.map((img, index) => (
+                    <button
+                      key={img.id ?? index}
+                      aria-label={`Show photo ${index + 1}`}
+                      onClick={() => setCurrentImageIndex(index)}
+                      className={`relative shrink-0 w-20 sm:w-24 aspect-[4/3] rounded-md overflow-hidden transition-opacity ${
+                        currentImageIndex === index ? "ring-2 ring-red-600 ring-offset-1" : "opacity-60 hover:opacity-100"
+                      }`}
+                    >
+                      <ProgressiveImage src={img.image} className="w-full h-full" alt="" draggable={false} />
+                    </button>
+                  ))}
                 </div>
               )}
-            </motion.div>
+            </section>
 
-            {/* Tabs Section */}
-            <motion.div
-              className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-            >
-              <div className="flex overflow-x-auto border-b border-gray-100 scrollbar-hide">
-                {tabs.map((tab, index) => (
-                  <TabButton key={tab} active={activeTab === index} onClick={() => setActiveTab(index)}>
-                    {tab}
-                  </TabButton>
+            {/* Price + actions on phones (desktop has the sticky panel) */}
+            <section className={`${card} p-4 lg:hidden`}>
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[12px] uppercase tracking-[0.12em] text-gray-500">{instant ? "Price" : "Asking price"}</p>
+                  <p className="text-[28px] font-semibold text-gray-900 tabular-nums leading-tight">{price ? formatPrice(price) : "On request"}</p>
+                </div>
+                {vehicle.bid_count > 0 && (
+                  <span className="rounded-md bg-red-50 text-red-700 px-2 py-1 text-[12px] font-medium">
+                    {vehicle.bid_count} {vehicle.bid_count === 1 ? "offer" : "offers"} so far
+                  </span>
+                )}
+              </div>
+              <div className="mt-4">{contactRow}</div>
+            </section>
+
+            {/* Specs */}
+            <section className={`${card} p-4 sm:p-6`} aria-labelledby="specs">
+              <h2 id="specs" className="text-lg font-semibold text-gray-900">Key details</h2>
+              <dl className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+                {specs.map(({ icon: Icon, label, value }) => (
+                  <div key={label} className="rounded-lg bg-gray-50 ring-1 ring-gray-100 p-3 sm:p-3.5">
+                    <dt className="flex items-center gap-1.5 text-[12px] text-gray-500"><Icon size={14} /> {label}</dt>
+                    <dd className="mt-1 text-[15px] font-medium text-gray-900 truncate">{isPartial && !value ? <Bone className="h-4 w-16" /> : value || "—"}</dd>
+                  </div>
                 ))}
-              </div>
+              </dl>
+            </section>
 
-              <div className="p-4 sm:p-6">
-                {/* Overview Tab */}
-                {activeTab === 0 && isPartial && <SpecsSkeleton />}
-                {activeTab === 0 && !isPartial && (
-                  <div className="space-y-5 sm:space-y-6">
-                    <div>
-                      <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Description</h3>
-                      <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
-                        {vehicle.description || "No description provided for this vehicle."}
-                      </p>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-                      <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-                        <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">Key Specifications</h4>
-                        <div className="space-y-2">
-                          {[
-                            { label: "Year", value: vehicle.year },
-                            { label: "Make", value: vehicle.make },
-                            { label: "Model", value: vehicle.model },
-                            { label: "Mileage", value: `${formatNumber(vehicle.mileage)} km` },
-                          ].map((item) => (
-                            <div key={item.label} className="flex justify-between text-xs sm:text-sm">
-                              <span className="text-gray-500">{item.label}</span>
-                              <span className="text-gray-900 font-medium">{item.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      <div className="bg-gray-50 rounded-xl p-3 sm:p-4">
-                        <h4 className="font-medium text-gray-900 mb-2 sm:mb-3 text-sm sm:text-base">Vehicle Details</h4>
-                        <div className="space-y-2">
-                          {[
-                            { label: "Body Type", value: vehicle.body_type || "N/A" },
-                            { label: "Fuel Type", value: vehicle.fuel_type || "N/A" },
-                            { label: "Transmission", value: vehicle.transmission || "N/A" },
-                            { label: "Location", value: vehicle.location || "N/A" },
-                          ].map((item) => (
-                            <div key={item.label} className="flex justify-between text-xs sm:text-sm">
-                              <span className="text-gray-500">{item.label}</span>
-                              <span className="text-gray-900 font-medium truncate ml-2">{item.value}</span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* Features Tab */}
-                {activeTab === 1 && (
-                  <div>
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Vehicle Features</h3>
-                    <p className="text-gray-600 text-sm sm:text-base">
-                      {vehicle.description || "Feature list not available for this vehicle."}
-                    </p>
-                  </div>
-                )}
-
-                {/* Seller Tab */}
-                {activeTab === 2 && (
-                  <div className="space-y-5 sm:space-y-6">
-                    <div className="flex items-start gap-3 sm:gap-4">
-                      <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gradient-to-br from-red-500 to-red-600 text-white rounded-full flex items-center justify-center text-lg sm:text-xl font-bold shadow-lg flex-shrink-0">
-                        {mockSellerInfo.name.charAt(0)}
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-1.5 sm:gap-2 mb-1">
-                          <h3 className="text-lg sm:text-xl font-bold text-gray-900 truncate">{mockSellerInfo.name}</h3>
-                          {mockSellerInfo.verified && <CheckCircle className="text-green-500 flex-shrink-0" size={18} />}
-                        </div>
-                        <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 mb-1 text-sm">
-                          <Star weight="fill" className="text-yellow-400 flex-shrink-0" size={14} />
-                          <span className="font-medium">{mockSellerInfo.rating}</span>
-                          <span className="text-gray-400">({mockSellerInfo.reviewCount} reviews)</span>
-                        </div>
-                        <div className="flex items-center text-gray-500 text-xs sm:text-sm">
-                          <MapPin size={12} className="mr-1 flex-shrink-0" />
-                          <span className="truncate">{mockSellerInfo.location}</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2 sm:gap-3">
-                      <button
-                        onClick={() => window.open(`tel:${mockSellerInfo.phone}`)}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-3 sm:py-3.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl transition-colors"
-                      >
-                        <Phone size={18} className="text-gray-600" />
-                        <span className="font-medium text-gray-700 text-xs sm:text-sm">Call</span>
-                      </button>
-                      <button
-                        onClick={() => window.open(`mailto:${mockSellerInfo.email}`)}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-3 sm:py-3.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl transition-colors"
-                      >
-                        <Mail size={18} className="text-gray-600" />
-                        <span className="font-medium text-gray-700 text-xs sm:text-sm">Email</span>
-                      </button>
-                      <button
-                        onClick={() => window.open(`https://wa.me/${mockSellerInfo.phone.replace(/\D/g, "")}`)}
-                        className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-3 sm:py-3.5 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-xl transition-colors"
-                      >
-                        <WhatsappLogo size={18} className="text-green-600" />
-                        <span className="font-medium text-green-700 text-xs sm:text-sm">WhatsApp</span>
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* History Tab */}
-                {activeTab === 3 && (
-                  <div className="space-y-3 sm:space-y-4">
-                    <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Vehicle Timeline</h3>
-                    {mockHistory.map((item, index) => (
-                      <div key={index} className="flex items-start gap-3 sm:gap-4 pb-3 sm:pb-4 border-b border-gray-100 last:border-b-0">
-                        <div className={`p-1.5 sm:p-2 rounded-full flex-shrink-0 ${item.status === "success" ? "bg-green-100" : "bg-blue-100"}`}>
-                          {item.status === "success" ? (
-                            <CheckCircle className="text-green-600" size={16} />
-                          ) : (
-                            <Info className="text-blue-600" size={16} />
-                          )}
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium text-gray-900 text-sm sm:text-base">{item.event}</p>
-                          <p className="text-xs sm:text-sm text-gray-500">{new Date(item.date).toLocaleDateString()}</p>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </motion.div>
-          </div>
-
-          {/* Right Column - Bid Section (Desktop) */}
-          <div className="hidden lg:block lg:col-span-1">
-            <motion.div
-              className="bg-white rounded-2xl shadow-sm p-6 sticky top-24"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-            >
-              {vehicle.listing_type === "marketplace" ? (
-                <div className="space-y-5">
-                  <div>
-                    <h3 className="text-xl font-bold text-gray-900 flex items-center gap-2">
-                      <DollarSign className="text-red-500" size={24} />
-                      Make an Offer
-                    </h3>
-                    <p className="text-gray-500 text-sm mt-1">Submit your best offer for this vehicle</p>
-                  </div>
-
-                  {isAuthenticated ? (
-                    <div className="space-y-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Your Offer</label>
-                        <div className="relative">
-                          <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                          <input
-                            type="number"
-                            placeholder="Enter amount"
-                            value={bidAmount}
-                            onChange={(e) => setBidAmount(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                          />
-                        </div>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
-                        <textarea
-                          placeholder="Tell the seller why you're interested..."
-                          value={bidMessage}
-                          onChange={(e) => setBidMessage(e.target.value)}
-                          rows={3}
-                          className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
-                        />
-                      </div>
-
-                      <button
-                        onClick={handlePlaceBid}
-                        disabled={placing || !bidAmount}
-                        className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/30"
-                      >
-                        {placing ? (
-                          <>
-                            <Loader2 className="animate-spin" size={20} />
-                            Submitting...
-                          </>
-                        ) : (
-                          "Submit Offer"
-                        )}
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <button
-                        onClick={() => setAuthModal("login")}
-                        className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-600 transition-all shadow-lg shadow-red-500/30"
-                      >
-                        Login to Make an Offer
-                      </button>
-
-                      <div className="relative">
-                        <div className="absolute inset-0 flex items-center">
-                          <div className="w-full border-t border-gray-200" />
-                        </div>
-                        <div className="relative flex justify-center text-sm">
-                          <span className="px-4 bg-white text-gray-500">or</span>
-                        </div>
-                      </div>
-
-                      <button
-                        onClick={() => setShowQuoteModal(true)}
-                        className="w-full py-3.5 border-2 border-gray-200 text-gray-700 font-semibold rounded-xl hover:bg-gray-50 transition-all"
-                      >
-                        Get Instant Quote
-                      </button>
-                    </div>
+            {/* Description */}
+            <section className={`${card} p-4 sm:p-6`} aria-labelledby="about-car">
+              <h2 id="about-car" className="text-lg font-semibold text-gray-900">About this car</h2>
+              {isPartial ? (
+                <div className="mt-3 space-y-2"><Bone className="h-3.5 w-full" /><Bone className="h-3.5 w-11/12" /><Bone className="h-3.5 w-2/3" /></div>
+              ) : description ? (
+                <>
+                  <p className={`mt-3 text-[15px] leading-relaxed text-gray-600 whitespace-pre-line ${longDescription && !expanded ? "line-clamp-6" : ""}`}>{description}</p>
+                  {longDescription && (
+                    <button onClick={() => setExpanded((v) => !v)} className="mt-2 text-sm font-medium text-red-600 hover:text-red-700">
+                      {expanded ? "Show less" : "Read more"}
+                    </button>
                   )}
-
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex items-center gap-3 text-sm text-gray-500">
-                      <Shield size={18} className="text-green-500 flex-shrink-0" />
-                      <span>Secure transaction protected by Auto Eden</span>
-                    </div>
-                  </div>
-                </div>
+                </>
               ) : (
-                <div className="text-center space-y-4">
-                  <div className="text-4xl font-bold text-gray-900">{formatPrice(vehicle.price)}</div>
-                  <button className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-500/30">
-                    <Zap size={20} />
-                    Buy Now
-                  </button>
-                </div>
+                <p className="mt-3 text-[15px] text-gray-500">The seller hasn't added a description yet. Ask us anything about this car and we'll find out.</p>
               )}
-            </motion.div>
+            </section>
+
+            {/* Verification */}
+            <section className={`${card} relative isolate overflow-hidden p-4 sm:p-6`} aria-labelledby="checks">
+              <div className="flex items-start gap-3">
+                <span className="grid place-items-center w-10 h-10 rounded-lg bg-gray-950 text-white shrink-0"><ShieldCheck size={20} /></span>
+                <div>
+                  <h2 id="checks" className="text-lg font-semibold text-gray-900">Auto Eden checks</h2>
+                  <p className="text-sm text-gray-500">Every car goes through these before you can buy it.</p>
+                </div>
+              </div>
+              <ol className="mt-5 space-y-0">
+                {timeline.map((s, i) => (
+                  <li key={s.label} className="relative flex gap-3 pb-5 last:pb-0">
+                    {i < timeline.length - 1 && <span className={`absolute left-[11px] top-6 bottom-0 w-px ${s.done ? "bg-emerald-300" : "bg-gray-200"}`} />}
+                    <span className={`relative grid place-items-center w-6 h-6 rounded-full shrink-0 ${s.done ? "bg-emerald-500 text-white" : "bg-white ring-2 ring-gray-200 text-gray-300"}`}>
+                      {s.done && <Check size={13} weight="bold" />}
+                    </span>
+                    <div className="min-w-0 -mt-0.5">
+                      <p className={`text-[15px] font-medium ${s.done ? "text-gray-900" : "text-gray-400"}`}>{s.label}</p>
+                      <p className="text-[13px] text-gray-500">{s.done ? fmtDate(s.date) || "Done" : "Not yet"}</p>
+                    </div>
+                  </li>
+                ))}
+              </ol>
+            </section>
           </div>
+
+          {/* Right column (desktop) */}
+          <aside className="hidden lg:block sticky top-24 space-y-4">
+            <div className={`${card} p-6`}>
+              <div className="flex items-end justify-between gap-3">
+                <div>
+                  <p className="text-[12px] uppercase tracking-[0.12em] text-gray-500">{instant ? "Price" : "Asking price"}</p>
+                  <p className="text-3xl font-semibold text-gray-900 tabular-nums">{price ? formatPrice(price) : "On request"}</p>
+                </div>
+                {vehicle.bid_count > 0 && (
+                  <span className="rounded-md bg-red-50 text-red-700 px-2 py-1 text-[12px] font-medium">
+                    {vehicle.bid_count} {vehicle.bid_count === 1 ? "offer" : "offers"}
+                  </span>
+                )}
+              </div>
+
+              <div className="mt-5 pt-5 border-t border-gray-100">
+                {isOwner ? (
+                  <div className="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                    This is your listing. Offers on it show up in your{" "}
+                    <Link to="/dashboard?tab=offers" className="font-medium text-red-600 hover:text-red-700">dashboard</Link>.
+                  </div>
+                ) : canOffer ? (
+                  isAuthenticated ? (
+                    <>
+                      <h2 className="font-semibold text-gray-900 mb-3">Make an offer</h2>
+                      <OfferForm
+                        amount={bidAmount} setAmount={setBidAmount}
+                        message={bidMessage} setMessage={setBidMessage}
+                        placing={placing} onSubmit={handlePlaceBid} price={price}
+                      />
+                    </>
+                  ) : (
+                    <div className="space-y-2.5">
+                      <button onClick={() => setAuthModal("login")} className="w-full h-12 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors">
+                        Sign in to make an offer
+                      </button>
+                      <button onClick={() => setShowQuoteModal(true)} className="w-full h-12 rounded-lg ring-1 ring-gray-200 hover:bg-gray-50 text-gray-900 font-medium transition-colors">
+                        Ask for a quote
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <button onClick={() => setShowQuoteModal(true)} className="w-full h-12 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors">
+                    I'm interested
+                  </button>
+                )}
+              </div>
+
+              <div className="mt-5">
+                <p className="text-[13px] text-gray-500 mb-2">Questions? Talk to Auto Eden</p>
+                {contactRow}
+              </div>
+            </div>
+
+            <ul className={`${card} p-5 space-y-3 text-sm text-gray-600`}>
+              {[
+                "No fees for buyers",
+                "We check the VIN and paperwork",
+                "View the car before you pay",
+              ].map((t) => (
+                <li key={t} className="flex items-center gap-2.5">
+                  <span className="grid place-items-center w-5 h-5 rounded-full bg-emerald-50 text-emerald-600"><Check size={12} weight="bold" /></span>
+                  {t}
+                </li>
+              ))}
+            </ul>
+          </aside>
         </div>
 
-        {/* Similar Vehicles */}
-        {!market && (
-          <div className="mt-8 sm:mt-12">
-            <Bone className="h-7 w-48 mb-4 sm:mb-6" />
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {[0, 1, 2, 3].map((i) => <VehicleCardSkeleton key={i} />)}
+        {/* Similar vehicles */}
+        {(!market || recommendations.length > 0) && (
+          <section className="mt-10 sm:mt-14" aria-labelledby="similar">
+            <div className="flex items-end justify-between gap-3 mb-4 sm:mb-6">
+              <div>
+                <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-red-600">Keep looking</p>
+                <h2 id="similar" className="mt-1 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900">Similar cars</h2>
+              </div>
+              <Link to="/marketplace" className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-900 hover:text-red-600">
+                View all <ArrowRight size={16} />
+              </Link>
             </div>
-          </div>
-        )}
-        {recommendations.length > 0 && (
-          <motion.div
-            className="mt-8 sm:mt-12"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-          >
-            <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Similar Vehicles</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-              {recommendations.map((rec) => (
-                <div key={rec.id} onMouseEnter={() => prefetchVehicle(rec.id)} onTouchStart={() => prefetchVehicle(rec.id)}>
-                  <VehicleCard vehicle={rec} onClick={() => navigate(`/vehicles/${rec.id}`)} />
-                </div>
-              ))}
+            <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5 sm:gap-4 lg:gap-5">
+              {!market
+                ? [0, 1, 2, 3].map((i) => <ListingCardSkeleton key={i} />)
+                : recommendations.map((rec) => <ListingCard key={rec.id} vehicle={rec} />)}
             </div>
-          </motion.div>
+          </section>
         )}
       </div>
 
-      {/* Mobile Fixed Bottom Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 p-3 sm:p-4 lg:hidden z-40 safe-area-bottom">
+      {/* Mobile bottom bar */}
+      <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur border-t border-gray-200 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
         <div className="flex items-center gap-3">
-          <div className="flex-1">
-            <p className="text-xs text-gray-500">Price</p>
-            <p className="text-xl font-bold text-gray-900">{formatPrice(vehicle.price)}</p>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] text-gray-500 truncate">{vehicle.year} {name}</p>
+            <p className="text-xl font-semibold text-gray-900 tabular-nums">{price ? formatPrice(price) : "On request"}</p>
           </div>
-          {vehicle.listing_type === "marketplace" ? (
+          {isOwner ? (
+            <Link to="/dashboard?tab=listings" className="h-12 px-5 rounded-lg bg-gray-900 text-white font-semibold inline-flex items-center">Manage</Link>
+          ) : canOffer ? (
             <button
-              onClick={() => isAuthenticated ? setShowMobileBidSection(true) : setAuthModal("login")}
-              className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-xl shadow-lg shadow-red-500/30 flex items-center gap-2 active:scale-[0.98]"
+              onClick={() => (isAuthenticated ? setShowMobileBidSection(true) : setAuthModal("login"))}
+              className="h-12 px-6 rounded-lg bg-red-600 active:bg-red-700 text-white font-semibold"
             >
-              <MessageCircle size={18} />
-              Make Offer
+              Make an offer
             </button>
           ) : (
-            <button className="px-6 py-3 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-xl shadow-lg shadow-red-500/30 flex items-center gap-2 active:scale-[0.98]">
-              <Zap size={18} />
-              Buy Now
+            <button onClick={() => setShowQuoteModal(true)} className="h-12 px-6 rounded-lg bg-red-600 active:bg-red-700 text-white font-semibold">
+              I'm interested
             </button>
           )}
         </div>
       </div>
 
-      {/* Mobile Bid Sheet */}
+      {/* Mobile offer sheet */}
       <AnimatePresence>
         {showMobileBidSection && (
-          <div className="fixed inset-0 z-50 lg:hidden">
+          <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-modal="true" aria-label="Make an offer">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowMobileBidSection(false)}
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/50"
             />
             <motion.div
               initial={{ y: "100%" }}
               animate={{ y: 0 }}
               exit={{ y: "100%" }}
-              transition={{ type: "spring", damping: 25, stiffness: 300 }}
-              className="absolute bottom-0 left-0 right-0 bg-white rounded-t-3xl max-h-[85vh] overflow-y-auto safe-area-bottom"
+              transition={{ type: "spring", damping: 30, stiffness: 320 }}
+              className="absolute bottom-0 inset-x-0 bg-white rounded-t-2xl max-h-[88svh] overflow-y-auto px-4 pt-3 pb-[max(1rem,env(safe-area-inset-bottom))]"
             >
-              <div className="p-4 sm:p-6">
-                <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4" />
-
-                <div className="flex items-center justify-between mb-5">
-                  <h3 className="text-xl font-bold text-gray-900">Make an Offer</h3>
-                  <button
-                    onClick={() => setShowMobileBidSection(false)}
-                    className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-                  >
-                    <X size={20} className="text-gray-500" />
-                  </button>
+              <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-4" />
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Make an offer</h3>
+                  <p className="text-sm text-gray-500">{vehicle.year} {name} · asking {formatPrice(price)}</p>
                 </div>
-
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Your Offer Amount</label>
-                    <div className="relative">
-                      <DollarSign className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" size={20} />
-                      <input
-                        type="number"
-                        placeholder="Enter amount"
-                        value={bidAmount}
-                        onChange={(e) => setBidAmount(e.target.value)}
-                        className="w-full pl-12 pr-4 py-3.5 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all text-lg"
-                      />
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Message (Optional)</label>
-                    <textarea
-                      placeholder="Tell the seller why you're interested..."
-                      value={bidMessage}
-                      onChange={(e) => setBidMessage(e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
-                    />
-                  </div>
-
-                  <button
-                    onClick={handlePlaceBid}
-                    disabled={placing || !bidAmount}
-                    className="w-full py-4 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2 shadow-lg shadow-red-500/30 text-lg"
-                  >
-                    {placing ? (
-                      <>
-                        <Loader2 className="animate-spin" size={20} />
-                        Submitting...
-                      </>
-                    ) : (
-                      "Submit Offer"
-                    )}
-                  </button>
-
-                  <p className="text-center text-xs text-gray-500 flex items-center justify-center gap-1.5">
-                    <Shield size={14} className="text-green-500" />
-                    Secure transaction protected by Auto Eden
-                  </p>
-                </div>
+                <button aria-label="Close" onClick={() => setShowMobileBidSection(false)} className="p-2 -mr-2 rounded-lg hover:bg-gray-100">
+                  <X size={20} className="text-gray-500" />
+                </button>
               </div>
+              <OfferForm
+                amount={bidAmount} setAmount={setBidAmount}
+                message={bidMessage} setMessage={setBidMessage}
+                placing={placing} onSubmit={handlePlaceBid} price={price}
+              />
             </motion.div>
           </div>
         )}
@@ -846,64 +695,43 @@ export default function CarDetailsPage() {
       {/* Share Modal */}
       <AnimatePresence>
         {showShareModal && (
-          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4">
+          <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-label="Share this car">
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={() => setShowShareModal(false)}
-              className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+              className="absolute inset-0 bg-black/50"
             />
             <motion.div
-              initial={{ opacity: 0, y: 100 }}
+              initial={{ opacity: 0, y: 40 }}
               animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: 100 }}
-              className="relative bg-white rounded-t-3xl sm:rounded-2xl shadow-xl w-full sm:max-w-sm p-5 sm:p-6 safe-area-bottom"
+              exit={{ opacity: 0, y: 40 }}
+              className="relative bg-white rounded-t-2xl sm:rounded-xl shadow-xl w-full sm:max-w-sm p-5"
             >
-              <div className="w-12 h-1.5 bg-gray-300 rounded-full mx-auto mb-4 sm:hidden" />
-
-              <div className="flex items-center justify-between mb-5">
-                <h3 className="text-lg sm:text-xl font-bold text-gray-900">Share this vehicle</h3>
-                <button onClick={() => setShowShareModal(false)} className="p-2 hover:bg-gray-100 rounded-full transition-colors">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-lg font-semibold text-gray-900">Share this car</h3>
+                <button aria-label="Close" onClick={() => setShowShareModal(false)} className="p-2 -mr-2 hover:bg-gray-100 rounded-lg">
                   <X size={20} className="text-gray-500" />
                 </button>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={() => handleShare("facebook")}
-                  className="flex items-center justify-center gap-2 px-4 py-3.5 bg-blue-50 hover:bg-blue-100 active:bg-blue-200 rounded-xl transition-colors"
-                >
-                  <Facebook size={20} className="text-blue-600" />
-                  <span className="font-medium text-blue-700">Facebook</span>
-                </button>
-                <button
-                  onClick={() => handleShare("twitter")}
-                  className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl transition-colors"
-                >
-                  <XLogo size={20} className="text-gray-800" />
-                  <span className="font-medium text-gray-800">Twitter</span>
-                </button>
-                <button
-                  onClick={() => handleShare("whatsapp")}
-                  className="flex items-center justify-center gap-2 px-4 py-3.5 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-xl transition-colors"
-                >
-                  <WhatsappLogo size={20} className="text-green-600" />
-                  <span className="font-medium text-green-700">WhatsApp</span>
-                </button>
-                <button
-                  onClick={() => handleShare("copy")}
-                  className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl transition-colors"
-                >
-                  <Copy size={20} className="text-gray-600" />
-                  <span className="font-medium text-gray-700">Copy Link</span>
-                </button>
+              <div className="grid grid-cols-2 gap-2">
+                {[
+                  ["whatsapp", WhatsappLogo, "WhatsApp", "text-emerald-600"],
+                  ["facebook", Facebook, "Facebook", "text-blue-600"],
+                  ["twitter", XLogo, "X", "text-gray-900"],
+                  ["copy", Copy, "Copy link", "text-gray-600"],
+                ].map(([id, Icon, label, tone]) => (
+                  <button key={id} onClick={() => handleShare(id)} className="flex items-center justify-center gap-2 h-12 rounded-lg ring-1 ring-gray-200 hover:bg-gray-50 text-sm font-medium text-gray-800">
+                    <Icon size={18} className={tone} /> {label}
+                  </button>
+                ))}
               </div>
             </motion.div>
           </div>
         )}
       </AnimatePresence>
 
-      {/* Quote Request Modal */}
       <QuoteRequestModal
         open={showQuoteModal}
         onClose={() => setShowQuoteModal(false)}
@@ -911,10 +739,8 @@ export default function CarDetailsPage() {
         vehicleId={vehicle?.id}
       />
 
-      {/* Auth Modals */}
       <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
 
-      {/* Image Preview */}
       <ImagePreview
         isOpen={preview.isOpen}
         onClose={closePreview}

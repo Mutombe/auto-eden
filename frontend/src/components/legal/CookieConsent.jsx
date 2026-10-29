@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { Cookie, X } from "../ui/icons";
 import { getConsent, onOpenCookieSettings, saveConsent } from "../../lib/consent";
+import Pattern from "../ui/Pattern";
 
 /**
  * First-visit cookie banner + preferences panel.
@@ -51,11 +52,12 @@ export default function CookieConsent() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 24 }}
           transition={{ duration: 0.25, ease: "easeOut" }}
-          className="pacaembu-font fixed z-[60] inset-x-3 bottom-3 sm:inset-x-auto sm:left-6 sm:bottom-6 sm:w-[420px] bg-white rounded-2xl shadow-2xl ring-1 ring-black/5 pb-[env(safe-area-inset-bottom)]"
+          className="pacaembu-font fixed z-[60] inset-x-3 bottom-3 sm:inset-x-auto sm:left-6 sm:bottom-6 sm:w-[420px] bg-white rounded-xl shadow-2xl ring-1 ring-black/5 overflow-hidden pb-[env(safe-area-inset-bottom)]"
         >
-          <div className="p-5">
+          <div className="relative isolate p-5">
+            <Pattern variant="grid" fade="corner" scale={0.75} className="-z-10 text-gray-200" />
             <div className="flex items-start gap-3">
-              <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+              <div className="w-10 h-10 rounded-lg bg-gray-950 text-white flex items-center justify-center shrink-0">
                 <Cookie className="w-5 h-5" />
               </div>
               <div className="flex-1 min-w-0">
@@ -122,13 +124,13 @@ export default function CookieConsent() {
   );
 }
 
-const btnBase = "h-11 rounded-xl text-sm font-medium transition-colors";
+const btnBase = "h-11 rounded-lg text-sm font-medium transition-colors";
 const btnPrimary = `${btnBase} bg-red-600 hover:bg-red-700 text-white`;
 const btnSecondary = `${btnBase} bg-gray-100 hover:bg-gray-200 text-gray-900`;
 
 function Row({ title, text, control }) {
   return (
-    <div className="flex items-center gap-3 rounded-xl border border-gray-200 p-3">
+    <div className="flex items-center gap-3 rounded-lg bg-white ring-1 ring-gray-200 p-3">
       <div className="flex-1 min-w-0">
         <div className="text-sm font-medium text-gray-900">{title}</div>
         <div className="text-xs text-gray-500 mt-0.5 leading-relaxed">{text}</div>

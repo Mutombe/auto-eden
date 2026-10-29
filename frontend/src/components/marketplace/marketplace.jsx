@@ -18,7 +18,7 @@ import {
   X,
 } from "../ui/icons";
 import useTracking from "../../hooks/useTracking";
-import Pattern from "../ui/Pattern";
+import { HeroPattern } from "../ui/Pattern";
 
 // Filters live in the URL (/marketplace?make=Toyota&page=2), so links are shareable and
 // coming back from a vehicle page restores the exact view.
@@ -120,7 +120,7 @@ export default function MarketplacePage() {
       {/* Header */}
       <header className="relative bg-gray-950 text-white overflow-hidden isolate">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(70%_120%_at_85%_0%,rgba(220,38,38,0.35),transparent_60%),radial-gradient(50%_80%_at_0%_100%,rgba(220,38,38,0.12),transparent_60%)]" />
-        <Pattern variant="tread" fade="right" scale={0.8} className="-z-10 text-white/[0.05]" />
+        <HeroPattern />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-6 sm:pb-10">
           <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-red-400">
             <BadgeCheck className="w-4 h-4" />

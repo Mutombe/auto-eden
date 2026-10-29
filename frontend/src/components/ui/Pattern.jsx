@@ -2,7 +2,7 @@ import React, { useId } from "react";
 
 /**
  * Auto Eden's own background patterns, drawn from the brand: circuit traces from the logo mark,
- * tyre tread, road contours and a fine dot grid. They inherit `currentColor`, so tint them with a
+ * tyre tread, a square grid and a fine dot grid. They inherit `currentColor`, so tint them with a
  * text colour class (e.g. "text-white/10"), and fade out with `fade` so they never fight content.
  *
  *   <Pattern variant="circuit" fade="right" className="text-white/[0.08]" />
@@ -42,16 +42,10 @@ const TILES = {
       </g>
     ),
   },
-  // Gentle road / contour lines.
-  contour: {
-    size: [160, 64],
-    draw: (
-      <g fill="none" stroke="currentColor" strokeWidth="1.2">
-        <path d="M0 16c26 0 26-10 52-10s28 10 54 10 28-10 54-10" />
-        <path d="M0 40c26 0 26-12 52-12s28 12 54 12 28-12 54-12" />
-        <path d="M0 58c26 0 26-6 52-6s28 6 54 6 28-6 54-6" strokeDasharray="6 7" />
-      </g>
-    ),
+  // Plain square grid, like graph paper.
+  grid: {
+    size: [32, 32],
+    draw: <path d="M32 .5H.5V32" fill="none" stroke="currentColor" strokeWidth="1" />,
   },
   dots: {
     size: [18, 18],
@@ -89,3 +83,6 @@ export default function Pattern({ variant = "circuit", fade = "radial", scale = 
     </svg>
   );
 }
+
+/** The one overlay every dark page hero uses (first introduced on the dashboard header). */
+export const HeroPattern = () => <Pattern variant="circuit" fade="right" className="-z-10 text-white/[0.08]" />;

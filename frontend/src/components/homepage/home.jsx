@@ -8,7 +8,7 @@ import { useProgressiveReveal } from "../../lib/progressive";
 
 // Import the hero component
 import HeroCarousel from "./hero";
-import Pattern from "../ui/Pattern";
+import Pattern, { HeroPattern } from "../ui/Pattern";
 
 const CARD_WIDTH =
   "flex-none snap-start w-[84%] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-3rem)/3)] xl:w-[calc((100%-4.5rem)/4)]";
@@ -330,66 +330,68 @@ const TopSellersSection = () => {
   ];
 
   return (
-    <section className="pacaembu-font py-16 lg:py-20 bg-gray-50" aria-labelledby="top-sellers-heading">
+    <section className="pacaembu-font relative isolate overflow-hidden py-16 lg:py-24 bg-[#f6f7f9]" aria-labelledby="top-sellers-heading">
+      <Pattern variant="grid" fade="top" className="-z-10 text-gray-200" />
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <header className="flex items-center justify-between mb-10">
+        <header className="flex items-end justify-between gap-4 mb-8 lg:mb-10">
           <div>
-            <h2 id="top-sellers-heading" className="text-2xl lg:text-3xl font-medium text-gray-900">
-              Top Sellers in Zimbabwe
+            <p className="text-[12px] font-semibold uppercase tracking-[0.14em] text-red-600">Most wanted</p>
+            <h2 id="top-sellers-heading" className="mt-2 text-3xl lg:text-4xl font-semibold tracking-tight text-gray-900">
+              Top sellers in Zimbabwe
             </h2>
-            <p className="text-gray-500 mt-1">Most popular vehicles on our platform</p>
+            <p className="text-gray-500 mt-2">The models people search for most on Auto Eden.</p>
           </div>
           <Link
             to="/marketplace"
-            className="hidden sm:inline-flex items-center text-red-600 hover:text-red-700 font-medium"
+            className="hidden sm:inline-flex items-center gap-1.5 shrink-0 rounded-lg bg-white ring-1 ring-gray-200 px-4 py-2.5 text-sm font-medium text-gray-900 hover:ring-gray-300 hover:bg-gray-50 transition-colors"
           >
             View all
-            <ArrowRight className="w-4 h-4 ml-1" />
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </header>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+        {/* Swipe row on phones, a roomy grid from tablet up, so each car is shown whole. */}
+        <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex sm:grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 overflow-x-auto sm:overflow-visible snap-x snap-mandatory scroll-px-4 sm:scroll-px-0 no-scrollbar pb-1">
           {topSellers.map((car, index) => (
             <Link
               key={index}
               to={`/marketplace?make=${car.make}&model=${car.model}`}
-              className="group relative aspect-square rounded-2xl overflow-hidden bg-gray-200"
+              className="group snap-start shrink-0 w-[78%] sm:w-auto rounded-xl bg-white ring-1 ring-gray-200 overflow-hidden hover:ring-gray-300 hover:shadow-lg hover:shadow-gray-900/5 transition-all"
             >
-              {/* Rank Badge */}
-              <div className="absolute top-3 left-3 z-10 w-7 h-7 bg-red-600 text-white rounded-lg flex items-center justify-center text-sm font-bold">
-                {index + 1}
+              <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+                <img
+                  src={car.image}
+                  alt={`${car.make} ${car.model} for sale in Zimbabwe`}
+                  className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                  loading="lazy"
+                  onError={(e) => {
+                    e.target.src = "/placeholder-car.jpg";
+                  }}
+                />
+                <span className="absolute top-3 left-3 rounded-md bg-gray-950/85 backdrop-blur px-2 py-1 text-[12px] font-semibold text-white tabular-nums">
+                  #{index + 1}
+                </span>
               </div>
-
-              {/* Image */}
-              <img
-                src={car.image}
-                alt={`${car.make} ${car.model} for sale in Zimbabwe`}
-                className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                loading="lazy"
-                onError={(e) => {
-                  e.target.src = "/placeholder-car.jpg";
-                }}
-              />
-
-              {/* Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-
-              {/* Info */}
-              <div className="absolute bottom-0 left-0 right-0 p-4">
-                <p className="text-white font-semibold">{car.make}</p>
-                <p className="text-white/80 text-sm">{car.model}</p>
+              <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+                <div className="min-w-0">
+                  <p className="text-[12px] text-gray-500">{car.make}</p>
+                  <p className="text-[17px] font-semibold text-gray-900 truncate">{car.model}</p>
+                </div>
+                <span className="grid place-items-center w-9 h-9 shrink-0 rounded-lg bg-gray-100 text-gray-700 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                  <ArrowRight className="w-4 h-4" />
+                </span>
               </div>
             </Link>
           ))}
         </div>
 
-        <div className="sm:hidden text-center mt-6">
+        <div className="sm:hidden mt-6">
           <Link
             to="/marketplace"
-            className="inline-flex items-center text-red-600 hover:text-red-700 font-medium"
+            className="flex items-center justify-center gap-1.5 rounded-lg bg-white ring-1 ring-gray-200 py-3 text-sm font-medium text-gray-900"
           >
             View all vehicles
-            <ArrowRight className="w-4 h-4 ml-1" />
+            <ArrowRight className="w-4 h-4" />
           </Link>
         </div>
       </div>
@@ -403,7 +405,7 @@ const TopSellersSection = () => {
 const SimpleCTA = () => (
   <section className="pacaembu-font relative isolate overflow-hidden py-16 lg:py-20 bg-gray-950 text-white">
     <div className="absolute inset-0 -z-10 bg-[radial-gradient(50%_90%_at_50%_120%,rgba(220,38,38,0.35),transparent_70%)]" />
-    <Pattern variant="contour" fade="radial" className="-z-10 text-white/[0.07]" />
+    <HeroPattern />
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <h2 className="text-3xl lg:text-4xl font-medium mb-4">
         Ready to Find Your Next Car?

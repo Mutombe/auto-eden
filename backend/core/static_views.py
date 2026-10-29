@@ -101,15 +101,17 @@ class ContactView(APIView):
             x_forwarded_for = request.META.get('HTTP_X_FORWARDED_FOR')
             ip = x_forwarded_for.split(',')[0] if x_forwarded_for else request.META.get('REMOTE_ADDR')
 
+            # The suggestion box and review form post here too, tagged as feedback.
+            kind = 'feedback' if request.data.get('type') == 'feedback' else 'contact'
             inquiry = serializer.save(
-                type='contact',
+                type=kind,
                 ip_address=ip
             )
 
             # Send email notification to admins
             try:
                 send_mail(
-                    subject=f"New Contact Form Submission: {inquiry.subject or 'General Inquiry'}",
+                    subject=f"New {'Feedback' if kind == 'feedback' else 'Contact Form Submission'}: {inquiry.subject or 'General Inquiry'}",
                     message=f"""
 New contact form submission received:
 

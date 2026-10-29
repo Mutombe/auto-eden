@@ -1,7 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { AuthModals } from "../auth/AuthModals";
-import Pattern from "../ui/Pattern";
+import { HeroPattern } from "../ui/Pattern";
 
 /**
  * Signed-out visitors get a sign-in prompt instead of the page (and no API calls that would
@@ -14,7 +14,7 @@ export default function AccountGate({ children }) {
   return (
     <div className="pacaembu-font min-h-screen bg-[#f6f7f9]">
       <div className="relative isolate overflow-hidden bg-gray-950 h-24 sm:h-28">
-        <Pattern variant="circuit" fade="right" className="text-white/[0.08]" />
+        <HeroPattern />
       </div>
       <div className="max-w-md mx-auto px-4 py-12 sm:py-16 text-center">
         <div className="w-12 h-12 mx-auto rounded-lg bg-white ring-1 ring-gray-200 shadow-sm grid place-items-center mb-4 overflow-hidden">

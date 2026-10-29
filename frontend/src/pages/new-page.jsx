@@ -2,41 +2,78 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import {
-  Newspaper, Calendar, ArrowRight, Tag,
-  TrendingUp, Award, Users, Zap, Loader2
-} from "../components/ui/icons";
+import { Newspaper, Calendar, ArrowRight, TrendingUp, Award, Users, Zap, Lightbulb } from "../components/ui/icons";
 import api from "../utils/api";
+import Pattern, { HeroPattern } from "../components/ui/Pattern";
+import { PageHero, SectionHead, CTABand, reveal } from "../components/site/PageKit";
 
 /**
  * News Page - Auto Eden Updates & Announcements
  * SEO-optimized news/blog page
  */
+// Labels for the Article.category choices.
+export const NEWS_CATEGORIES = {
+  news: "News",
+  tips: "Tips & guides",
+  industry: "Industry",
+  company: "Company",
+  market: "Market analysis",
+};
+
 // Map category to icon
-const getCategoryIcon = (category) => {
+export const getCategoryIcon = (category, className = "w-5 h-5") => {
   const icons = {
-    announcement: <Zap className="w-5 h-5" />,
-    "product update": <Award className="w-5 h-5" />,
-    milestone: <Users className="w-5 h-5" />,
-    "market insights": <TrendingUp className="w-5 h-5" />,
+    news: <Newspaper className={className} />,
+    tips: <Lightbulb className={className} />,
+    industry: <Zap className={className} />,
+    company: <Users className={className} />,
+    market: <TrendingUp className={className} />,
   };
-  return icons[category?.toLowerCase()] || <Newspaper className="w-5 h-5" />;
+  return icons[category?.toLowerCase()] || <Award className={className} />;
 };
 
 // Format date
-const formatDate = (dateStr) => {
+export const formatDate = (dateStr) => {
   if (!dateStr) return "";
-  const date = new Date(dateStr);
-  return date.toLocaleDateString("en-US", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
+  return new Date(dateStr).toLocaleDateString("en-GB", { year: "numeric", month: "long", day: "numeric" });
 };
+
+const Cover = ({ article, className = "" }) => (
+  <div className={`relative isolate overflow-hidden bg-gray-950 ${className}`}>
+    {article.featured_image ? (
+      <img
+        src={article.featured_image}
+        alt=""
+        className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+        loading="lazy"
+        onError={(e) => (e.currentTarget.style.display = "none")}
+      />
+    ) : (
+      <>
+        <HeroPattern />
+        <div className="absolute inset-0 grid place-items-center text-white/80">{getCategoryIcon(article.category, "w-9 h-9")}</div>
+      </>
+    )}
+  </div>
+);
+
+function NewsSkeleton() {
+  return (
+    <div className="grid md:grid-cols-2 gap-3 sm:gap-4">
+      {[0, 1].map((i) => (
+        <div key={i} className="rounded-xl bg-white ring-1 ring-gray-200 overflow-hidden animate-pulse">
+          <div className="aspect-[16/9] bg-gray-200" />
+          <div className="p-6 space-y-3"><div className="h-3 w-32 bg-gray-200 rounded" /><div className="h-5 w-3/4 bg-gray-200 rounded" /><div className="h-3 w-full bg-gray-100 rounded" /></div>
+        </div>
+      ))}
+    </div>
+  );
+}
 
 export default function NewsPage() {
   const [articles, setArticles] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [category, setCategory] = useState("all");
 
   useEffect(() => {
     const fetchArticles = async () => {
@@ -52,218 +89,103 @@ export default function NewsPage() {
     fetchArticles();
   }, []);
 
-  const fadeInUp = {
-    initial: { opacity: 0, y: 20 },
-    whileInView: { opacity: 1, y: 0 },
-    viewport: { once: true },
-    transition: { duration: 0.5 }
-  };
-
-  const featuredNews = articles.filter(a => a.is_featured);
-  const otherNews = articles.filter(a => !a.is_featured);
+  const filtered = category === "all" ? articles : articles.filter((a) => a.category === category);
+  const lead = filtered.find((a) => a.is_featured) || filtered[0];
+  const rest = filtered.filter((a) => a !== lead);
+  const present = Array.from(new Set(articles.map((a) => a.category)));
 
   return (
-    <main className="pacaembu-font bg-gray-50">
-      {/* SEO Hidden Heading */}
-      <h1 className="sr-only">
-        Auto Eden News - Latest Updates, Announcements & Market Insights Zimbabwe
-      </h1>
+    <main className="pacaembu-font min-h-screen bg-[#f6f7f9]">
+      <PageHero
+        eyebrow="News & updates"
+        icon={Newspaper}
+        title="Latest from Auto Eden"
+        subtitle="Product updates, company news and what's moving in Zimbabwe's car market."
+        compact
+      />
 
-      {/* Hero with Blended Background */}
-      <section className="relative min-h-[80vh] overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <img 
-            src="/city.jpg" 
-            alt="" 
-            loading='eager' 
-            decoding="async"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
-          {/* Gradient Overlay - left-aligned content so gradient from left */}
-          <div className="absolute inset-0 bg-gradient-to-r from-gray-900 via-gray-900/95 to-gray-900/70" />
-          {/* Accent glow */}
-          <div className="absolute bottom-0 right-0 w-96 h-96 bg-red-600/20 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="max-w-2xl pt-15"
-          >
-            <div className="flex items-center gap-2 text-red-400 mb-4">
-              <Newspaper className="w-5 h-5" />
-              <span className="text-sm font-medium uppercase tracking-wider">News & Updates</span>
-            </div>
-            <h2 className="text-3xl lg:text-5xl font-bold text-white mb-4">
-              Latest from Auto Eden
-            </h2>
-            <p className="text-lg text-gray-300">
-              Stay informed with the latest product updates, company news, and market insights.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Featured News */}
-      <section className="py-12 lg:py-16" aria-labelledby="featured-news">
+      <section className="py-12 lg:py-16" aria-labelledby="news-list">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h2 
-            {...fadeInUp}
-            id="featured-news" 
-            className="text-2xl font-bold text-gray-900 mb-8"
-          >
-            Featured
-          </motion.h2>
+          <h2 id="news-list" className="sr-only">Articles</h2>
+          {present.length > 1 && (
+            <div className="-mx-4 px-4 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto no-scrollbar mb-6">
+              {["all", ...present].map((c) => (
+                <button
+                  key={c}
+                  onClick={() => setCategory(c)}
+                  className={`shrink-0 h-9 px-4 rounded-lg text-sm font-medium transition-colors ${category === c ? "bg-gray-900 text-white" : "bg-white ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50"}`}
+                >
+                  {c === "all" ? "All" : NEWS_CATEGORIES[c] || c}
+                </button>
+              ))}
+            </div>
+          )}
 
           {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="w-8 h-8 text-red-600 animate-spin" />
-            </div>
-          ) : featuredNews.length > 0 ? (
-            <div className="grid md:grid-cols-2 gap-6">
-              {featuredNews.map((article, index) => (
-                <motion.article
-                  key={article.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.1 }}
-                  className="group bg-white rounded-2xl overflow-hidden border border-gray-200 hover:shadow-lg transition-shadow"
-                >
-                  <div className="aspect-[16/9] bg-gray-100 overflow-hidden flex items-center justify-center">
-                    {article.featured_image ? (
-                      <img
-                        src={article.featured_image}
-                        alt={article.title}
-                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                        onError={(e) => {
-                          e.target.style.display = 'none';
-                        }}
-                      />
-                    ) : (
-                      <div className="text-gray-400">{getCategoryIcon(article.category)}</div>
-                    )}
-                  </div>
-                  <div className="p-6">
-                    <div className="flex items-center gap-3 mb-3">
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-red-50 text-red-600 text-xs font-medium rounded-full">
-                        {getCategoryIcon(article.category)}
-                        {article.category}
-                      </span>
-                      <span className="text-sm text-gray-500 flex items-center gap-1">
-                        <Calendar className="w-3.5 h-3.5" />
-                        {formatDate(article.published_at)}
-                      </span>
-                    </div>
-                    <h3 className="text-xl font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
-                      {article.title}
-                    </h3>
-                    <p className="text-gray-600 mb-4 line-clamp-2">{article.excerpt}</p>
-                    <Link
-                      to={`/news/${article.slug || article.id}`}
-                      className="inline-flex items-center text-sm font-medium text-red-600 hover:text-red-700"
-                    >
-                      Read More
-                      <ArrowRight className="w-4 h-4 ml-1" />
-                    </Link>
-                  </div>
-                </motion.article>
-              ))}
-            </div>
+            <NewsSkeleton />
+          ) : !lead ? (
+            <motion.div {...reveal} className="relative isolate overflow-hidden rounded-xl bg-white ring-1 ring-gray-200 p-10 sm:p-14 text-center">
+              <Pattern variant="grid" fade="radial" className="-z-10 text-gray-100" />
+              <span className="grid place-items-center w-14 h-14 mx-auto rounded-xl bg-gray-950 text-white"><Newspaper size={26} /></span>
+              <h3 className="mt-5 text-xl font-semibold text-gray-900">No stories yet</h3>
+              <p className="mt-2 text-gray-600 max-w-md mx-auto">We're working on our first updates. In the meantime, our guides cover everything about buying and selling.</p>
+              <Link to="/learn" className="mt-6 inline-flex items-center gap-2 h-11 px-6 rounded-lg bg-gray-900 hover:bg-gray-800 text-white font-medium">
+                Read the guides <ArrowRight size={16} />
+              </Link>
+            </motion.div>
           ) : (
-            <div className="text-center py-12 text-gray-500">
-              No featured articles yet. Check back soon!
-            </div>
+            <>
+              {/* Lead story */}
+              <motion.div {...reveal}>
+                <Link to={`/news/${lead.id}`} className="group grid lg:grid-cols-[1.25fr_1fr] rounded-xl bg-white ring-1 ring-gray-200 overflow-hidden hover:shadow-lg hover:shadow-gray-900/5 transition-shadow">
+                  <Cover article={lead} className="aspect-[16/9] lg:aspect-auto lg:min-h-[340px]" />
+                  <div className="p-6 sm:p-8 flex flex-col">
+                    <div className="flex flex-wrap items-center gap-3 text-sm">
+                      <span className="inline-flex items-center gap-1.5 rounded-md bg-red-50 text-red-700 px-2 py-1 text-[12px] font-medium">
+                        {getCategoryIcon(lead.category, "w-3.5 h-3.5")} {NEWS_CATEGORIES[lead.category] || lead.category}
+                      </span>
+                      <span className="text-gray-500 flex items-center gap-1"><Calendar className="w-3.5 h-3.5" />{formatDate(lead.published_at)}</span>
+                    </div>
+                    <h3 className="mt-4 text-2xl sm:text-3xl font-semibold tracking-tight text-gray-900 group-hover:text-red-600 transition-colors">{lead.title}</h3>
+                    <p className="mt-3 text-gray-600 line-clamp-4">{lead.excerpt}</p>
+                    <span className="mt-auto pt-6 inline-flex items-center gap-1.5 text-sm font-medium text-gray-900 group-hover:text-red-600">
+                      Read story <ArrowRight className="w-4 h-4" />
+                    </span>
+                  </div>
+                </Link>
+              </motion.div>
+
+              {rest.length > 0 && (
+                <div className="mt-10">
+                  <SectionHead eyebrow="More" title="More updates" />
+                  <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
+                    {rest.map((article) => (
+                      <motion.div key={article.id} {...reveal}>
+                        <Link to={`/news/${article.id}`} className="group flex flex-col h-full rounded-xl bg-white ring-1 ring-gray-200 overflow-hidden hover:shadow-lg hover:shadow-gray-900/5 transition-shadow">
+                          <Cover article={article} className="aspect-[16/9]" />
+                          <div className="p-5 flex flex-col flex-1">
+                            <p className="text-[12px] font-semibold uppercase tracking-[0.12em] text-red-600">{NEWS_CATEGORIES[article.category] || article.category}</p>
+                            <h3 className="mt-1.5 font-semibold text-gray-900 group-hover:text-red-600 transition-colors">{article.title}</h3>
+                            <p className="mt-1.5 text-gray-600 text-sm line-clamp-2">{article.excerpt}</p>
+                            <span className="mt-auto pt-4 text-[13px] text-gray-500">{formatDate(article.published_at)}</span>
+                          </div>
+                        </Link>
+                      </motion.div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
           )}
         </div>
       </section>
 
-      {/* More News */}
-      <section className="py-12 lg:py-16 bg-white" aria-labelledby="more-news">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.h2 
-            {...fadeInUp}
-            id="more-news" 
-            className="text-2xl font-bold text-gray-900 mb-8"
-          >
-            More Updates
-          </motion.h2>
-
-          {!loading && otherNews.length > 0 ? (
-            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {otherNews.map((article, index) => (
-                <motion.article
-                  key={article.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  viewport={{ once: true }}
-                  transition={{ delay: index * 0.05 }}
-                  className="group bg-gray-50 rounded-xl p-5 hover:bg-gray-100 transition-colors"
-                >
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className="w-8 h-8 bg-white rounded-lg flex items-center justify-center text-gray-600">
-                      {getCategoryIcon(article.category)}
-                    </span>
-                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      {article.category}
-                    </span>
-                  </div>
-                  <h3 className="font-semibold text-gray-900 mb-2 group-hover:text-red-600 transition-colors">
-                    {article.title}
-                  </h3>
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">{article.excerpt}</p>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-gray-500">{formatDate(article.published_at)}</span>
-                    <Link
-                      to={`/news/${article.slug || article.id}`}
-                      className="text-sm font-medium text-red-600 hover:text-red-700"
-                    >
-                      Read →
-                    </Link>
-                  </div>
-                </motion.article>
-              ))}
-            </div>
-          ) : !loading && (
-            <div className="text-center py-12 text-gray-500">
-              No additional articles yet.
-            </div>
-          )}
-        </div>
-      </section>
-
-      {/* Newsletter CTA */}
-      <section className="py-12 lg:py-16 bg-gray-900 text-white">
-        <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div {...fadeInUp}>
-            <h2 className="text-2xl lg:text-3xl font-bold mb-4">
-              Stay in the Loop
-            </h2>
-            <p className="text-gray-400 mb-6">
-              Get the latest news, market insights, and exclusive offers delivered to your inbox.
-            </p>
-            <form className="flex flex-col sm:flex-row gap-3 max-w-md mx-auto">
-              <input
-                type="email"
-                placeholder="Enter your email"
-                className="flex-1 px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:ring-2 focus:ring-red-500 focus:border-transparent"
-              />
-              <button
-                type="submit"
-                className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors"
-              >
-                Subscribe
-              </button>
-            </form>
-          </motion.div>
-        </div>
-      </section>
+      <CTABand
+        title="Want new cars as they're listed?"
+        subtitle="Create a free account and save a search. We'll tell you the moment a match goes live."
+        primary={{ label: "Browse cars", to: "/marketplace" }}
+        secondary={{ label: "Read our guides", to: "/learn" }}
+      />
 
       {/* SEO Structured Data */}
       <script type="application/ld+json">

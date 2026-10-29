@@ -7,7 +7,7 @@ import { useSelector } from "react-redux";
 import { useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import { AuthModals } from "../auth/AuthModals";
-import Pattern from "../ui/Pattern";
+import Pattern, { HeroPattern } from "../ui/Pattern";
 import { resources, errorMessage } from "../admin/lib/adminApi";
 import { keys } from "../admin/lib/optimistic";
 import { usePhotoUploader } from "../admin/pages/vehicles/useVehicleMutations";
@@ -114,7 +114,7 @@ export default function BuyMyCarPage() {
       {/* Hero + form */}
       <section className="relative isolate overflow-hidden bg-gray-950 text-white">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(60%_90%_at_90%_10%,rgba(220,38,38,0.38),transparent_65%)]" />
-        <Pattern variant="tread" fade="left" scale={0.9} className="-z-10 text-white/[0.06]" />
+        <HeroPattern />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-32 pb-10 lg:pb-20 grid lg:grid-cols-[minmax(0,1fr)_460px] gap-8 lg:gap-14 items-start">
           <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.45 }} className="lg:pt-8">
             <span className="inline-flex items-center gap-2 h-7 px-3 rounded-md bg-white/10 ring-1 ring-inset ring-white/15 text-[12.5px] font-medium text-white/85">
@@ -373,7 +373,7 @@ function OfferForm() {
       ) : (
         <form onSubmit={submit} noValidate>
           <div className="relative isolate overflow-hidden px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100">
-            <Pattern variant="contour" fade="right" className="-z-10 text-gray-200" />
+            <Pattern variant="grid" fade="right" scale={0.75} className="-z-10 text-gray-200" />
             <div className="flex items-center justify-between">
               <h2 className="text-lg font-semibold">Get your offer</h2>
               <span className="text-xs font-medium text-gray-500">Step {step + 1} of 2</span>

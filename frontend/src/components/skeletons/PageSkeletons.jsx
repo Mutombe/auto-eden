@@ -7,27 +7,20 @@ import Bone, { SkeletonRegion } from "../ui/Bone";
 // ---------------- Vehicle detail (/vehicles/:id) ----------------
 export function VehicleDetailHeroSkeleton() {
   return (
-    <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-red-900 pt-16 sm:pt-20 pb-6 sm:pb-8">
-      <div className="max-w-7xl mx-auto px-3 sm:px-4">
-        <div className="flex items-center justify-between mb-4 sm:mb-6 h-10">
-          <Bone className="h-5 w-16 bg-white/10" />
-          <div className="flex gap-2 sm:gap-3">
-            <Bone className="h-10 w-10 sm:h-9 sm:w-9 rounded-full bg-white/10" />
-            <Bone className="h-10 w-10 sm:h-9 sm:w-9 rounded-full bg-white/10" />
+    <div className="bg-gray-950">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-20 sm:pt-24 pb-6 sm:pb-8">
+        <div className="flex items-center justify-between h-9">
+          <Bone className="h-5 w-28 bg-white/10" />
+          <Bone className="h-9 w-20 rounded-lg bg-white/10" />
+        </div>
+        <div className="mt-5 sm:mt-6 flex items-end justify-between gap-4">
+          <div className="flex-1">
+            <div className="flex gap-2 mb-2.5"><Bone className="h-6 w-40 rounded-md bg-white/10" /><Bone className="h-6 w-28 rounded-md bg-white/10" /></div>
+            <Bone className="h-4 w-12 mb-2 bg-white/10" />
+            <Bone className="h-8 sm:h-10 lg:h-12 w-3/4 max-w-lg bg-white/15" />
+            <Bone className="h-4 w-56 mt-3 bg-white/10" />
           </div>
-        </div>
-        <div className="mb-4 sm:mb-6">
-          <div className="flex gap-2 mb-2"><Bone className="h-6 w-36 rounded-full bg-white/10" /><Bone className="h-6 w-28 rounded-full bg-white/10" /></div>
-          <Bone className="h-8 sm:h-9 lg:h-10 xl:h-12 w-4/5 max-w-xl mb-3 sm:mb-4 bg-white/10" />
-          <Bone className="h-11 sm:h-14 w-40 sm:w-48 rounded-xl bg-white/15" />
-        </div>
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-          {[0, 1, 2, 3].map((i) => (
-            <div key={i} className="bg-white/10 rounded-xl p-3 sm:p-4 flex items-center gap-2 sm:gap-3">
-              <Bone className="h-7 w-7 sm:h-9 sm:w-9 rounded-lg bg-white/10" />
-              <div className="flex-1 space-y-1.5"><Bone className="h-2.5 w-12 bg-white/10" /><Bone className="h-4 w-20 bg-white/15" /></div>
-            </div>
-          ))}
+          <div className="hidden lg:block"><Bone className="h-3 w-24 ml-auto mb-2 bg-white/10" /><Bone className="h-10 w-40 bg-white/15" /></div>
         </div>
       </div>
     </div>
@@ -36,10 +29,10 @@ export function VehicleDetailHeroSkeleton() {
 
 export function GallerySkeleton() {
   return (
-    <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
-      <Bone className="aspect-[4/3] sm:aspect-video w-full rounded-none" />
-      <div className="p-3 sm:p-4 border-t border-gray-100 flex gap-2 overflow-hidden">
-        {Array.from({ length: 6 }).map((_, i) => <Bone key={i} className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg shrink-0" />)}
+    <div className="bg-white rounded-xl ring-1 ring-gray-200/80 p-1.5 sm:p-2">
+      <Bone className="aspect-[4/3] sm:aspect-[16/10] w-full rounded-lg" />
+      <div className="pt-2 flex gap-2 overflow-hidden">
+        {Array.from({ length: 6 }).map((_, i) => <Bone key={i} className="w-20 sm:w-24 aspect-[4/3] rounded-md shrink-0" />)}
       </div>
     </div>
   );
@@ -47,17 +40,11 @@ export function GallerySkeleton() {
 
 export function SpecsSkeleton() {
   return (
-    <div className="space-y-5 sm:space-y-6">
-      <div>
-        <Bone className="h-5 w-28 mb-3" />
-        <div className="space-y-2"><Bone className="h-3.5 w-full" /><Bone className="h-3.5 w-11/12" /><Bone className="h-3.5 w-2/3" /></div>
-      </div>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
-        {[0, 1].map((c) => (
-          <div key={c} className="bg-gray-50 rounded-xl p-3 sm:p-4">
-            <Bone className="h-4 w-32 mb-3" />
-            <div className="space-y-2.5">{[0, 1, 2, 3].map((i) => <div key={i} className="flex justify-between"><Bone className="h-3 w-16" /><Bone className="h-3 w-20" /></div>)}</div>
-          </div>
+    <div className="bg-white rounded-xl ring-1 ring-gray-200/80 p-4 sm:p-6">
+      <Bone className="h-5 w-28" />
+      <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-2 sm:gap-3">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <div key={i} className="rounded-lg bg-gray-50 ring-1 ring-gray-100 p-3 sm:p-3.5"><Bone className="h-3 w-14" /><Bone className="h-4 w-20 mt-2" /></div>
         ))}
       </div>
     </div>
@@ -66,20 +53,17 @@ export function SpecsSkeleton() {
 
 export function VehicleDetailSkeleton() {
   return (
-    <SkeletonRegion label="Loading vehicle" className="min-h-screen bg-gray-100 pb-28 lg:pb-0">
+    <SkeletonRegion label="Loading vehicle" className="min-h-screen bg-[#f6f7f9] pb-28 lg:pb-0">
       <VehicleDetailHeroSkeleton />
-      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
-          <div className="lg:col-span-2 min-w-0 space-y-4 sm:space-y-6">
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <div className="grid grid-cols-1 lg:grid-cols-[minmax(0,1fr)_360px] xl:grid-cols-[minmax(0,1fr)_380px] gap-4 sm:gap-6 lg:gap-8 items-start">
+          <div className="min-w-0 space-y-4 sm:space-y-6">
             <GallerySkeleton />
-            <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden">
-              <div className="flex gap-1 border-b border-gray-100 px-2">{[0, 1, 2, 3].map((i) => <div key={i} className="px-4 sm:px-5 py-3"><Bone className="h-4 w-16" /></div>)}</div>
-              <div className="p-4 sm:p-6"><SpecsSkeleton /></div>
-            </div>
+            <SpecsSkeleton />
           </div>
           <div className="hidden lg:block">
-            <div className="bg-white rounded-2xl shadow-sm p-6 space-y-5">
-              <Bone className="h-6 w-40" /><Bone className="h-4 w-56" /><Bone className="h-12 w-full rounded-xl" /><Bone className="h-24 w-full rounded-xl" /><Bone className="h-12 w-full rounded-xl" />
+            <div className="bg-white rounded-xl ring-1 ring-gray-200/80 p-6 space-y-5">
+              <Bone className="h-3 w-24" /><Bone className="h-9 w-40" /><Bone className="h-12 w-full rounded-lg" /><Bone className="h-24 w-full rounded-lg" /><Bone className="h-12 w-full rounded-lg" />
             </div>
           </div>
         </div>

@@ -1,7 +1,12 @@
 // src/pages/ReviewsPage.jsx
 import React, { useState } from "react";
-import { motion } from "framer-motion";
-import { Star, Quote, User, CheckCircle, Calendar, ThumbsUp, MessageSquare, Send, AlertCircle, Car, Shield, DollarSign, HandCoins, Checks, ShieldCheck, UserCircle } from "../components/ui/icons";
+import { motion, AnimatePresence } from "framer-motion";
+import { Star, Quote, CheckCircle, MessageSquare, Send, AlertCircle, HandCoins, Checks, ShieldCheck, ThumbsUp, X } from "../components/ui/icons";
+import api from "../utils/api";
+import Pattern from "../components/ui/Pattern";
+import { PageHero, SectionHead, CTABand, reveal } from "../components/site/PageKit";
+
+const input = "w-full h-11 px-3.5 rounded-lg ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 outline-none text-[15px] bg-white";
 
 
 /**
@@ -24,12 +29,25 @@ export default function ReviewsPage() {
     e.preventDefault();
     setLoading(true);
     
-    setTimeout(() => {
+    setStatus(null);
+    // Saved as a feedback inquiry for the team to moderate.
+    try {
+      await api.post("/core/contact/", {
+        type: "feedback",
+        name: formData.name,
+        email: formData.email,
+        subject: `Review: ${formData.rating}/5${formData.transactionType ? ` (${formData.transactionType})` : ""}`,
+        message: formData.review,
+      });
       setStatus("success");
-      setLoading(false);
       setFormData({ name: "", email: "", rating: 5, transactionType: "", review: "" });
       setShowReviewForm(false);
-    }, 1500);
+    } catch (err) {
+      console.error("Review error:", err);
+      setStatus("error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   // Sample reviews
@@ -104,144 +122,80 @@ export default function ReviewsPage() {
       {[1, 2, 3, 4, 5].map((star) => (
         <Star
           key={star}
-          weight={star <= rating ? "fill" : "duotone"} className={`${size} ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
+          weight={star <= rating ? "fill" : "duotone"} className={`${size} ${star <= rating ? 'text-amber-400' : 'text-gray-300'}`}
         />
       ))}
     </div>
   );
 
   return (
-    <main className="pacaembu-font min-h-screen bg-gray-50">
-      {/* SEO Hidden Heading */}
-      <h1 className="sr-only">
-        Customer Reviews & Testimonials - Auto Eden Zimbabwe Car Marketplace
-      </h1>
-
-      {/* Hero with Blended Background */}
-      <section className="relative overflow-hidden">
-        {/* Background Image */}
-        <div className="absolute inset-0">
-          <img 
-            src="/city.jpg" 
-            alt=""
-            loading='eager' 
-            decoding="async"
-            className="w-full h-full object-cover"
-            onError={(e) => {
-              e.target.style.display = 'none';
-            }}
-          />
-          {/* Gradient Overlay - warm tones for reviews */}
-          <div className="absolute inset-0 bg-gradient-to-b from-red via-white/90 to-gray-50" />
-          {/* Decorative circles */}
-          <div className="absolute top-10 right-10 w-64 h-64 bg-yellow-400/10 rounded-full blur-3xl" />
-          <div className="absolute bottom-0 left-20 w-96 h-96 bg-red-400/10 rounded-full blur-3xl" />
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center max-w-3xl mx-auto"
-          >
-            <div className="flex items-center justify-center gap-2 text-yellow-500 mb-4">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <Star key={star} weight="fill" className="w-8 h-8 text-yellow-400 drop-shadow-sm" />
-              ))}
-            </div>
-            <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-4">
-              What Our Customers Say
-            </h2>
-            <p className="text-lg text-gray-600 max-w-xl mx-auto">
-              Real experiences from real people who've bought and sold cars on Auto Eden.
-            </p>
-          </motion.div>
-
-          {/* Stats */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="grid grid-cols-3 gap-4 max-w-2xl mx-auto mt-12"
-          >
-            {stats.map((stat, index) => (
-              <div key={index} className="text-center p-5 bg-white/80 backdrop-blur-sm rounded-2xl border border-gray-100 shadow-sm">
-                <div className="flex items-center justify-center gap-2 text-red-600 mb-1">
-                  {stat.icon}
-                  <span className="text-2xl lg:text-3xl font-bold text-gray-900">{stat.value}</span>
-                </div>
-                <p className="text-sm text-gray-500">{stat.label}</p>
+    <main className="pacaembu-font min-h-screen bg-[#f6f7f9]">
+      <PageHero
+        eyebrow="Reviews"
+        icon={Star}
+        title="What our customers say"
+        subtitle="Experiences from people who've bought and sold cars with Auto Eden."
+        aside={
+          <div className="grid grid-cols-3 gap-2">
+            {stats.map((stat) => (
+              <div key={stat.label} className="rounded-lg bg-white/[0.06] ring-1 ring-white/10 p-4">
+                <p className="text-2xl sm:text-3xl font-semibold tabular-nums">{stat.value}</p>
+                <p className="mt-1 text-[12px] sm:text-[13px] text-white/55 leading-tight">{stat.label}</p>
               </div>
             ))}
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        }
+      >
+        <button
+          onClick={() => setShowReviewForm(true)}
+          className="inline-flex items-center justify-center gap-2 h-12 px-6 rounded-lg bg-red-600 hover:bg-red-700 font-semibold transition-colors"
+        >
+          <MessageSquare className="w-4 h-4" /> Write a review
+        </button>
+      </PageHero>
 
-      {/* Reviews Grid */}
+      {status === "success" && (
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+          <div className="p-4 bg-emerald-50 ring-1 ring-emerald-200 rounded-lg flex items-center gap-3">
+            <CheckCircle className="w-5 h-5 text-emerald-600 shrink-0" />
+            <p className="text-sm text-emerald-900">Thanks for your review. We'll publish it once we've checked it.</p>
+          </div>
+        </div>
+      )}
+
+      {/* Reviews */}
       <section className="py-12 lg:py-16" aria-labelledby="reviews-section">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between mb-8">
-            <h2 id="reviews-section" className="text-2xl font-bold text-gray-900">
-              Recent Reviews
-            </h2>
-            <button
-              onClick={() => setShowReviewForm(true)}
-              className="inline-flex items-center px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-medium rounded-lg transition-colors text-sm"
-            >
-              <MessageSquare className="w-4 h-4 mr-2" />
-              Write a Review
-            </button>
-          </div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <SectionHead
+            id="reviews-section"
+            eyebrow="From our customers"
+            title="Recent reviews"
+            action={<StarRating rating={5} size="w-5 h-5" />}
+          />
+          <div className="columns-1 md:columns-2 lg:columns-3 gap-3 sm:gap-4 [&>*]:mb-3 sm:[&>*]:mb-4">
             {reviews.map((review, index) => (
               <motion.article
                 key={review.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: index * 0.05 }}
-                className="bg-white rounded-xl p-6 shadow-sm border border-gray-100"
+                {...reveal}
+                transition={{ duration: 0.45, delay: (index % 3) * 0.05 }}
+                className={`break-inside-avoid relative isolate overflow-hidden rounded-xl p-6 ${
+                  index === 0 ? "bg-gray-950 text-white" : "bg-white ring-1 ring-gray-200"
+                }`}
               >
-                {/* Header */}
-                <div className="flex items-start justify-between mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <UserCircle className="w-5 h-5 text-gray-500" />
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-gray-900">{review.name}</span>
-                        {review.verified && (
-                          <Checks className="w-4 h-4 text-green-500" />
-                        )}
-                      </div>
-                      <span className="text-sm text-gray-500">{review.location}</span>
-                    </div>
-                  </div>
+                {index === 0 && <Pattern variant="grid" fade="corner" className="-z-10 text-white/[0.07]" />}
+                <div className="flex items-center justify-between gap-3">
                   <StarRating rating={review.rating} />
+                  <Quote weight="fill" className={`w-7 h-7 ${index === 0 ? "text-red-500" : "text-red-100"}`} />
                 </div>
-
-                {/* Transaction Type */}
-                <div className="flex items-center gap-2 mb-3">
-                  <span className="inline-flex items-center px-2.5 py-1 bg-gray-100 text-gray-600 text-xs font-medium rounded-full">
-                    <Car className="w-3 h-3 mr-1" />
-                    {review.type}
+                <p className={`mt-4 leading-relaxed ${index === 0 ? "text-[17px] text-white/85" : "text-gray-700"}`}>{review.review}</p>
+                <div className={`mt-5 pt-4 border-t flex items-center gap-3 ${index === 0 ? "border-white/10" : "border-gray-100"}`}>
+                  <span className={`grid place-items-center w-10 h-10 rounded-full font-semibold shrink-0 ${index === 0 ? "bg-white/10 text-white" : "bg-gray-100 text-gray-700"}`}>
+                    {review.name.charAt(0)}
                   </span>
-                  <span className="text-xs text-gray-400">{review.vehicle}</span>
-                </div>
-
-                {/* Review Text */}
-                <p className="text-gray-600 text-sm leading-relaxed mb-4">
-                  "{review.review}"
-                </p>
-
-                {/* Footer */}
-                <div className="flex items-center justify-between pt-4 border-t border-gray-100">
-                  <span className="text-xs text-gray-400 flex items-center">
-                    <Calendar className="w-3 h-3 mr-1" />
-                    {review.date}
-                  </span>
+                  <div className="min-w-0">
+                    <p className="font-semibold">{review.name} <span className={`font-normal ${index === 0 ? "text-white/50" : "text-gray-500"}`}>· {review.location}</span></p>
+                    <p className={`text-[13px] truncate ${index === 0 ? "text-white/50" : "text-gray-500"}`}>{review.type} · {review.vehicle} · {review.date}</p>
+                  </div>
                 </div>
               </motion.article>
             ))}
@@ -249,158 +203,116 @@ export default function ReviewsPage() {
         </div>
       </section>
 
-      {/* Trust Section */}
-      <section className="py-12 lg:py-16 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-2xl font-bold text-gray-900 mb-8">Why Customers Trust Us</h2>
-          <div className="grid sm:grid-cols-3 gap-6">
-            <div className="p-6 rounded-xl bg-gray-50">
-              <HandCoins className="w-10 h-10 text-green-600 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Zero Listing Fees</h3>
-              <p className="text-sm text-gray-600">Sellers list for free, buyers browse for free</p>
-            </div>
-            <div className="p-6 rounded-xl bg-gray-50">
-              <ShieldCheck className="w-10 h-10 text-blue-600 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Verified Vehicles</h3>
-              <p className="text-sm text-gray-600">Every car is thoroughly inspected</p>
-            </div>
-            <div className="p-6 rounded-xl bg-gray-50">
-              <Checks className="w-10 h-10 text-purple-600 mx-auto mb-3" />
-              <h3 className="font-semibold text-gray-900 mb-2">Secure Transactions</h3>
-              <p className="text-sm text-gray-600">We handle payments safely</p>
-            </div>
+      {/* Trust */}
+      <section className="py-12 lg:py-16 bg-white border-y border-gray-200/70">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <SectionHead center eyebrow="Why it works" title="Why customers trust us" />
+          <div className="grid sm:grid-cols-3 gap-3 sm:gap-4">
+            {[
+              [HandCoins, "Zero listing fees", "Sellers list for free, buyers browse for free"],
+              [ShieldCheck, "Verified vehicles", "Every car is checked before it goes live"],
+              [Checks, "Secure transactions", "We handle payments safely"],
+            ].map(([Icon, t, d]) => (
+              <motion.div key={t} {...reveal} className="rounded-xl bg-[#f6f7f9] ring-1 ring-gray-200/70 p-6">
+                <span className="grid place-items-center w-11 h-11 rounded-lg bg-white ring-1 ring-gray-200 text-red-600"><Icon size={22} /></span>
+                <h3 className="mt-4 font-semibold text-gray-900">{t}</h3>
+                <p className="mt-1 text-sm text-gray-600">{d}</p>
+              </motion.div>
+            ))}
           </div>
         </div>
       </section>
 
-      {/* Review Form Modal */}
-      {showReviewForm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-          <motion.div
-            initial={{ scale: 0.95, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            className="bg-white rounded-2xl shadow-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto"
-          >
-            <div className="p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="text-xl font-semibold text-gray-900">Write a Review</h3>
-                <button
-                  onClick={() => setShowReviewForm(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  ✕
-                </button>
+      <CTABand
+        title="Bought or sold with us?"
+        subtitle="Tell other drivers how it went. It takes a minute."
+        primary={{ label: "Browse cars", to: "/marketplace" }}
+        secondary={{ label: "Sell your car", to: "/sell" }}
+      />
+
+      {/* Review form */}
+      <AnimatePresence>
+        {showReviewForm && (
+          <div className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center sm:p-4" role="dialog" aria-modal="true" aria-label="Write a review">
+            <motion.div className="absolute inset-0 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowReviewForm(false)} />
+            <motion.form
+              onSubmit={handleSubmit}
+              initial={{ opacity: 0, y: 40 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: 40 }}
+              className="relative w-full sm:max-w-lg max-h-[92svh] overflow-y-auto bg-white rounded-t-2xl sm:rounded-xl shadow-xl"
+            >
+              <div className="relative isolate overflow-hidden px-5 sm:px-6 pt-5 pb-4 border-b border-gray-100 flex items-start justify-between">
+                <Pattern variant="grid" fade="right" scale={0.75} className="-z-10 text-gray-200" />
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">Write a review</h3>
+                  <p className="text-sm text-gray-500">Reviews are checked before they're published.</p>
+                </div>
+                <button type="button" aria-label="Close" onClick={() => setShowReviewForm(false)} className="p-2 -mr-2 rounded-lg hover:bg-gray-100"><X size={20} className="text-gray-500" /></button>
               </div>
-
-              {status === "success" && (
-                <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                  <Checks className="w-5 h-5 text-green-600" />
-                  <p className="text-green-700">Thank you for your review!</p>
-                </div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-5">
+              <div className="px-5 sm:px-6 py-5 space-y-4">
+                {status === "error" && (
+                  <div className="p-3 bg-red-50 ring-1 ring-red-200 rounded-lg flex items-center gap-2 text-sm text-red-700">
+                    <AlertCircle className="w-4 h-4 shrink-0" /> Couldn't send your review. Please try again.
+                  </div>
+                )}
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    placeholder="John D."
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Email *
-                  </label>
-                  <input
-                    type="email"
-                    required
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                    placeholder="john@example.com"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Rating *
-                  </label>
-                  <div className="flex gap-2">
-                    {[1, 2, 3, 4, 5].map((star) => (
-                      <button
-                        key={star}
-                        type="button"
-                        onClick={() => setFormData({ ...formData, rating: star })}
-                        className="p-1"
-                      >
-                        <Star
-                          weight={star <= formData.rating ? "fill" : "duotone"} className={`w-8 h-8 ${star <= formData.rating ? 'text-yellow-400' : 'text-gray-300'}`}
-                        />
+                  <span className="block text-[13px] font-medium text-gray-700 mb-1.5">Your rating</span>
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((n) => (
+                      <button type="button" key={n} aria-label={`${n} star${n > 1 ? "s" : ""}`} onClick={() => setFormData({ ...formData, rating: n })} className="p-1">
+                        <Star weight={n <= formData.rating ? "fill" : "regular"} className={`w-8 h-8 ${n <= formData.rating ? "text-amber-400" : "text-gray-300"}`} />
                       </button>
                     ))}
                   </div>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Transaction Type *
-                  </label>
-                  <select
-                    required
-                    value={formData.transactionType}
-                    onChange={(e) => setFormData({ ...formData, transactionType: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500"
-                  >
-                    <option value="">Select...</option>
-                    <option value="bought">I bought a car</option>
-                    <option value="sold">I sold a car</option>
-                    <option value="both">Both</option>
-                  </select>
+                  <span className="block text-[13px] font-medium text-gray-700 mb-1.5">You…</span>
+                  <div className="flex gap-2">
+                    {["Bought a car", "Sold a car"].map((t) => (
+                      <button
+                        type="button"
+                        key={t}
+                        onClick={() => setFormData({ ...formData, transactionType: t })}
+                        className={`flex-1 h-10 rounded-lg text-sm font-medium ${formData.transactionType === t ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-700 hover:bg-gray-200"}`}
+                      >
+                        {t}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Your Review *
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <label className="block">
+                    <span className="block text-[13px] font-medium text-gray-700 mb-1.5">Name</span>
+                    <input required value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} className={input} autoComplete="name" />
                   </label>
+                  <label className="block">
+                    <span className="block text-[13px] font-medium text-gray-700 mb-1.5">Email</span>
+                    <input required type="email" value={formData.email} onChange={(e) => setFormData({ ...formData, email: e.target.value })} className={input} autoComplete="email" />
+                  </label>
+                </div>
+                <label className="block">
+                  <span className="block text-[13px] font-medium text-gray-700 mb-1.5">Your review</span>
                   <textarea
                     required
                     rows={4}
                     value={formData.review}
                     onChange={(e) => setFormData({ ...formData, review: e.target.value })}
-                    className="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 resize-none"
-                    placeholder="Share your experience..."
+                    className="w-full px-3.5 py-3 rounded-lg ring-1 ring-gray-200 focus:ring-2 focus:ring-red-500 outline-none text-[15px] resize-none"
+                    placeholder="How was buying or selling with Auto Eden?"
                   />
-                </div>
-
-                <button
-                  type="submit"
-                  disabled={loading}
-                  className="w-full px-6 py-3 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2"
-                >
-                  {loading ? (
-                    <>
-                      <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                      Submitting...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="w-4 h-4" />
-                      Submit Review
-                    </>
-                  )}
+                </label>
+              </div>
+              <div className="px-5 sm:px-6 pb-[max(1.25rem,env(safe-area-inset-bottom))] flex gap-2">
+                <button type="button" onClick={() => setShowReviewForm(false)} className="h-11 px-5 rounded-lg ring-1 ring-gray-200 hover:bg-gray-50 font-medium">Cancel</button>
+                <button disabled={loading} className="flex-1 h-11 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold disabled:opacity-60 inline-flex items-center justify-center gap-2">
+                  {loading ? <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Sending…</> : <><Send className="w-4 h-4" /> Submit review</>}
                 </button>
-              </form>
-            </div>
-          </motion.div>
-        </div>
-      )}
+              </div>
+            </motion.form>
+          </div>
+        )}
+      </AnimatePresence>
 
       {/* SEO Structured Data */}
       <script type="application/ld+json">

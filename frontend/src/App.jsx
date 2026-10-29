@@ -33,12 +33,14 @@ const HiringPage = lazy(() => import("./pages/hiring"));
 const ReviewsPage = lazy(() => import("./pages/reviews"));
 const ArticlePage = lazy(() => import("./pages/articles"));
 const NewsPage = lazy(() => import("./pages/new-page"));
+const NewsArticlePage = lazy(() => import("./pages/news-article"));
 const ProfilePage = lazy(() => import("./components/profile/profile"));
 const AdminConsole = lazy(() => import("./components/admin/AdminConsole"));
 const CarDetailsPage = lazy(() => import("./components/marketplace/vehicleDetails"));
 const ContactPage = lazy(() => import("./pages/contact"));
 const PrivacyPolicyPage = lazy(() => import("./pages/legal/PrivacyPolicy"));
 const CookiePolicyPage = lazy(() => import("./pages/legal/CookiePolicy"));
+const TermsPage = lazy(() => import("./pages/legal/Terms"));
 
 // Likely next stops from the landing page: fetch their code once the browser is idle.
 const warmRoutes = () => {
@@ -131,9 +133,11 @@ function App() {
           <Route path="/suggestions" element={<SuggestionsPage />} />
           <Route path="/reviews" element={<ReviewsPage />} />
           <Route path="/news" element={<NewsPage />} />
+          <Route path="/news/:articleId" element={<NewsArticlePage />} />
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/cookies" element={<CookiePolicyPage />} />
+          <Route path="/terms" element={<TermsPage />} />
           <Route path="/dashboard" element={<AccountGate><DashboardPage /></AccountGate>} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/vehicles/:vehicleId" element={<CarDetailsPage />} />

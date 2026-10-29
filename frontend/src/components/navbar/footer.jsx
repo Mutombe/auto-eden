@@ -1,136 +1,16 @@
 // src/components/Footer.jsx
-import React, { useState } from "react";
+import React from "react";
 import { Link } from "react-router-dom";
-import { motion, AnimatePresence } from "framer-motion";
 import { Facebook, Twitter, Instagram, Linkedin, X, ExternalLink, XLogo } from "../ui/icons";
 import { openCookieSettings } from "../../lib/consent";
 import Pattern from "../ui/Pattern";
 
-
-// Privacy & Legal Modal Component
-export const PrivacyLegalModal = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState("terms");
-
-  if (!isOpen) return null;
-
-  return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        exit={{ opacity: 0 }}
-        className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm"
-        onClick={onClose}
-      >
-        <motion.div
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-          exit={{ scale: 0.95, opacity: 0 }}
-          onClick={(e) => e.stopPropagation()}
-          className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-hidden"
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-gray-100">
-            <div className="flex gap-1">
-              <button
-                onClick={() => setActiveTab("privacy")}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  activeTab === "privacy" 
-                    ? "bg-red-600 text-white" 
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                Privacy & Cookies
-              </button>
-              <button
-                onClick={() => setActiveTab("terms")}
-                className={`px-4 py-2 text-sm font-medium rounded-lg transition-colors ${
-                  activeTab === "terms" 
-                    ? "bg-red-600 text-white" 
-                    : "text-gray-600 hover:bg-gray-100"
-                }`}
-              >
-                Terms of Service
-              </button>
-            </div>
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-400 hover:text-gray-600 transition-colors"
-            >
-              <X className="w-5 h-5" />
-            </button>
-          </div>
-
-          {/* Content */}
-          <div className="p-6 overflow-y-auto max-h-[60vh]">
-            {activeTab === "privacy" ? (
-              <div className="space-y-4">
-                <h2 className="text-xl font-bold text-gray-900">Privacy & Cookies</h2>
-                <p className="text-gray-600">
-                  We collect only what we need to run the marketplace, never sell your data, and use no advertising
-                  cookies. The full details are in our policies:
-                </p>
-                <div className="grid sm:grid-cols-2 gap-3">
-                  <Link to="/privacy" onClick={onClose} className="rounded-xl border border-gray-200 p-4 hover:border-red-300 hover:bg-red-50/40 transition-colors">
-                    <div className="font-semibold text-gray-900">Privacy Policy</div>
-                    <div className="text-sm text-gray-500 mt-1">What we collect, why, and your rights.</div>
-                  </Link>
-                  <Link to="/cookies" onClick={onClose} className="rounded-xl border border-gray-200 p-4 hover:border-red-300 hover:bg-red-50/40 transition-colors">
-                    <div className="font-semibold text-gray-900">Cookie Policy</div>
-                    <div className="text-sm text-gray-500 mt-1">Every cookie we use and how to control it.</div>
-                  </Link>
-                </div>
-              </div>
-            ) : (
-              <div className="prose prose-sm max-w-none">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Terms of Service</h2>
-                <p className="text-gray-600 mb-4">Last updated: January 2026</p>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">1. Acceptance of Terms</h3>
-                <p className="text-gray-600 mb-4">
-                  By accessing and using Auto Eden, you agree to be bound by these Terms of Service. 
-                  If you do not agree, please do not use our platform.
-                </p>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">2. User Responsibilities</h3>
-                <p className="text-gray-600 mb-4">
-                  Users must provide accurate information when creating listings. Sellers are responsible 
-                  for the accuracy of vehicle descriptions and images. Misrepresentation may result in 
-                  account suspension.
-                </p>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">3. Listing Policy</h3>
-                <p className="text-gray-600 mb-4">
-                  Listings are free for all users. Auto Eden reserves the right to remove listings 
-                  that violate our policies or contain fraudulent information.
-                </p>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">4. Transaction Handling</h3>
-                <p className="text-gray-600 mb-4">
-                  Auto Eden facilitates secure transactions between buyers and sellers. We act as an 
-                  intermediary to ensure both parties fulfill their obligations.
-                </p>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">5. Limitation of Liability</h3>
-                <p className="text-gray-600">
-                  Auto Eden is not liable for disputes between buyers and sellers beyond our role as 
-                  a marketplace facilitator. We encourage all parties to conduct due diligence.
-                </p>
-              </div>
-            )}
-          </div>
-        </motion.div>
-      </motion.div>
-    </AnimatePresence>
-  );
-};
 
 /**
  * Slim Footer Component
  * Minimal, single-row footer with essential links
  */
 export default function Footer() {
-  const [showLegalModal, setShowLegalModal] = useState(false);
   const currentYear = new Date().getFullYear();
 
   const socialLinks = [
@@ -167,12 +47,9 @@ export default function Footer() {
               <Link to="/cookies" className="hover:text-white transition-colors">
                 Cookies
               </Link>
-              <button 
-                onClick={() => setShowLegalModal(true)}
-                className="hover:text-white transition-colors"
-              >
+              <Link to="/terms" className="hover:text-white transition-colors">
                 Terms
-              </button>
+              </Link>
               <button onClick={openCookieSettings} className="hover:text-white transition-colors">
                 Cookie settings
               </button>
@@ -209,8 +86,6 @@ export default function Footer() {
         </div>
       </footer>
 
-      {/* Privacy & Legal Modal */}
-      <PrivacyLegalModal isOpen={showLegalModal} onClose={() => setShowLegalModal(false)} />
     </>
   );
 }
