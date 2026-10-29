@@ -14,7 +14,7 @@ urlpatterns = [
     path("admin/", admin.site.urls),
     path('hijack/', include('hijack.urls')),  # User impersonation
     path('core/', include('core.urls')),
-    # Link previews for shared cars (crawlers can't run the SPA)
+    # Link previews for cars (crawlers can't run the SPA); see core/share_views.py
     path('share/vehicles/<int:vehicle_id>/', vehicle_share_page, name='vehicle-share'),
     path('share/vehicles/<int:vehicle_id>/image.jpg', vehicle_share_image, name='vehicle-share-image'),
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps},
