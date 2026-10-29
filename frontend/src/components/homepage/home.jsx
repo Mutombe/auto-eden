@@ -319,6 +319,10 @@ const NarrativeSection = () => {
 /**
  * Top Sellers Section - Shows popular makes/models in Zimbabwe
  */
+// Ambient card effect: the blurred copy shows only in the body, the photo fades out into it.
+const AMBIENT_MASK = "linear-gradient(to bottom, transparent 34%, #000 70%)";
+const COVER_FADE = "linear-gradient(to bottom, #000 76%, transparent 100%)";
+
 const TopSellersSection = () => {
   const topSellers = [
     { make: "Toyota", model: "Hilux", image: "/top-sellers/autoeden-hilux.avif", count: 45 },
@@ -356,13 +360,24 @@ const TopSellersSection = () => {
             <Link
               key={index}
               to={`/marketplace?make=${car.make}&model=${car.model}`}
-              className="group snap-start shrink-0 w-[78%] sm:w-auto rounded-xl bg-white ring-1 ring-gray-200 overflow-hidden hover:ring-gray-300 hover:shadow-lg hover:shadow-gray-900/5 transition-all"
+              className="group relative isolate snap-start shrink-0 w-[78%] sm:w-auto rounded-xl bg-white ring-1 ring-gray-200 overflow-hidden hover:ring-gray-300 hover:shadow-lg hover:shadow-gray-900/5 transition-all"
             >
-              <div className="relative aspect-[16/10] overflow-hidden bg-gray-100">
+              {/* Ambient bleed: a blurred, saturated copy of the photo tints the card body in the
+                  car's own colours, fading in below the photo. */}
+              <img
+                src={car.image}
+                alt=""
+                aria-hidden="true"
+                loading="lazy"
+                className="pointer-events-none absolute inset-0 -z-10 w-full h-full object-cover scale-125 blur-2xl saturate-[1.8] opacity-40 group-hover:opacity-60 transition-opacity duration-500"
+                style={{ maskImage: AMBIENT_MASK, WebkitMaskImage: AMBIENT_MASK }}
+              />
+              <div className="relative aspect-[16/10] overflow-hidden">
                 <img
                   src={car.image}
                   alt={`${car.make} ${car.model} for sale in Zimbabwe`}
                   className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                  style={{ maskImage: COVER_FADE, WebkitMaskImage: COVER_FADE }}
                   loading="lazy"
                   onError={(e) => {
                     e.target.src = "/placeholder-car.jpg";
@@ -372,12 +387,12 @@ const TopSellersSection = () => {
                   #{index + 1}
                 </span>
               </div>
-              <div className="flex items-center justify-between gap-3 px-4 py-3.5">
+              <div className="relative -mt-4 flex items-center justify-between gap-3 px-4 pt-1 pb-4">
                 <div className="min-w-0">
-                  <p className="text-[12px] text-gray-500">{car.make}</p>
+                  <p className="text-[12px] text-gray-600">{car.make}</p>
                   <p className="text-[17px] font-semibold text-gray-900 truncate">{car.model}</p>
                 </div>
-                <span className="grid place-items-center w-9 h-9 shrink-0 rounded-lg bg-gray-100 text-gray-700 group-hover:bg-red-600 group-hover:text-white transition-colors">
+                <span className="grid place-items-center w-9 h-9 shrink-0 rounded-lg bg-white/80 backdrop-blur ring-1 ring-black/5 text-gray-800 group-hover:bg-red-600 group-hover:text-white group-hover:ring-red-600 transition-colors">
                   <ArrowRight className="w-4 h-4" />
                 </span>
               </div>

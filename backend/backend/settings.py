@@ -183,6 +183,8 @@ DEFAULT_FROM_EMAIL = 'admin@bitstudio.co.zw'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
 SITE_URL = os.environ.get('SITE_URL', 'https://bitstudio.co.zw')
+# Public web app; shared-car previews redirect visitors here.
+FRONTEND_URL = os.environ.get('FRONTEND_URL', 'https://autoeden.co.zw')
 
 
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

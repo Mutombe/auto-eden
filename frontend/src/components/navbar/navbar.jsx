@@ -24,6 +24,7 @@ import NotificationCenter from "../notifications/NotificationCenter";
 import { AuthModals } from "../auth/AuthModals";
 import Wordmark from "../brand/Wordmark";
 import Pattern from "../ui/Pattern";
+import { SavedNavButton } from "../vehicles/SaveButton";
 
 // Re-export AuthModals for backward compatibility
 export { AuthModals } from "../auth/AuthModals";
@@ -127,6 +128,7 @@ export const Navbar = () => {
 
             {/* Desktop account */}
             <div className="hidden md:flex items-center gap-2.5">
+              <SavedNavButton light={!scrolled} className="mr-1" />
               {isAuthenticated ? (
                 <>
                   <div className={tone}>
@@ -171,13 +173,14 @@ export const Navbar = () => {
               )}
             </div>
 
-            {/* Mobile: notifications + menu button */}
-            <div className="md:hidden flex items-center gap-1.5">
+            {/* Mobile: notifications + saved + menu button */}
+            <div className="md:hidden flex items-center gap-2">
               {isAuthenticated && (
                 <div className={tone}>
                   <NotificationCenter />
                 </div>
               )}
+              <SavedNavButton light={!scrolled} />
               <button
                 className={`inline-flex items-center gap-1.5 h-9 pl-2.5 pr-3 rounded-lg text-[13px] font-medium transition-colors ${
                   scrolled ? "text-gray-900 bg-gray-100 hover:bg-gray-200" : "text-white bg-white/10 ring-1 ring-inset ring-white/25 backdrop-blur-sm hover:bg-white/20"

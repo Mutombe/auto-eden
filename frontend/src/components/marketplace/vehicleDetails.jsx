@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'react-toastify';
 import { useMarketplace, useVehicle } from "../../lib/publicApi";
+import { vehicleShareUrl } from "../../utils/api";
 import { formatNumber, formatPrice } from "../../lib/progressive";
 import ProgressiveImage from "../ui/ProgressiveImage";
 import Bone from "../ui/Bone";
@@ -21,6 +22,7 @@ import useTracking from "../../hooks/useTracking";
 import ListingCard, { ListingCardSkeleton, titleCase, formatKm } from "../vehicles/ListingCard";
 import { HeroPattern } from "../ui/Pattern";
 import QuoteRequestModal from "./quoteRequestModal";
+import { SaveButton } from "../vehicles/SaveButton";
 
 // Auto Eden handles every enquiry; these match the contact page.
 const CONTACT = { phone: "+263 78 222 2032", email: "admin@autoeden.co.zw" };
@@ -249,7 +251,7 @@ export default function CarDetailsPage() {
   };
 
   const handleShare = (platform) => {
-    const url = window.location.href;
+    const url = vehicleShareUrl(vehicle.id);
     const title = `${vehicle.year} ${vehicle.make} ${vehicle.model}`;
 
     switch (platform) {
@@ -273,7 +275,7 @@ export default function CarDetailsPage() {
   // Phones get the system share sheet; everything else gets ours.
   const share = () => {
     if (navigator.share && window.matchMedia("(pointer: coarse)").matches) {
-      navigator.share({ title: `${vehicle.year} ${vehicle.make} ${vehicle.model}`, url: window.location.href }).catch(() => {});
+      navigator.share({ title: `${vehicle.year} ${vehicle.make} ${vehicle.model}`, url: vehicleShareUrl(vehicle.id) }).catch(() => {});
     } else {
       setShowShareModal(true);
     }
@@ -360,12 +362,15 @@ export default function CarDetailsPage() {
             >
               <ArrowLeft size={16} /> Back to cars
             </button>
+            <div className="flex items-center gap-2">
+            <SaveButton vehicle={vehicle} variant="pill" />
             <button
               onClick={share}
               className="inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white/10 hover:bg-white/15 ring-1 ring-white/10 text-sm text-white/90 transition-colors"
             >
               <Share2 size={16} /> Share
             </button>
+            </div>
           </div>
 
           <div className="mt-5 sm:mt-6 flex flex-col lg:flex-row lg:items-end lg:justify-between gap-4">
@@ -456,10 +461,12 @@ export default function CarDetailsPage() {
                       aria-label={`Show photo ${index + 1}`}
                       onClick={() => setCurrentImageIndex(index)}
                       className={`relative shrink-0 w-20 sm:w-24 aspect-[4/3] rounded-md overflow-hidden transition-opacity ${
-                        currentImageIndex === index ? "ring-2 ring-red-600 ring-offset-1" : "opacity-60 hover:opacity-100"
+                        currentImageIndex === index ? "" : "opacity-60 hover:opacity-100"
                       }`}
                     >
                       <ProgressiveImage src={img.image} className="w-full h-full" alt="" draggable={false} />
+                      {/* Drawn inside the thumbnail so the strip's edge can't clip it. */}
+                      {currentImageIndex === index && <span aria-hidden="true" className="absolute inset-0 rounded-md ring-2 ring-inset ring-red-600" />}
                     </button>
                   ))}
                 </div>

@@ -1,6 +1,6 @@
 // Image that never shows blank space or a broken icon: a pulsing bone reserves the box,
 // the photo fades in from a soft blur once decoded, and a car glyph replaces failures.
-import React, { useEffect, useState } from "react";
+import React, { useLayoutEffect, useRef, useState } from "react";
 
 const CarGlyph = () => (
   <svg viewBox="0 0 24 24" className="w-1/3 max-w-12 h-auto" fill="none" stroke="currentColor" strokeWidth="1.4" aria-hidden="true">
@@ -16,9 +16,15 @@ const CarGlyph = () => (
  */
 export default function ProgressiveImage({ src, alt = "", className = "", imgClassName = "object-cover", priority = false, onClick, draggable }) {
   const [state, setState] = useState(src ? "loading" : "error");
+  const img = useRef(null);
 
-  useEffect(() => {
-    setState(src ? "loading" : "error");
+  // Reset when the source changes, but don't clobber an image that already finished: a cached
+  // photo (e.g. the gallery's main image reused as a thumbnail) can fire onLoad before effects
+  // run, which used to leave it stuck invisible behind the loading bone.
+  useLayoutEffect(() => {
+    if (!src) return setState("error");
+    const el = img.current;
+    setState(!el?.complete ? "loading" : el.naturalWidth ? "loaded" : "error");
   }, [src]);
 
   return (
@@ -30,6 +36,7 @@ export default function ProgressiveImage({ src, alt = "", className = "", imgCla
         </div>
       ) : (
         <img
+          ref={img}
           src={src}
           alt={alt}
           draggable={draggable}

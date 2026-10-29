@@ -4,6 +4,12 @@ import { toast } from "react-toastify";
 // API Base URL - use localhost for development
 const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
+// Links people share for a car. They hit the backend's preview page (Open Graph tags + JPEG
+// photo, which chat apps need) and then bounce to the real page. VITE_SHARE_URL lets the
+// frontend domain proxy /share/* instead, so links read autoeden.co.zw/share/...
+const SHARE_BASE_URL = (import.meta.env.VITE_SHARE_URL || API_BASE_URL).replace(/\/$/, "");
+export const vehicleShareUrl = (id) => `${SHARE_BASE_URL}/share/vehicles/${id}/`;
+
 // Flag to prevent multiple refresh attempts
 let isRefreshing = false;
 let failedQueue = [];

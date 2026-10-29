@@ -1,11 +1,12 @@
 import React from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import { ArrowRight, ArrowUpRight, BadgeCheck, Fuel, Gauge, MapPin, Settings2, Zap } from "../ui/icons";
+import { ArrowRight, BadgeCheck, Fuel, Gauge, MapPin, Settings2, Zap } from "../ui/icons";
 import { prefetchVehicle } from "../../lib/publicApi";
 import { formatPrice } from "../../lib/progressive";
 import Bone from "../ui/Bone";
 import SmartImage from "../../utils/smartImage";
+import { SaveButton } from "./SaveButton";
 
 // Listing data is often ALL CAPS ("NISSAN X-TRAIL"); show it in title case, keeping short
 // acronyms (BMW, GTI, SUV) as they are.
@@ -72,14 +73,14 @@ export default function ListingCard({ vehicle, priority = false, className = "" 
   const prefetch = () => prefetchVehicle(vehicle.id);
 
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className={`@container ${className}`}>
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className={`@container group/save relative ${className}`}>
       <Link
         to={`/vehicles/${vehicle.id}`}
         onMouseEnter={prefetch}
         onTouchStart={prefetch}
         onFocus={prefetch}
         aria-label={`${vehicle.year} ${name}, ${formatPrice(price)}`}
-        className="group/card pacaembu-font flex flex-col h-full bg-white rounded-[14px] @3xs:rounded-[18px] p-1.5 @3xs:p-2 ring-1 ring-gray-200/70 shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-[0_22px_44px_-18px_rgba(16,24,40,0.28)] hover:-translate-y-1 transition-[box-shadow,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        className="group/card pacaembu-font flex flex-col h-full bg-white rounded-[14px] @3xs:rounded-[18px] p-1.5 @3xs:p-2 ring-1 ring-gray-200/70 shadow-[0_1px_2px_rgba(16,24,40,0.04)] group-hover/save:shadow-[0_22px_44px_-18px_rgba(16,24,40,0.28)] group-hover/save:-translate-y-1 transition-[box-shadow,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
       >
         {/* Photo, inset in the card like the hero sits in the page */}
         <div className="relative aspect-[4/3] overflow-hidden rounded-[10px] @3xs:rounded-[12px] bg-gray-100 isolate">
@@ -110,9 +111,8 @@ export default function ListingCard({ vehicle, priority = false, className = "" 
                 </span>
               )}
             </div>
-            <span className="hidden @3xs:grid place-items-center w-9 h-9 rounded-full bg-white/95 text-gray-900 shadow-sm sm:opacity-0 sm:-translate-y-1 group-hover/card:opacity-100 group-hover/card:translate-y-0 transition-all duration-300">
-              <ArrowUpRight weight="bold" className="w-4 h-4" />
-            </span>
+            {/* Room for the save heart, which sits over the card as a sibling of the link */}
+            <span aria-hidden="true" className="w-8 h-8 @3xs:w-9 @3xs:h-9 shrink-0" />
           </div>
 
           {instant && (
@@ -171,6 +171,10 @@ export default function ListingCard({ vehicle, priority = false, className = "" 
           </div>
         </div>
       </Link>
+      <SaveButton
+        vehicle={vehicle}
+        className="absolute top-3 right-3 @3xs:top-[18px] @3xs:right-[18px] w-8 h-8 @3xs:w-9 @3xs:h-9 transition-transform duration-300 ease-out group-hover/save:-translate-y-1"
+      />
     </motion.div>
   );
 }
