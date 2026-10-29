@@ -6,6 +6,7 @@ import { Avatar, cx } from "../admin/ui/primitives";
 import { Car, Gavel, Handshake, Heart, LayoutDashboard, User } from "../ui/icons";
 import { ME, prefetchMine, useMine, useProfile } from "../../lib/accountApi";
 import { whenIdle } from "../../lib/progressive";
+import Pattern from "../ui/Pattern";
 
 const greeting = () => {
   const h = new Date().getHours();
@@ -48,6 +49,7 @@ export default function AccountLayout({ subtitle, actions, children }) {
     <div className="pacaembu-font min-h-screen bg-[#f6f7f9]">
       <header className="relative bg-gray-950 text-white overflow-hidden isolate">
         <div className="absolute inset-0 -z-10 bg-[radial-gradient(70%_120%_at_85%_0%,rgba(220,38,38,0.32),transparent_60%)]" />
+        <Pattern variant="circuit" fade="right" className="-z-10 text-white/[0.08]" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-6 sm:pb-8 flex items-center gap-4">
           <div className="rounded-full ring-2 ring-white/15 shrink-0">
             <Avatar name={profile?.username || user?.username || "?"} src={profile?.profile_picture || undefined} size={52} />

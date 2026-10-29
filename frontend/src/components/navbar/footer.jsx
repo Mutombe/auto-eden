@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Facebook, Twitter, Instagram, Linkedin, X, ExternalLink, XLogo } from "../ui/icons";
 import { openCookieSettings } from "../../lib/consent";
+import Pattern from "../ui/Pattern";
 
 
 // Privacy & Legal Modal Component
@@ -141,7 +142,8 @@ export default function Footer() {
 
   return (
     <>
-      <footer className="pacaembu-font bg-gray-900 text-gray-400 py-4" role="contentinfo">
+      <footer className="pacaembu-font relative isolate overflow-hidden bg-gray-950 text-gray-400 py-4" role="contentinfo">
+        <Pattern variant="circuit" fade="left" scale={0.6} className="-z-10 text-white/[0.06]" />
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
             {/* Left: Copyright */}

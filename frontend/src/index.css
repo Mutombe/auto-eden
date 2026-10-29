@@ -68,3 +68,22 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .bone, .shimmer { animation: none; }
 }
+
+/* ---------- Auto Eden wordmark (see components/brand/Wordmark.jsx) ---------- */
+.ae-wordmark {
+  font-family: "Open Sans", "Segoe UI", system-ui, sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.035em;
+  line-height: 1;
+  white-space: nowrap;
+}
+.ae-wordmark .ae-e {
+  display: inline-block;
+  font-style: italic;
+  margin: 0 0.035em 0 0.01em;
+  font-size: 1.06em;
+  background: linear-gradient(170deg, #ff6b6b 0%, #f02424 50%, #c81414 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

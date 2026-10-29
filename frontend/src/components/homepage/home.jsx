@@ -8,6 +8,7 @@ import { useProgressiveReveal } from "../../lib/progressive";
 
 // Import the hero component
 import HeroCarousel from "./hero";
+import Pattern from "../ui/Pattern";
 
 const CARD_WIDTH =
   "flex-none snap-start w-[84%] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-3rem)/3)] xl:w-[calc((100%-4.5rem)/4)]";
@@ -400,7 +401,9 @@ const TopSellersSection = () => {
  * Simple CTA Section
  */
 const SimpleCTA = () => (
-  <section className="pacaembu-font py-16 lg:py-20 bg-gray-900 text-white">
+  <section className="pacaembu-font relative isolate overflow-hidden py-16 lg:py-20 bg-gray-950 text-white">
+    <div className="absolute inset-0 -z-10 bg-[radial-gradient(50%_90%_at_50%_120%,rgba(220,38,38,0.35),transparent_70%)]" />
+    <Pattern variant="contour" fade="radial" className="-z-10 text-white/[0.07]" />
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
       <h2 className="text-3xl lg:text-4xl font-medium mb-4">
         Ready to Find Your Next Car?
