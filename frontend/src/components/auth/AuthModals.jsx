@@ -16,7 +16,7 @@ import {
   Shield,
   Zap,
   Car,
-} from "lucide-react";
+} from "../ui/icons";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { login, register, googleLogin, requestPasswordReset } from "../../redux/slices/authSlice";
 

@@ -12,7 +12,7 @@ import {
   CircularProgress,
   InputAdornment,
 } from "@mui/material";
-import { X, Eye, EyeOff, Lock } from "lucide-react";
+import { X, Eye, EyeOff, Lock } from "../ui/icons";
 import {
   changePassword,
   clearPasswordChangeStatus,

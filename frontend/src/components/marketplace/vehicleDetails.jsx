@@ -1,46 +1,16 @@
-import React, { useEffect, useState, useMemo } from "react";
+import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'react-toastify';
-import {
-  fetchMarketplace,
-  fetchVehicleDetails,
-} from "../../redux/slices/vehicleSlice";
+import { useMarketplace, useVehicle, prefetchVehicle } from "../../lib/publicApi";
+import { formatNumber, formatPrice } from "../../lib/progressive";
+import ProgressiveImage from "../ui/ProgressiveImage";
+import Bone from "../ui/Bone";
+import { SpecsSkeleton, VehicleCardSkeleton, VehicleDetailSkeleton } from "../skeletons/PageSkeletons";
 import { placeBid } from "../../redux/slices/bidSlice";
 import { AuthModals } from "../navbar/navbar";
-import ImageWithFallback from "../../utils/smartImage";
-import { FaXTwitter, FaWhatsapp } from "react-icons/fa6";
-import {
-  DollarSign,
-  Gauge,
-  Tag,
-  Shield,
-  TrendingUp,
-  ArrowLeft,
-  X,
-  Share2,
-  Heart,
-  Eye,
-  CheckCircle,
-  XCircle,
-  AlertCircle,
-  ChevronLeft,
-  ChevronRight,
-  Phone,
-  Mail,
-  Star,
-  Zap,
-  Info,
-  Camera,
-  MapPin,
-  Fuel,
-  Facebook,
-  Copy,
-  Loader2,
-  Sparkles,
-  MessageCircle,
-} from "lucide-react";
+import { DollarSign, Gauge, Tag, Shield, TrendingUp, ArrowLeft, X, Share2, Heart, Eye, CheckCircle, XCircle, AlertCircle, ChevronLeft, ChevronRight, Phone, Mail, Star, Zap, Info, Camera, MapPin, Fuel, Facebook, Copy, Loader2, Sparkles, MessageCircle, XLogo, WhatsappLogo } from "../ui/icons";
 import { motion, AnimatePresence } from "framer-motion";
 import ImagePreview, { useImagePreview } from "../imagePreviewing";
 import useTracking from "../../hooks/useTracking";
@@ -72,7 +42,7 @@ function VehicleMetaTags({ vehicle }) {
   const baseUrl = "https://autoeden.co.zw";
   const url = `${baseUrl}/vehicles/${vehicle.id}`;
   const title = `${vehicle.year} ${vehicle.make} ${vehicle.model} for Sale | Auto Eden Zimbabwe`;
-  const description = `Buy this ${vehicle.year} ${vehicle.make} ${vehicle.model} in ${vehicle.location || 'Zimbabwe'}. ${vehicle.mileage?.toLocaleString()}km, ${vehicle.fuel_type || 'Petrol'}, ${vehicle.transmission || 'Manual'}. ${vehicle.is_physically_verified ? 'Verified Condition.' : ''} Price: $${vehicle.price?.toLocaleString()}.`;
+  const description = `Buy this ${vehicle.year} ${vehicle.make} ${vehicle.model} in ${vehicle.location || 'Zimbabwe'}. ${formatNumber(vehicle.mileage)}km, ${vehicle.fuel_type || 'Petrol'}, ${vehicle.transmission || 'Manual'}. ${vehicle.is_physically_verified ? 'Verified Condition.' : ''} Price: ${formatPrice(vehicle.price)}.`;
   const vehicleImage = vehicle.main_image || (vehicle.images?.[0]?.image) || `${baseUrl}/logo2.png`;
 
   return (
@@ -155,11 +125,13 @@ export default function CarDetailsPage() {
   useTracking(window.location.pathname, vehicleId);
   const { preview, openPreview, closePreview } = useImagePreview();
 
-  const {
-    currentVehicle,
-    loadingDetails,
-    marketplace: { results: marketplaceVehicles = [] },
-  } = useSelector((state) => state.vehicles);
+  // First paint comes from the marketplace card already in cache (title, price, photo);
+  // the full record (all photos, description, bids) fills in behind it.
+  const { data: vehicle, isError } = useVehicle(vehicleId);
+  const isPartial = !!vehicle?.__partial;
+  // Shares the marketplace's cached page 1, so "Similar vehicles" costs no extra request.
+  const { data: market } = useMarketplace({ page: 1 });
+  const marketplaceVehicles = market?.results || [];
 
   const { isAuthenticated } = useSelector((state) => state.auth);
   const { placing } = useSelector((state) => state.bids);
@@ -175,35 +147,51 @@ export default function CarDetailsPage() {
   const [viewCount] = useState(1247);
   const [showMobileBidSection, setShowMobileBidSection] = useState(false);
 
-  const vehicle = currentVehicle;
-
   const recommendations = useMemo(() => {
-    if (!currentVehicle) return [];
+    if (!vehicle) return [];
     return marketplaceVehicles
       .filter(
         (v) =>
-          v.id !== currentVehicle.id &&
-          (v.make === currentVehicle.make || v.body_type === currentVehicle.body_type)
+          v.id !== vehicle.id &&
+          (v.make === vehicle.make || v.body_type === vehicle.body_type)
       )
       .slice(0, 4);
-  }, [marketplaceVehicles, currentVehicle]);
+  }, [marketplaceVehicles, vehicle]);
 
+  // New vehicle (e.g. from "Similar vehicles"): start at its first photo.
   useEffect(() => {
-    if (vehicleId) {
-      dispatch(fetchVehicleDetails(vehicleId));
-    }
-  }, [vehicleId, dispatch]);
+    setCurrentImageIndex(0);
+  }, [vehicleId]);
 
+  const images = vehicle?.images?.length ? vehicle.images : [];
+  const imageCount = Math.max(images.length, 1);
+  const goTo = (i) => setCurrentImageIndex(Math.min(Math.max(i, 0), imageCount - 1));
+
+  // Warm the neighbouring photos so arrows/swipes feel instant.
   useEffect(() => {
-    dispatch(fetchMarketplace());
-  }, [dispatch]);
+    [currentImageIndex - 1, currentImageIndex + 1].forEach((i) => {
+      const src = images[i]?.image;
+      if (src) new Image().src = src;
+    });
+  }, [currentImageIndex, images]);
+
+  // Swipe left/right on the main photo (phones).
+  const touch = useRef(null);
+  const onTouchStart = (e) => (touch.current = { x: e.touches[0].clientX, y: e.touches[0].clientY });
+  const onTouchEnd = (e) => {
+    if (!touch.current) return;
+    const dx = e.changedTouches[0].clientX - touch.current.x;
+    const dy = e.changedTouches[0].clientY - touch.current.y;
+    touch.current = null;
+    if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) goTo(currentImageIndex + (dx < 0 ? 1 : -1));
+  };
 
   const handlePlaceBid = () => {
     if (placing) return;
-    if (currentVehicle && bidAmount) {
+    if (vehicle && bidAmount) {
       dispatch(
         placeBid({
-          vehicleId: currentVehicle.id,
+          vehicleId: vehicle.id,
           amount: parseFloat(bidAmount),
           message: bidMessage || "No message provided",
         })
@@ -268,22 +256,28 @@ export default function CarDetailsPage() {
 
   const tabs = ["Overview", "Features", "Seller", "History"];
 
-  if (!vehicle || loadingDetails) {
+  if (!vehicle && isError) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <Loader2 className="w-8 h-8 sm:w-10 sm:h-10 animate-spin text-red-500 mx-auto mb-4" />
-          <p className="text-gray-400 text-sm sm:text-base">Loading vehicle details...</p>
+      <div className="min-h-screen bg-gray-100 flex items-center justify-center px-4">
+        <div className="bg-white rounded-2xl shadow-sm p-8 text-center max-w-sm w-full">
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+          <h1 className="text-lg font-semibold text-gray-900 mb-1">Vehicle not available</h1>
+          <p className="text-sm text-gray-500 mb-5">It may have been sold or removed.</p>
+          <button onClick={() => navigate("/marketplace")} className="px-5 py-2.5 bg-red-600 text-white rounded-xl font-medium">
+            Browse the marketplace
+          </button>
         </div>
       </div>
     );
   }
 
+  if (!vehicle) return <VehicleDetailSkeleton />;
+
   const badge = getVerificationBadge(vehicle);
   const BadgeIcon = badge.icon;
 
   return (
-    <div className="min-h-screen bg-gray-100 pb-20 lg:pb-0">
+    <div className="min-h-screen bg-gray-100 pb-28 lg:pb-0">
       <VehicleMetaTags vehicle={vehicle} />
 
       {/* Dark Hero Header */}
@@ -311,7 +305,8 @@ export default function CarDetailsPage() {
               >
                 <Heart
                   size={18}
-                  className={`sm:w-5 sm:h-5 ${isWishlisted ? "text-red-500 fill-current" : "text-gray-400"}`}
+                  weight={isWishlisted ? "fill" : "duotone"}
+                  className={`sm:w-5 sm:h-5 ${isWishlisted ? "text-red-500" : "text-gray-400"}`}
                 />
               </button>
 
@@ -345,7 +340,7 @@ export default function CarDetailsPage() {
 
             <div className="flex flex-wrap items-center gap-3 sm:gap-4">
               <div className="bg-gradient-to-r from-red-600 to-red-500 text-white px-4 sm:px-6 py-2 sm:py-3 rounded-xl font-bold text-xl sm:text-2xl lg:text-3xl shadow-lg shadow-red-500/30">
-                ${vehicle.price?.toLocaleString() || "0"}
+                {formatPrice(vehicle.price)}
               </div>
               {vehicle.bid_count > 0 && (
                 <div className="flex items-center gap-1.5 text-gray-300 text-sm">
@@ -358,7 +353,7 @@ export default function CarDetailsPage() {
 
           {/* Quick Stats */}
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
-            <StatCard icon={Gauge} label="Mileage" value={`${vehicle.mileage?.toLocaleString() || "0"} km`} color="text-blue-400" />
+            <StatCard icon={Gauge} label="Mileage" value={`${formatNumber(vehicle.mileage)} km`} color="text-blue-400" />
             <StatCard icon={Tag} label="Body Type" value={vehicle.body_type || "Sedan"} color="text-green-400" />
             <StatCard icon={MapPin} label="Location" value={vehicle.location || "Auto Eden"} color="text-purple-400" />
             <StatCard icon={Fuel} label="Fuel Type" value={vehicle.fuel_type || "Petrol"} color="text-orange-400" />
@@ -368,9 +363,9 @@ export default function CarDetailsPage() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-4 sm:py-8">
-        <div className="grid lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8">
           {/* Left Column - Images & Tabs */}
-          <div className="lg:col-span-2 space-y-4 sm:space-y-6">
+          <div className="lg:col-span-2 min-w-0 space-y-4 sm:space-y-6">
             {/* Image Gallery */}
             <motion.div
               className="bg-white rounded-xl sm:rounded-2xl shadow-sm overflow-hidden"
@@ -380,13 +375,17 @@ export default function CarDetailsPage() {
             >
               <div className="relative">
                 <div
-                  className="aspect-[4/3] sm:aspect-video cursor-pointer"
-                  onClick={() => handleImageClick(currentImageIndex)}
+                  className="aspect-[4/3] sm:aspect-video cursor-pointer select-none touch-pan-y"
+                  onClick={() => images.length && handleImageClick(currentImageIndex)}
+                  onTouchStart={onTouchStart}
+                  onTouchEnd={onTouchEnd}
                 >
-                  <ImageWithFallback
-                    src={vehicle.images?.[currentImageIndex]?.image}
-                    className="w-full h-full object-cover"
-                    alt={`${vehicle.make} ${vehicle.model}`}
+                  <ProgressiveImage
+                    src={images[currentImageIndex]?.image}
+                    className="w-full h-full"
+                    alt={`${vehicle.year} ${vehicle.make} ${vehicle.model}, photo ${currentImageIndex + 1}`}
+                    draggable={false}
+                    priority
                   />
                 </div>
 
@@ -394,17 +393,18 @@ export default function CarDetailsPage() {
                 <div className="absolute top-3 right-3 sm:top-4 sm:right-4">
                   <div className="bg-black/60 backdrop-blur-sm text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-full text-xs sm:text-sm flex items-center gap-1">
                     <Camera size={12} className="sm:w-3.5 sm:h-3.5" />
-                    <span>{currentImageIndex + 1}/{vehicle.images?.length || 1}</span>
+                    <span>{currentImageIndex + 1}/{imageCount}</span>
                   </div>
                 </div>
 
                 {/* Navigation Arrows */}
-                {vehicle.images?.length > 1 && (
+                {images.length > 1 && (
                   <>
                     <button
+                      aria-label="Previous photo"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setCurrentImageIndex(Math.max(0, currentImageIndex - 1));
+                        goTo(currentImageIndex - 1);
                       }}
                       disabled={currentImageIndex === 0}
                       className="absolute left-2 sm:left-4 top-1/2 -translate-y-1/2 p-2 sm:p-2.5 rounded-full bg-black/50 text-white disabled:opacity-30 hover:bg-black/70 active:scale-95 transition-all"
@@ -412,11 +412,12 @@ export default function CarDetailsPage() {
                       <ChevronLeft size={20} className="sm:w-6 sm:h-6" />
                     </button>
                     <button
+                      aria-label="Next photo"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setCurrentImageIndex(Math.min(vehicle.images?.length - 1, currentImageIndex + 1));
+                        goTo(currentImageIndex + 1);
                       }}
-                      disabled={currentImageIndex === vehicle.images?.length - 1}
+                      disabled={currentImageIndex === images.length - 1}
                       className="absolute right-2 sm:right-4 top-1/2 -translate-y-1/2 p-2 sm:p-2.5 rounded-full bg-black/50 text-white disabled:opacity-30 hover:bg-black/70 active:scale-95 transition-all"
                     >
                       <ChevronRight size={20} className="sm:w-6 sm:h-6" />
@@ -426,22 +427,23 @@ export default function CarDetailsPage() {
               </div>
 
               {/* Thumbnail Strip */}
-              {vehicle.images?.length > 1 && (
+              {isPartial ? (
+                <div className="p-3 sm:p-4 border-t border-gray-100 flex gap-2 overflow-hidden">
+                  {Array.from({ length: 6 }).map((_, i) => <Bone key={i} className="w-14 h-14 sm:w-16 sm:h-16 rounded-lg shrink-0" />)}
+                </div>
+              ) : images.length > 1 && (
                 <div className="p-3 sm:p-4 border-t border-gray-100">
-                  <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1">
-                    {vehicle.images?.map((img, index) => (
+                  <div className="flex gap-2 overflow-x-auto scrollbar-hide -mx-1 px-1 py-1">
+                    {images.map((img, index) => (
                       <button
-                        key={index}
+                        key={img.id ?? index}
+                        aria-label={`Show photo ${index + 1}`}
                         onClick={() => setCurrentImageIndex(index)}
                         className={`flex-shrink-0 w-14 h-14 sm:w-16 sm:h-16 rounded-lg overflow-hidden border-2 transition-all active:scale-95 ${
                           currentImageIndex === index ? "border-red-500 ring-2 ring-red-500/30" : "border-transparent hover:border-gray-300"
                         }`}
                       >
-                        <ImageWithFallback
-                          src={img.image}
-                          className="w-full h-full object-cover"
-                          alt={`Preview ${index + 1}`}
-                        />
+                        <ProgressiveImage src={img.image} className="w-full h-full" alt="" draggable={false} />
                       </button>
                     ))}
                   </div>
@@ -466,7 +468,8 @@ export default function CarDetailsPage() {
 
               <div className="p-4 sm:p-6">
                 {/* Overview Tab */}
-                {activeTab === 0 && (
+                {activeTab === 0 && isPartial && <SpecsSkeleton />}
+                {activeTab === 0 && !isPartial && (
                   <div className="space-y-5 sm:space-y-6">
                     <div>
                       <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2 sm:mb-3">Description</h3>
@@ -483,7 +486,7 @@ export default function CarDetailsPage() {
                             { label: "Year", value: vehicle.year },
                             { label: "Make", value: vehicle.make },
                             { label: "Model", value: vehicle.model },
-                            { label: "Mileage", value: `${vehicle.mileage?.toLocaleString()} km` },
+                            { label: "Mileage", value: `${formatNumber(vehicle.mileage)} km` },
                           ].map((item) => (
                             <div key={item.label} className="flex justify-between text-xs sm:text-sm">
                               <span className="text-gray-500">{item.label}</span>
@@ -536,7 +539,7 @@ export default function CarDetailsPage() {
                           {mockSellerInfo.verified && <CheckCircle className="text-green-500 flex-shrink-0" size={18} />}
                         </div>
                         <div className="flex items-center gap-1.5 sm:gap-2 text-gray-600 mb-1 text-sm">
-                          <Star className="text-yellow-400 fill-current flex-shrink-0" size={14} />
+                          <Star weight="fill" className="text-yellow-400 flex-shrink-0" size={14} />
                           <span className="font-medium">{mockSellerInfo.rating}</span>
                           <span className="text-gray-400">({mockSellerInfo.reviewCount} reviews)</span>
                         </div>
@@ -566,7 +569,7 @@ export default function CarDetailsPage() {
                         onClick={() => window.open(`https://wa.me/${mockSellerInfo.phone.replace(/\D/g, "")}`)}
                         className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 px-3 py-3 sm:py-3.5 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-xl transition-colors"
                       >
-                        <FaWhatsapp size={18} className="text-green-600" />
+                        <WhatsappLogo size={18} className="text-green-600" />
                         <span className="font-medium text-green-700 text-xs sm:text-sm">WhatsApp</span>
                       </button>
                     </div>
@@ -694,7 +697,7 @@ export default function CarDetailsPage() {
                 </div>
               ) : (
                 <div className="text-center space-y-4">
-                  <div className="text-4xl font-bold text-gray-900">${vehicle.price?.toLocaleString()}</div>
+                  <div className="text-4xl font-bold text-gray-900">{formatPrice(vehicle.price)}</div>
                   <button className="w-full py-3.5 bg-gradient-to-r from-red-600 to-red-500 text-white font-semibold rounded-xl hover:from-red-700 hover:to-red-600 transition-all flex items-center justify-center gap-2 shadow-lg shadow-red-500/30">
                     <Zap size={20} />
                     Buy Now
@@ -706,6 +709,14 @@ export default function CarDetailsPage() {
         </div>
 
         {/* Similar Vehicles */}
+        {!market && (
+          <div className="mt-8 sm:mt-12">
+            <Bone className="h-7 w-48 mb-4 sm:mb-6" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+              {[0, 1, 2, 3].map((i) => <VehicleCardSkeleton key={i} />)}
+            </div>
+          </div>
+        )}
         {recommendations.length > 0 && (
           <motion.div
             className="mt-8 sm:mt-12"
@@ -716,11 +727,9 @@ export default function CarDetailsPage() {
             <h2 className="text-xl sm:text-2xl font-bold text-gray-900 mb-4 sm:mb-6">Similar Vehicles</h2>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
               {recommendations.map((rec) => (
-                <VehicleCard
-                  key={rec.id}
-                  vehicle={rec}
-                  onClick={() => navigate(`/vehicles/${rec.id}`)}
-                />
+                <div key={rec.id} onMouseEnter={() => prefetchVehicle(rec.id)} onTouchStart={() => prefetchVehicle(rec.id)}>
+                  <VehicleCard vehicle={rec} onClick={() => navigate(`/vehicles/${rec.id}`)} />
+                </div>
               ))}
             </div>
           </motion.div>
@@ -732,7 +741,7 @@ export default function CarDetailsPage() {
         <div className="flex items-center gap-3">
           <div className="flex-1">
             <p className="text-xs text-gray-500">Price</p>
-            <p className="text-xl font-bold text-gray-900">${vehicle.price?.toLocaleString()}</p>
+            <p className="text-xl font-bold text-gray-900">{formatPrice(vehicle.price)}</p>
           </div>
           {vehicle.listing_type === "marketplace" ? (
             <button
@@ -871,14 +880,14 @@ export default function CarDetailsPage() {
                   onClick={() => handleShare("twitter")}
                   className="flex items-center justify-center gap-2 px-4 py-3.5 bg-gray-100 hover:bg-gray-200 active:bg-gray-300 rounded-xl transition-colors"
                 >
-                  <FaXTwitter size={20} className="text-gray-800" />
+                  <XLogo size={20} className="text-gray-800" />
                   <span className="font-medium text-gray-800">Twitter</span>
                 </button>
                 <button
                   onClick={() => handleShare("whatsapp")}
                   className="flex items-center justify-center gap-2 px-4 py-3.5 bg-green-50 hover:bg-green-100 active:bg-green-200 rounded-xl transition-colors"
                 >
-                  <FaWhatsapp size={20} className="text-green-600" />
+                  <WhatsappLogo size={20} className="text-green-600" />
                   <span className="font-medium text-green-700">WhatsApp</span>
                 </button>
                 <button

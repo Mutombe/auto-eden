@@ -2,18 +2,7 @@
 import React, { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { Link } from "react-router-dom";
-import {
-  Briefcase, Users, Heart, Zap,
-  MapPin, Clock, ArrowRight, Mail,
-  Coffee, Laptop, Globe, Loader2
-} from "lucide-react";
-import { IoIosLaptop } from "react-icons/io";
-import { TbHealthRecognition } from "react-icons/tb";
-import { SiCoffeescript } from "react-icons/si";
-import { PiCoffeeLight } from "react-icons/pi";
-import { HiArrowTrendingUp } from "react-icons/hi2";
-import { GiEarthAfricaEurope } from "react-icons/gi";
-import { GiWorld } from "react-icons/gi";
+import { Briefcase, Users, Heart, Zap, MapPin, Clock, ArrowRight, Mail, Coffee, Laptop, Globe, Loader2, Stethoscope, GlobeHemisphereEast } from "../components/ui/icons";
 import api from "../utils/api";
 
 
@@ -49,17 +38,17 @@ export default function HiringPage() {
   // Company benefits/perks
   const perks = [
     {
-      icon: <IoIosLaptop className="w-6 h-6" />,
+      icon: <Laptop className="w-6 h-6" />,
       title: "Flexible Work",
       description: "Remote-friendly with flexible hours"
     },
     {
-      icon: <TbHealthRecognition className="w-6 h-6" />,
+      icon: <Stethoscope className="w-6 h-6" />,
       title: "Health Benefits",
       description: "Comprehensive medical coverage"
     },
     {
-      icon: <SiCoffeescript className="w-6 h-6" />,
+      icon: <Coffee className="w-6 h-6" />,
       title: "Great Culture",
       description: "Collaborative, fun environment"
     },
@@ -69,7 +58,7 @@ export default function HiringPage() {
       description: "Learning & development support"
     },
     {
-      icon: <GiEarthAfricaEurope className="w-6 h-6" />,
+      icon: <GlobeHemisphereEast className="w-6 h-6" />,
       title: "Impact",
       description: "Shape Zimbabwe's car industry"
     },

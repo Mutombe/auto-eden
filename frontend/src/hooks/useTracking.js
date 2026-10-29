@@ -1,6 +1,7 @@
 // src/hooks/useTracking.js
 import { useEffect } from 'react';
 import axios from 'axios';
+import { hasAnalyticsConsent } from '../lib/consent';
 
 export default function useTracking(path, vehicleId = null) {
   useEffect(() => {
@@ -14,9 +15,9 @@ export default function useTracking(path, vehicleId = null) {
         console.error('Tracking error:', error);
       }
     };
-    
-    // Only track in production
-    if (process.env.NODE_ENV === 'production') {
+
+    // Only track in production, and only for visitors who accepted analytics cookies
+    if (process.env.NODE_ENV === 'production' && hasAnalyticsConsent()) {
       track();
     }
   }, [path, vehicleId]);

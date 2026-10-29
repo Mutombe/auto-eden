@@ -14,7 +14,7 @@ import {
   Typography,
   Divider,
 } from "@mui/material";
-import { X, Bell, Mail, MessageSquare, Smartphone } from "lucide-react";
+import { X, Bell, Mail, MessageSquare, Smartphone } from "../ui/icons";
 import api from "../../utils/api";
 
 const NotificationPreferences = ({ open, onClose }) => {

@@ -1,10 +1,11 @@
 import React, { useEffect, useState, useMemo } from "react";
 import { useSelector, useDispatch } from "react-redux";
-import { fetchMarketplace } from "../../redux/slices/vehicleSlice";
+import { useMarketplace, prefetchVehicle, MARKETPLACE_PAGE_SIZE } from "../../lib/publicApi";
+import { useProgressiveReveal, formatNumber, formatPrice } from "../../lib/progressive";
+import Bone from "../ui/Bone";
 import { Link } from "react-router-dom";
 import { placeBid } from "../../redux/slices/bidSlice";
 import { AuthModals } from "../navbar/navbar";
-import { formatMediaUrl } from "../../utils/image";
 import QuoteRequestModal from "./quoteRequestModal";
 import ImagePreview, { useImagePreview } from "../imagePreviewing";
 import SmartImage from "../../utils/smartImage";
@@ -32,7 +33,7 @@ import {
   ChevronLeft,
   ChevronRight,
   SlidersHorizontal,
-} from "lucide-react";
+} from "../ui/icons";
 import {
   Button,
   TextField,
@@ -56,122 +57,40 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import useTracking from "../../hooks/useTracking";
 
-/**
- * A resilient image component that tries multiple URL formats before falling back to a placeholder.
- *
- * @param {object} props - The component props.
- * @param {string} props.src - The initial image URL from the API.
- * @param {string} props.alt - The alt text for the image.
- * @param {string} props.className - CSS classes for styling the image.
- * @param {string} [props.placeholder='/placeholder-car.jpg'] - The path to the placeholder image.
- */
-const ImageWithFallback = ({
-  src: initialSrc,
-  alt,
-  className,
-  placeholder = "/placeholder-car.jpg",
-}) => {
-  const baseUrl = "https://autoeden.sgp1.cdn.digitaloceanspaces.com/";
-  const mediaPrefix = "media/";
-
-  /**
-   * Generates the URL with the '/media/' prefix logic.
-   * This is the first URL we will attempt to load.
-   */
-  const getFormattedUrl = (url) => {
-    if (!url || typeof url !== "string") return placeholder;
-    // If it already has the prefix, return it as is.
-    if (url.includes(`/${mediaPrefix}`)) return url;
-    // If it has the base URL, insert the prefix.
-    if (url.startsWith(baseUrl)) {
-      return url.replace(baseUrl, `${baseUrl}${mediaPrefix}`);
-    }
-    // Fallback for relative paths, though unlikely in this case.
-    return `${baseUrl}${mediaPrefix}${
-      url.startsWith("/") ? url.slice(1) : url
-    }`;
-  };
-
-  // Define the two URLs we will try.
-  const formattedUrl = getFormattedUrl(initialSrc);
-  const originalUrl = initialSrc || placeholder;
-
-  // State to hold the current image source URL. We start with the formatted one.
-  const [imgSrc, setImgSrc] = useState(formattedUrl);
-
-  // Effect to reset the component's state if the initial `src` prop changes.
-  useEffect(() => {
-    setImgSrc(getFormattedUrl(initialSrc));
-  }, [initialSrc]);
-
-  /**
-   * Handles image loading errors.
-   * If the formatted URL fails, it tries the original URL.
-   * If the original URL also fails, it shows the final placeholder.
-   */
-  const handleError = () => {
-    // First error: The formatted URL failed. Let's try the original URL.
-    if (imgSrc === formattedUrl) {
-      setImgSrc(originalUrl);
-    }
-    // Second error: The original URL also failed. Fallback to the placeholder.
-    else {
-      setImgSrc(placeholder);
-    }
-  };
-
-  return (
-    <img src={imgSrc} alt={alt} className={className} onError={handleError} />
-  );
-};
-
 // --- Vehicle Skeleton Component ---
+// Mirrors the card below block for block (image box, title/meta, 2x2 specs, price row,
+// posted line) so swapping in the real card moves nothing.
 const VehicleSkeleton = ({ viewMode }) => (
   <div
-    className={`bg-white rounded-xl shadow-sm overflow-hidden animate-pulse ${
+    aria-hidden="true"
+    className={`bg-white rounded-xl shadow-sm overflow-hidden ${
       viewMode === "list" ? "flex flex-col md:flex-row" : ""
     }`}
   >
-    <div
-      className={`relative bg-gray-200 ${
-        viewMode === "list" ? "md:w-1/3 h-56 md:h-full" : "h-52 rounded-t-xl"
-      }`}
-    >
-      {/* Placeholder for image */}
+    <div className={viewMode === "list" ? "md:w-1/3" : ""}>
+      <Bone className={`w-full rounded-none ${viewMode === "list" ? "h-56 md:h-full" : "h-52"}`} />
     </div>
-    <div
-      className={`p-4 flex flex-col ${viewMode === "list" ? "md:w-2/3" : ""}`}
-    >
-      <div className="flex justify-between items-start mb-2">
-        <div className="flex-grow">
-          <div className="h-6 bg-gray-300 rounded w-3/4 mb-2"></div>
-          <div className="h-4 bg-gray-200 rounded w-1/2"></div>
+    <div className={`p-4 flex flex-col ${viewMode === "list" ? "md:w-2/3" : ""}`}>
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="h-7 flex items-center"><Bone className="h-5 w-3/5" /></div>
+          <div className="h-6 flex items-center"><Bone className="h-3.5 w-2/5" /></div>
         </div>
-        <div className="h-6 bg-gray-300 rounded w-12"></div>
+        <Bone className="h-5 w-5 rounded-full" />
       </div>
-      <div className="grid grid-cols-2 gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-          <div className="h-4 bg-gray-200 rounded w-20"></div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-          <div className="h-4 bg-gray-200 rounded w-20"></div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-          <div className="h-4 bg-gray-200 rounded w-20"></div>
-        </div>
-        <div className="flex items-center gap-2">
-          <div className="h-4 w-4 bg-gray-200 rounded-full"></div>
-          <div className="h-4 bg-gray-200 rounded w-20"></div>
-        </div>
+      <div className="grid grid-cols-2 gap-2 mt-3 mb-4">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-5 flex items-center gap-1.5">
+            <Bone className="h-4 w-4 rounded-full" />
+            <Bone className="h-3.5 w-16" />
+          </div>
+        ))}
       </div>
-      <div className="h-5 bg-gray-300 rounded w-2/3 mb-4"></div>
-      <div className="flex justify-between items-center mt-auto">
-        <div className="h-10 bg-gray-300 rounded w-24"></div>
-        <div className="h-10 bg-gray-300 rounded w-24"></div>
+      <div className="mt-auto pt-2 flex justify-between items-center">
+        <Bone className="h-7 w-24" />
+        <Bone className="h-9 w-28 rounded-lg" />
       </div>
+      <div className="mt-2 h-4 flex items-center"><Bone className="h-3 w-28" /></div>
     </div>
   </div>
 );
@@ -253,34 +172,43 @@ const CustomInput = ({ label, value, onChange, placeholder, type = "text", icon:
 export default function MarketplacePage() {
   const dispatch = useDispatch();
   useTracking(window.location.pathname);
-  const { marketplace, loading } = useSelector((state) => state.vehicles);
   const { preview, openPreview, closePreview } = useImagePreview();
-
-  const {
-    results: vehicles = [],
-    count: totalVehicles = 0,
-    currentPage = 1,
-    totalPages = 1,
-    pageSize = 12,
-  } = marketplace || {};
   const { user, isAuthenticated } = useSelector((state) => state.auth);
   const [filters, setFilters] = useState({
     minPrice: "",
     maxPrice: "",
-    make: "",
+    // Brand links on the homepage arrive as /marketplace?make=Toyota
+    make: new URLSearchParams(window.location.search).get("make") || "",
     year: "",
     sortBy: "newest",
     bodyType: "",
     fuelType: "",
     searchTerm: "",
-    page: 1, // Add this
-    page_size: 12, // Add this
+    page: 1,
+    page_size: MARKETPLACE_PAGE_SIZE,
   });
+
+  // Typing only queries the server once the user pauses.
+  const [debouncedSearch, setDebouncedSearch] = useState(filters.searchTerm);
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedSearch(filters.searchTerm), 300);
+    return () => clearTimeout(t);
+  }, [filters.searchTerm]);
+
+  const query = useMarketplace({ ...filters, searchTerm: debouncedSearch });
+  const vehicles = query.data?.results || [];
+  const totalVehicles = query.data?.count || 0;
+  const currentPage = filters.page;
+  const pageSize = filters.page_size;
+  const totalPages = Math.max(1, Math.ceil(totalVehicles / pageSize));
+  // Skeletons only on a genuine first paint; afterwards the previous results stay visible.
+  const isLoading = query.isLoading;
+  const isRefreshing = query.isFetching && query.isPlaceholderData;
+  const revealed = useProgressiveReveal(vehicles.length, !isLoading);
 
   const [authModal, setAuthModal] = useState(null);
   const [selectedVehicle, setSelectedVehicle] = useState(null);
   const [showFilters, setShowFilters] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
   const [viewMode, setViewMode] = useState("grid");
   const [showQuoteModal, setShowQuoteModal] = useState(false);
   const [snackbar, setSnackbar] = useState({
@@ -312,27 +240,6 @@ export default function MarketplacePage() {
     ...fuelTypes.map((type) => ({ value: type, label: type })),
   ];
 
-  useEffect(() => {
-    setIsLoading(true);
-
-    // Convert frontend filters to backend format
-    const backendFilters = {
-      min_price: filters.minPrice,
-      max_price: filters.maxPrice,
-      make: filters.make,
-      year: filters.year,
-      sort_by: filters.sortBy,
-      body_type: filters.bodyType,
-      fuel_type: filters.fuelType,
-      search_term: filters.searchTerm,
-      page: filters.page,
-      page_size: filters.page_size,
-    };
-
-    dispatch(fetchMarketplace(backendFilters))
-      .then(() => setIsLoading(false))
-      .catch(() => setIsLoading(false));
-  }, [dispatch, filters]);
 
   const handlePageChange = (newPage) => {
     setFilters((prev) => ({
@@ -377,6 +284,7 @@ export default function MarketplacePage() {
       fuelType: "",
       searchTerm: "",
       page: 1,
+      page_size: MARKETPLACE_PAGE_SIZE,
     });
   };
 
@@ -703,10 +611,13 @@ export default function MarketplacePage() {
 
         {/* Results Count & View Mode */}
         <div className="flex justify-between items-center mb-4">
+          {isLoading ? (
+            <Bone className="h-4 w-56" />
+          ) : (
           <div className="text-gray-600">
             Showing{" "}
             <span className="font-semibold">
-              {(currentPage - 1) * pageSize + 1}
+              {totalVehicles === 0 ? 0 : (currentPage - 1) * pageSize + 1}
             </span>{" "}
             to{" "}
             <span className="font-semibold">
@@ -720,6 +631,7 @@ export default function MarketplacePage() {
               </span>
             )}
           </div>
+          )}
           <div className="flex gap-2">
             <Tooltip title="Grid View">
               <IconButton
@@ -760,7 +672,7 @@ export default function MarketplacePage() {
                 : "flex flex-col gap-4"
             }
           >
-            {Array.from({ length: 6 }).map((_, i) => (
+            {Array.from({ length: pageSize }).map((_, i) => (
               <VehicleSkeleton key={i} viewMode={viewMode} />
             ))}
           </div>
@@ -798,20 +710,32 @@ export default function MarketplacePage() {
 
         {/* Vehicle Grid */}
         {!isLoading && vehicles.length > 0 && (
+          <div className="relative">
+          <div className={`absolute -top-2 left-0 right-0 h-0.5 overflow-hidden rounded transition-opacity ${isRefreshing ? "opacity-100" : "opacity-0"}`}>
+            <div className="h-full w-1/3 bg-red-500 animate-[tableProgress_1s_ease-in-out_infinite]" />
+          </div>
           <div
-            className={
+            className={`${
               viewMode === "grid"
                 ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
                 : "flex flex-col gap-4"
-            }
+            } transition-opacity duration-200 ${isRefreshing ? "opacity-70" : "opacity-100"}`}
           >
-            {vehicles.map((vehicle, index) => (
-              <Link to={`/vehicles/${vehicle.id}`} key={vehicle.id}>
+            {vehicles.map((vehicle, index) => index >= revealed ? (
+              <VehicleSkeleton key={`sk-${vehicle.id}`} viewMode={viewMode} />
+            ) : (
+              <Link
+                to={`/vehicles/${vehicle.id}`}
+                key={vehicle.id}
+                onMouseEnter={() => prefetchVehicle(vehicle.id)}
+                onTouchStart={() => prefetchVehicle(vehicle.id)}
+                onFocus={() => prefetchVehicle(vehicle.id)}
+              >
                 <motion.div
                   key={vehicle.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: 0.05 * (index % 6) }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25 }}
                   className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${
                     viewMode === "list" ? "flex flex-col md:flex-row" : ""
                   }`}
@@ -821,10 +745,11 @@ export default function MarketplacePage() {
                       viewMode === "list" ? "md:w-1/3" : ""
                     }`}
                   >
-                    <ImageWithFallback
+                    <SmartImage
                       src={vehicle.main_image}
                       alt={`${vehicle.make} ${vehicle.model}`}
-                      onClick={() => handleMarketplaceImageClick(vehicle, 0)}
+                      loading={index < 3 ? "eager" : "lazy"}
+                      fetchpriority={index < 3 ? "high" : "auto"}
                       className={`w-full object-cover ${
                         viewMode === "list"
                           ? "h-56 md:h-full md:rounded-l-xl"
@@ -864,7 +789,7 @@ export default function MarketplacePage() {
                         }}
                       />
 
-                      {vehicle.is_verified && (
+                      {vehicle.verification_state === "physical" && (
                         <Chip
                           icon={<Shield className="w-3 h-3 text-green-700" />}
                           label="Verified"
@@ -895,7 +820,7 @@ export default function MarketplacePage() {
                         </h3>
                         <p className="text-gray-600">
                           {vehicle.year} •{" "}
-                          {vehicle.mileage?.toLocaleString() || "0"} km
+                          {formatNumber(vehicle.mileage)} km
                         </p>
                       </div>
                       <Badge
@@ -935,11 +860,11 @@ export default function MarketplacePage() {
                     <div className="mt-auto pt-2 flex justify-between items-center">
                       <div>
                         <span className="text-2xl font-bold text-red-600">
-                          ${vehicle.price?.toLocaleString()}
+                          {formatPrice(vehicle.price)}
                         </span>
                         {vehicle.discount_price && (
                           <span className="text-sm text-gray-500 line-through ml-2">
-                            ${vehicle.discount_price?.toLocaleString()}
+                            {formatPrice(vehicle.discount_price)}
                           </span>
                         )}
                       </div>
@@ -1001,6 +926,7 @@ export default function MarketplacePage() {
                 </motion.div>
               </Link>
             ))}
+          </div>
           </div>
         )}
 

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { Bell, CheckCheck, Trash2, RefreshCw, X, Settings } from "lucide-react";
+import { Bell, CheckCheck, Trash2, RefreshCw, X, Settings } from "../ui/icons";
 import { CircularProgress } from "@mui/material";
 import NotificationItem from "./NotificationItem";
 import {

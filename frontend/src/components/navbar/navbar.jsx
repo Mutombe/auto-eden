@@ -1,21 +1,11 @@
 // src/components/Navbar.jsx
 import React, { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { motion, AnimatePresence } from "framer-motion";
-import {
-  ShoppingCart,
-  Info,
-  LogIn,
-  UserPlus,
-  LogOut,
-  X,
-  LayoutDashboard,
-  FolderDot,
-} from "lucide-react";
+import { ShoppingCart, Info, LogIn, UserPlus, LogOut, X, LayoutDashboard, FolderDot, Jeep } from "../ui/icons";
 import { Button, Avatar } from "@mui/material";
 import { logout } from "../../redux/slices/authSlice";
-import { TbCarSuv } from "react-icons/tb";
 import NotificationCenter from "../notifications/NotificationCenter";
 import { AuthModals } from "../auth/AuthModals";
 import { useSidebar } from "../../contexts/SidebarContext";
@@ -28,12 +18,25 @@ export { AuthModals } from "../auth/AuthModals";
  * Displays the Auto Eden logo
  */
 export function Logo({ variant = "default" }) {
+  const light = variant === "light";
+  // Both versions are always loaded and stacked; switching is a pure opacity cross-fade,
+  // so the swap is instant instead of waiting for the other file to download.
   return (
-    <Link to="/" className="flex-shrink-0 flex items-center" aria-label="Auto Eden Home">
+    <Link to="/" className="relative flex-shrink-0 flex items-center" aria-label="Auto Eden Home">
       <img
-        src={variant === "light" ? "/white-autoeden-logo.png" : "/Auto-Eden-black-logo.png"}
+        src="/Auto-Eden-black-logo.png"
         alt="Auto Eden - Buy & Sell Cars"
-        className="h-8 sm:h-10 w-auto"
+        decoding="async"
+        fetchpriority="high"
+        className={`h-8 sm:h-10 w-auto transition-opacity duration-150 ${light ? "opacity-0" : "opacity-100"}`}
+      />
+      <img
+        src="/white-autoeden-logo.png"
+        alt=""
+        aria-hidden="true"
+        decoding="async"
+        fetchpriority="high"
+        className={`absolute left-0 top-1/2 -translate-y-1/2 h-8 sm:h-10 w-auto transition-opacity duration-150 ${light ? "opacity-100" : "opacity-0"}`}
       />
     </Link>
   );
@@ -51,17 +54,20 @@ export const Navbar = () => {
   const [authModal, setAuthModal] = useState(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  // The homepage hero sits in a white frame; at the top the bar drops into that frame with it.
+  const insetHero = useLocation().pathname === "/";
   const isAdmin = user?.is_superuser;
 
   // Calculate navbar left offset for dashboard pages on desktop
   const sidebarWidth = sidebarCollapsed ? "lg:pl-20" : "lg:pl-64 xl:pl-72";
 
   // Handle scroll effect - transparent at top, solid when scrolled
+  // Passive listener + state only changes when crossing the threshold, so scrolling stays smooth
+  // and the logo/colours flip on the same frame the page passes 24px.
   useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 50);
-    };
-    window.addEventListener("scroll", handleScroll);
+    const handleScroll = () => setScrolled(window.scrollY > 24);
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -80,7 +86,7 @@ export const Navbar = () => {
   // Navigation items for reusability
   const navItems = [
     { to: "/marketplace", icon: ShoppingCart, label: "Marketplace" },
-    { to: "/sell", icon: TbCarSuv, label: "Buy My Car" },
+    { to: "/sell", icon: Jeep, label: "Buy My Car" },
     { to: "/about", icon: Info, label: "About Us" },
   ];
 
@@ -88,13 +94,13 @@ export const Navbar = () => {
     <>
       {/* Main Navigation Bar - Slim design */}
       <nav
-        className={`pacaembu-font fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          scrolled ? "bg-white shadow-md" : "bg-transparent"
+        className={`pacaembu-font fixed top-0 left-0 right-0 z-50 transition-[background-color,box-shadow,padding] duration-200 ${
+          scrolled ? "bg-white shadow-md" : `bg-transparent ${insetHero ? "pt-2 sm:pt-3 lg:pt-4" : ""}`
         }`}
         role="navigation"
         aria-label="Main navigation"
       >
-        <div className={`transition-all duration-300 px-4 sm:px-6 lg:px-8 ${
+        <div className={`transition-[padding] duration-200 ${insetHero && !scrolled ? "px-6 sm:px-9 lg:px-12" : "px-4 sm:px-6 lg:px-8"} ${
           isDashboardPage ? sidebarWidth : "max-w-7xl mx-auto"
         }`}>
           <div className="flex justify-between items-center h-14 sm:h-16">

@@ -10,10 +10,11 @@ import {
   Tag,
   Fuel,
   ChevronRight,
-} from "lucide-react";
+} from "../ui/icons";
 import { motion } from "framer-motion";
 import { useSelector } from "react-redux";
 import ImageWithFallback from "../../utils/smartImage";
+import { formatNumber, formatPrice } from "../../lib/progressive";
 
 const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
   const { user, isAuthenticated } = useSelector((state) => state.auth);
@@ -84,7 +85,7 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
             {vehicle.make} {vehicle.model}
           </h3>
           <p className="text-sm text-gray-500">
-            {vehicle.year} • {vehicle.mileage?.toLocaleString() || "0"} km
+            {vehicle.year} • {formatNumber(vehicle.mileage)} km
           </p>
         </div>
 
@@ -114,11 +115,11 @@ const VehicleCard = ({ vehicle, viewMode = "grid", onClick }) => {
         <div className="mt-auto pt-3 border-t border-gray-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div>
             <span className="text-xl sm:text-2xl font-bold text-red-600">
-              ${vehicle.price?.toLocaleString()}
+              {formatPrice(vehicle.price)}
             </span>
             {vehicle.discount_price && (
               <span className="text-sm text-gray-400 line-through ml-2">
-                ${vehicle.discount_price?.toLocaleString()}
+                {formatPrice(vehicle.discount_price)}
               </span>
             )}
           </div>

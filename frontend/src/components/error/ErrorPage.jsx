@@ -1,5 +1,5 @@
 import React from "react";
-import { AlertTriangle, RefreshCw, Home, ArrowLeft, Mail } from "lucide-react";
+import { AlertTriangle, RefreshCw, Home, ArrowLeft, Mail } from "../ui/icons";
 import { useNavigate } from "react-router-dom";
 
 const ErrorPage = ({

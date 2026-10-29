@@ -1,78 +1,46 @@
 import React, { useState, useEffect } from 'react';
 
+// Shown when an image is missing or fails: a neutral car glyph instead of a broken icon.
+const FALLBACK =
+  'data:image/svg+xml;utf8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><rect width="24" height="24" fill="#eceef1"/><g transform="translate(6 6) scale(.5)" fill="none" stroke="#9ca3af" stroke-width="1.4"><path d="M5 17h14M6 13l1.5-4.5A2 2 0 0 1 9.4 7h5.2a2 2 0 0 1 1.9 1.5L18 13M5 13h14v4H5z"/><circle cx="8" cy="17" r="1.5"/><circle cx="16" cy="17" r="1.5"/></g></svg>'
+  );
+
 /**
- * A resilient image component that tries multiple URL formats before falling back to a placeholder.
+ * Vehicle image with a skeleton while loading and a fade-in once decoded.
  *
- * @param {object} props - The component props.
- * @param {string} props.src - The initial image URL from the API.
- * @param {string} props.alt - The alt text for the image.
- * @param {string} props.className - CSS classes for styling the image.
- * @param {string} [props.placeholder='/placeholder-car.jpg'] - The path to the placeholder image.
- * @param {'eager' | 'lazy'} [props.loading='auto'] - The loading strategy for the image.
- * @param {'high' | 'low' | 'auto'} [props.fetchpriority='auto'] - The fetch priority for the image.
+ * The API already returns full CDN URLs, so the URL is used exactly as given. (An earlier
+ * version tried a "/media/" variant first; that path 404s on the CDN, so every image paid
+ * for a failed request before loading.)
+ *
+ * @param {'eager' | 'lazy'} [props.loading='lazy']
+ * @param {'high' | 'low' | 'auto'} [props.fetchpriority='auto']
  */
 const ImageWithFallback = ({
-  src: initialSrc,
+  src,
   alt,
-  className,
-  placeholder = '/placeholder-car.jpg',
-  loading = 'auto',
-  fetchpriority = 'auto'
+  className = '',
+  loading = 'lazy',
+  fetchpriority = 'auto',
+  onClick,
 }) => {
-  const baseUrl = 'https://autoeden.sgp1.cdn.digitaloceanspaces.com/';
-  const mediaPrefix = 'media/';
+  const [status, setStatus] = useState(src ? 'loading' : 'error');
 
-  /**
-   * Generates the URL with the '/media/' prefix logic.
-   * This is the first URL we will attempt to load.
-   */
-  const getFormattedUrl = (url) => {
-    if (!url || typeof url !== 'string') return placeholder;
-    // If it already has the prefix, return it as is.
-    if (url.includes(`/${mediaPrefix}`)) return url;
-    // If it has the base URL, insert the prefix.
-    if (url.startsWith(baseUrl)) {
-      return url.replace(baseUrl, `${baseUrl}${mediaPrefix}`);
-    }
-    // Fallback for relative paths, though unlikely in this case.
-    return `${baseUrl}${mediaPrefix}${url.startsWith('/') ? url.slice(1) : url}`;
-  };
-
-  // Define the two URLs we will try.
-  const formattedUrl = getFormattedUrl(initialSrc);
-  const originalUrl = initialSrc || placeholder;
-
-  // State to hold the current image source URL. We start with the formatted one.
-  const [imgSrc, setImgSrc] = useState(formattedUrl);
-
-  // Effect to reset the component's state if the initial `src` prop changes.
   useEffect(() => {
-    setImgSrc(getFormattedUrl(initialSrc));
-  }, [initialSrc]);
-
-  /**
-   * Handles image loading errors.
-   * If the formatted URL fails, it tries the original URL.
-   * If the original URL also fails, it shows the final placeholder.
-   */
-  const handleError = () => {
-    // First error: The formatted URL failed. Let's try the original URL.
-    if (imgSrc === formattedUrl) {
-      setImgSrc(originalUrl);
-    }
-    // Second error: The original URL also failed. Fallback to the placeholder.
-    else {
-      setImgSrc(placeholder);
-    }
-  };
+    setStatus(src ? 'loading' : 'error');
+  }, [src]);
 
   return (
     <img
-      src={imgSrc}
+      src={status === 'error' ? FALLBACK : src}
       alt={alt}
-      className={className}
-      onError={handleError}
+      onClick={onClick}
+      className={`${className} transition-opacity duration-500 ${status === 'loading' ? 'bone opacity-90' : 'opacity-100'}`}
+      onLoad={() => status === 'loading' && setStatus('loaded')}
+      onError={() => setStatus('error')}
       loading={loading}
+      decoding="async"
       fetchpriority={fetchpriority}
     />
   );

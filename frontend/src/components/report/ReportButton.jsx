@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { Flag } from "lucide-react";
+import { Flag } from "../ui/icons";
 import ReportModal from "./ReportModal";
 
 const ReportButton = ({

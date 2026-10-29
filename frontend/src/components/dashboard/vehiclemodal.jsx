@@ -14,7 +14,8 @@ import {
   Snackbar,
   Alert,
 } from "@mui/material";
-import { X, Upload, Trash } from "lucide-react";
+import { X, Upload, Trash } from "../ui/icons";
+import { compressImage } from "../admin/lib/compressImage";
 
 const VehicleDialog = ({
   open,
@@ -193,7 +194,7 @@ const VehicleDialog = ({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     const errors = validateForm();
     if (Object.keys(errors).length > 0) {
       setFormError("Please fill all required fields"); // Set form-level error
@@ -220,8 +221,9 @@ const VehicleDialog = ({
       formDataObj.append("proposed_price", formData.price);
     }
 
-    // Append new image files only
-    imageFiles.forEach((file) => {
+    // Append new image files only, compressed so the upload doesn't time out on the server
+    const compressed = await Promise.all(imageFiles.map(compressImage));
+    compressed.forEach((file) => {
       formDataObj.append(`image_files`, file);
     });
 

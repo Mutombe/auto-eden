@@ -17,12 +17,11 @@ ALLOWED_HOSTS = [
     '127.0.0.1',
 ]
 
-# Enable DEBUG temporarily to see errors - disable after fixing
-DEBUG = True
+DEBUG = os.environ.get('DJANGO_DEBUG', 'False') == 'True'
 SECRET_KEY = os.environ.get('SECRET_KEY', SECRET_KEY)
 
-# CORS SETTINGS - Allow all origins temporarily to debug
-CORS_ALLOW_ALL_ORIGINS = True
+# CORS SETTINGS - only the origins listed below may call the API
+CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
 
 CORS_ALLOWED_ORIGINS = [
@@ -124,21 +123,7 @@ STORAGES = {
     },
 }
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'autoeden_dinnercoat',
-        'USER': 'autoeden_dinnercoat',
-        'PASSWORD': 'e28eab23b29b3f0de748c00e8bf58f0c57f33cd0',
-        'HOST': '9q7a1c.h.filess.io',
-        'PORT': '5434',
-        'CONN_MAX_AGE': 0,
-        'OPTIONS': {
-            'options': '-c search_path=django_schema,public',
-            'connect_timeout': 5,
-        }
-    }
-}
+# DATABASES is inherited from settings.py and read from the DATABASE_URL env var.
 
 
 # SECURITY MIDDLEWARE SETTINGS
@@ -159,6 +144,12 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': [
        'rest_framework.permissions.AllowAny',
     ],
+    'DEFAULT_FILTER_BACKENDS': [
+        'django_filters.rest_framework.DjangoFilterBackend',
+        'rest_framework.filters.SearchFilter',
+    ],
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 10,
     'DEFAULT_RENDERER_CLASSES': [
         'rest_framework.renderers.JSONRenderer',
     ] if not DEBUG else [

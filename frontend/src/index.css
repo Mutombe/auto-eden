@@ -8,3 +8,63 @@ body {
   font-family: var(--font-sans);
   font-optical-sizing: auto;
 }
+
+/* Admin console */
+@utility no-scrollbar {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+@keyframes menuIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes tableProgress {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(300%); }
+}
+/* Used by the marketplace/detail galleries */
+@utility scrollbar-hide {
+  scrollbar-width: none;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ---- Loading vocabulary: one grey, one calm pulse everywhere ----
+   Component layer so utilities (bg-*, rounded-*) on a Bone can override the defaults. */
+@layer components {
+  .bone {
+    background-color: #eceef1;
+    animation: bonePulse 1.6s ease-in-out infinite;
+  }
+  /* "Creating…" rows: a light sweep across the placeholder */
+  .shimmer {
+    background-image: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.75) 50%, transparent 100%);
+    background-size: 200% 100%;
+    background-repeat: no-repeat;
+    animation: shimmerSweep 1.4s ease-in-out infinite;
+  }
+}
+
+@keyframes bonePulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.55; }
+}
+
+@keyframes shimmerSweep {
+  0% { background-position: 150% 0; }
+  100% { background-position: -50% 0; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bone, .shimmer { animation: none; }
+}

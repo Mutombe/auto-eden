@@ -1,12 +1,7 @@
 // src/pages/SuggestionsPage.jsx
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  Lightbulb, Send, CheckCircle, AlertCircle,
-  MessageSquare, ThumbsUp, Sparkles, Zap
-} from "lucide-react";
-import { SlLike } from "react-icons/sl";
-import { CiMobile3 } from "react-icons/ci";
+import { Lightbulb, Send, CheckCircle, AlertCircle, MessageSquare, ThumbsUp, Sparkles, Zap, Smartphone } from "../components/ui/icons";
 
 
 /**
@@ -48,7 +43,7 @@ export default function SuggestionsPage() {
       title: "Mobile App",
       votes: 156,
       status: "planned",
-      icon: <CiMobile3 className="w-4 h-4" />
+      icon: <Smartphone className="w-4 h-4" />
     },
     {
       title: "Price Comparison Tool",
@@ -60,7 +55,7 @@ export default function SuggestionsPage() {
       title: "Vehicle Financing Options",
       votes: 124,
       status: "in-progress",
-      icon: <SlLike className="w-4 h-4" />
+      icon: <ThumbsUp className="w-4 h-4" />
     }
   ];
 
@@ -218,7 +213,7 @@ export default function SuggestionsPage() {
             >
               <div className="bg-white rounded-2xl p-6 shadow-sm border border-gray-100">
                 <h3 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <SlLike className="w-5 h-5 text-purple-600" />
+                  <ThumbsUp className="w-5 h-5 text-purple-600" />
                   Popular Ideas
                 </h3>
                 <div className="space-y-4">

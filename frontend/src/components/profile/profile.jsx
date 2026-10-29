@@ -36,7 +36,7 @@ import {
   MapPin,
   Fuel,
   Gauge,
-} from "lucide-react";
+} from "../ui/icons";
 
 // Quick Stats Card
 const StatCard = ({ icon: Icon, label, value, color = "red" }) => (

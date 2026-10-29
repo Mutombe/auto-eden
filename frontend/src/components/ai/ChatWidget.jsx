@@ -1,6 +1,7 @@
 // src/components/ai/ChatWidget.jsx
 import React, { useState, useEffect, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { useLocation } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   sendMessage,
@@ -20,7 +21,7 @@ import {
   Loader2,
   Sparkles,
   MinusCircle,
-} from "lucide-react";
+} from "../ui/icons";
 import { IconButton, TextField } from "@mui/material";
 
 // Format timestamp
@@ -105,6 +106,8 @@ const TypingIndicator = () => (
 // Main Chat Widget
 const ChatWidget = () => {
   const dispatch = useDispatch();
+  // Vehicle pages have a fixed "Make Offer" bar on phones; sit above it instead of covering it.
+  const raised = useLocation().pathname.startsWith("/vehicles/");
   const { messages, loading, isOpen, isEnabled, vehicleContext } = useSelector(
     (state) => state.ai
   );
@@ -176,7 +179,7 @@ const ChatWidget = () => {
             whileHover={{ scale: 1.05 }}
             whileTap={{ scale: 0.95 }}
             onClick={() => dispatch(toggleChat())}
-            className="fixed bottom-6 right-6 z-50 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors group"
+            className={`fixed ${raised ? "bottom-24 lg:bottom-6" : "bottom-6"} right-4 sm:right-6 z-50 w-14 h-14 bg-red-600 hover:bg-red-700 text-white rounded-full shadow-lg flex items-center justify-center transition-colors group`}
             aria-label="Open AI Chat"
           >
             <MessageSquare className="w-6 h-6" />
@@ -195,8 +198,8 @@ const ChatWidget = () => {
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 20, scale: 0.95 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
-            className={`fixed bottom-6 right-6 z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col ${
-              isMinimized ? "w-80 h-14" : "w-96 h-[500px]"
+            className={`fixed ${raised ? "bottom-24 lg:bottom-6" : "bottom-6"} right-4 sm:right-6 z-50 bg-white rounded-2xl shadow-2xl border border-gray-200 overflow-hidden flex flex-col ${
+              isMinimized ? "w-[min(20rem,calc(100vw-2rem))] h-14" : "w-[min(24rem,calc(100vw-2rem))] h-[min(500px,calc(100dvh-7rem))]"
             }`}
           >
             {/* Header */}

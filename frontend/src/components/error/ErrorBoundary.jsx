@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { AlertTriangle, RefreshCw, Home } from "lucide-react";
+import { AlertTriangle, RefreshCw, Home } from "../ui/icons";
 
 class ErrorBoundary extends Component {
   constructor(props) {

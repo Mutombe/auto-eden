@@ -5,7 +5,7 @@ import { Link } from "react-router-dom";
 import {
   Newspaper, Calendar, ArrowRight, Tag,
   TrendingUp, Award, Users, Zap, Loader2
-} from "lucide-react";
+} from "../components/ui/icons";
 import api from "../utils/api";
 
 /**

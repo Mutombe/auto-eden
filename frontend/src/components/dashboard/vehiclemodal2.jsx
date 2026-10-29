@@ -45,7 +45,7 @@ import {
   Star,
   Award,
   ImageIcon,
-} from 'lucide-react';
+} from "../ui/icons";
 import { motion, AnimatePresence } from 'framer-motion';
 import ImageWithFallback from '../../utils/smartImage';
 // Image Gallery Component

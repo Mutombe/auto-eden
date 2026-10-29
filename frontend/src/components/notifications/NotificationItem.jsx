@@ -8,7 +8,7 @@ import {
   Car,
   Trash2,
   Check
-} from "lucide-react";
+} from "../ui/icons";
 import { formatDistanceToNow } from "date-fns";
 
 const NOTIFICATION_ICONS = {

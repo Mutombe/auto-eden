@@ -6,7 +6,7 @@ import {
   BookOpen, Car, Shield, DollarSign, Camera, 
   FileCheck, Search, Key, ArrowRight, Clock,
   CheckCircle, HelpCircle, Lightbulb
-} from "lucide-react";
+} from "../components/ui/icons";
 
 /**
  * Learn Page - Educational content about Auto Eden

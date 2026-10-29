@@ -10,9 +10,24 @@ from django.db import models
 from django.db.models.signals import post_save, post_delete
 from django.core.cache import cache
 from .models import Vehicle
+import logging
+import threading
+
+logger = logging.getLogger(__name__)
+
+def send_mail_async(*args, **kwargs):
+    """Send email on a background thread so saves never wait on the SMTP server."""
+    def _send():
+        try:
+            send_mail(*args, **kwargs)
+        except Exception:
+            logger.exception("Signal email failed")
+    threading.Thread(target=_send, daemon=True).start()
 
 @receiver([post_save, post_delete], sender=Vehicle)
 def increment_marketplace_cache_version(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
     try:
         # Increment cache version to bust all marketplace caches
         version = cache.get('marketplace_cache_version', 1)
@@ -23,13 +38,15 @@ def increment_marketplace_cache_version(sender, instance, **kwargs):
 
 @receiver(post_save, sender=Vehicle)
 def handle_new_vehicle(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
     if created:
         # Email to admin
         admin_subject = f"New Vehicle Listing: {instance.make} {instance.model} ({instance.year})"
         admin_message = render_to_string('emails/new_vehicle_admin.html', {
             'vehicle': instance
         })
-        send_mail(
+        send_mail_async(
             admin_subject,
             admin_message,
             settings.DEFAULT_FROM_EMAIL,
@@ -41,13 +58,15 @@ def handle_new_vehicle(sender, instance, created, **kwargs):
 # New Bid Notification
 @receiver(post_save, sender=Bid)
 def handle_new_bid(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
     if created:
         # Email to admin
         admin_subject = f"New Bid for {instance.vehicle}"
         admin_message = render_to_string('emails/new_bid_admin.html', {
             'bid': instance
         })
-        send_mail(
+        send_mail_async(
             admin_subject,
             admin_message,
             settings.DEFAULT_FROM_EMAIL,
@@ -58,6 +77,8 @@ def handle_new_bid(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=Vehicle)
 def check_vehicle_matches(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
     # Initialize matching_searches as an empty queryset
     matching_searches = VehicleSearch.objects.none()
 
@@ -88,7 +109,7 @@ def check_vehicle_matches(sender, instance, created, **kwargs):
             'user': search.user
         })
         
-        send_mail(
+        send_mail_async(
             user_subject,
             strip_tags(user_message),
             settings.DEFAULT_FROM_EMAIL,
@@ -99,24 +120,30 @@ def check_vehicle_matches(sender, instance, created, **kwargs):
 
 @receiver(post_save, sender=User)
 def create_user_profile(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
     if created:
         Profile.objects.create(user=instance)
 
 
 @receiver(post_save, sender=User)
 def save_user_profile(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
     instance.profile.save()
 
 
 @receiver(post_save, sender=User)
 def handle_new_user_registration(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
     if created:
         # Email to admin
         admin_subject = f"New User Registration: {instance.email}"
         admin_message = render_to_string('emails/new_user_admin.html', {
             'user': instance
         })
-        send_mail(
+        send_mail_async(
             admin_subject,
             strip_tags(admin_message),
             settings.DEFAULT_FROM_EMAIL,
@@ -130,7 +157,7 @@ def handle_new_user_registration(sender, instance, created, **kwargs):
         user_message = render_to_string('emails/welcome_user.html', {
             'user': instance
         })
-        send_mail(
+        send_mail_async(
             user_subject,
             strip_tags(user_message),
             settings.DEFAULT_FROM_EMAIL,
@@ -149,12 +176,14 @@ def handle_new_user_registration(sender, instance, created, **kwargs):
 # 2. Vehicle Deletion Signal
 @receiver(models.signals.post_delete, sender=Vehicle)
 def handle_vehicle_deletion(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
     # Email to admin
     admin_subject = f"Vehicle Deleted: {instance.make} {instance.model} ({instance.year})"
     admin_message = render_to_string('emails/vehicle_deleted_admin.html', {
         'vehicle': instance
     })
-    send_mail(
+    send_mail_async(
         admin_subject,
         strip_tags(admin_message),
         settings.DEFAULT_FROM_EMAIL,
@@ -170,7 +199,7 @@ def handle_vehicle_deletion(sender, instance, **kwargs):
             'vehicle': instance,
             'user': instance.owner
         })
-        send_mail(
+        send_mail_async(
             owner_subject,
             strip_tags(owner_message),
             settings.DEFAULT_FROM_EMAIL,
@@ -182,12 +211,14 @@ def handle_vehicle_deletion(sender, instance, **kwargs):
 # 3. User Deletion Signal
 @receiver(models.signals.post_delete, sender=User)
 def handle_user_deletion(sender, instance, **kwargs):
+    if kwargs.get('raw'):
+        return
     # Email to admin
     admin_subject = f"User Account Deleted: {instance.email}"
     admin_message = render_to_string('emails/user_deleted_admin.html', {
         'user': instance
     })
-    send_mail(
+    send_mail_async(
         admin_subject,
         strip_tags(admin_message),
         settings.DEFAULT_FROM_EMAIL,
@@ -199,6 +230,8 @@ def handle_user_deletion(sender, instance, **kwargs):
 # 4. Vehicle Edited Signal
 @receiver(models.signals.post_save, sender=Vehicle)
 def handle_vehicle_edited(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
     if not created and instance.tracker.changed(): 
         changed_fields = instance.tracker.changed()
         
@@ -208,7 +241,7 @@ def handle_vehicle_edited(sender, instance, created, **kwargs):
             'vehicle': instance,
             'changes': changed_fields
         })
-        send_mail(
+        send_mail_async(
             admin_subject,
             strip_tags(admin_message),
             settings.DEFAULT_FROM_EMAIL,
@@ -226,7 +259,7 @@ def handle_vehicle_edited(sender, instance, created, **kwargs):
                 'user': instance.owner,
                 'changes': {k: v for k, v in changed_fields.items() if k in significant_fields}
             })
-            send_mail(
+            send_mail_async(
                 owner_subject,
                 strip_tags(owner_message),
                 settings.DEFAULT_FROM_EMAIL,
@@ -238,6 +271,8 @@ def handle_vehicle_edited(sender, instance, created, **kwargs):
 # 5. Vehicle Physical Verification Signal
 @receiver(models.signals.post_save, sender=Vehicle)
 def handle_vehicle_physical_verification(sender, instance, created, **kwargs):
+    if kwargs.get('raw'):
+        return
     if not created and instance.tracker.has_changed('verification_state') and instance.verification_state == 'physical':
         # Email to owner
         owner_subject = f"Your Vehicle Has Been Physically Verified!"
@@ -245,7 +280,7 @@ def handle_vehicle_physical_verification(sender, instance, created, **kwargs):
             'vehicle': instance,
             'user': instance.owner
         })
-        send_mail(
+        send_mail_async(
             owner_subject,
             strip_tags(owner_message),
             settings.DEFAULT_FROM_EMAIL,

@@ -4,7 +4,7 @@ import { motion } from "framer-motion";
 import {
   Mail, Phone, MapPin, Clock, Send,
   MessageCircle, CheckCircle, AlertCircle
-} from "lucide-react";
+} from "../components/ui/icons";
 import api from "../utils/api";
 
 /**

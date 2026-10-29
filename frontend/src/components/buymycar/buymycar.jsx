@@ -8,20 +8,9 @@ import {
   fetchInstantSaleVehicles,
   createVehicle,
 } from "../../redux/slices/vehicleSlice";
-import {
-  Car,
-  Clock,
-  DollarSign,
-  CheckCircle,
-  Plus,
-  Upload,
-} from "lucide-react";
+import { Car, Clock, DollarSign, CheckCircle, Plus, Upload, HandCoins, Checks, CarProfile } from "../ui/icons";
 import { motion } from "framer-motion";
-import { GiTakeMyMoney } from "react-icons/gi";
-import { MdStarPurple500 } from "react-icons/md";
-import { IoCheckmarkDone } from "react-icons/io5";
-import { IoCheckmarkDoneCircleOutline } from "react-icons/io5";
-import { IoCarSportOutline } from "react-icons/io5";
+import { compressImage } from "../admin/lib/compressImage";
 
 export default function BuyMyCarPage() {
   const dispatch = useDispatch();
@@ -95,11 +84,13 @@ export default function BuyMyCarPage() {
     checkVIN();
   }, [formData.vin]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     if (isSubmitting) return;
 
     setIsSubmitting(true);
     const vehicleFormData = new FormData();
+    // Shrink phone photos first so the upload doesn't time out on the server
+    const compressedImages = await Promise.all(selectedImages.map(compressImage));
 
     // Append vehicle data
     vehicleFormData.append("make", formData.make);
@@ -111,7 +102,7 @@ export default function BuyMyCarPage() {
     vehicleFormData.append("listing_type", "instant_sale");
 
     // Append images
-    selectedImages.forEach((image) => {
+    compressedImages.forEach((image) => {
       vehicleFormData.append("image_files", image);
     });
 
@@ -163,7 +154,7 @@ export default function BuyMyCarPage() {
             <div className="bg-white p-6 md:p-10 rounded-2xl shadow-lg w-full max-w-3xl">
               <div className="flex justify-center mb-6">
                 <div className="h-16 w-16 bg-red-600 flex items-center justify-center rounded-full">
-                  <IoCarSportOutline size={32} className="text-white" />
+                  <CarProfile size={32} className="text-white" />
                 </div>
               </div>
               <h1 className="text-3xl md:text-4xl font-bold mb-4 text-gray-900">
@@ -193,7 +184,7 @@ export default function BuyMyCarPage() {
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8 w-full">
               {[
                 {
-                  icon: <GiTakeMyMoney size={24} />,
+                  icon: <HandCoins size={24} />,
                   title: "Instant Offer",
                   description:
                     "Receive a competitive offer for your vehicle within minutes of submission",
@@ -205,7 +196,7 @@ export default function BuyMyCarPage() {
                     "Get paid quickly and securely once your vehicle details are verified",
                 },
                 {
-                  icon: <IoCheckmarkDone size={24} />,
+                  icon: <Checks size={24} />,
                   title: "No Fees",
                   description:
                     "Our service is completely free with no hidden costs or obligations",

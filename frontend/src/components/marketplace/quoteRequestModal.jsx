@@ -1,5 +1,6 @@
 // Enhanced Quote Request Component with proper form handling and validation
 import React, { useState } from "react";
+import { X, Car, Mail, MapPin, Phone } from "../ui/icons";
 import {
   Dialog,
   TextField,
@@ -16,7 +17,6 @@ import {
   Box
 } from "@mui/material";
 import { useSelector, useDispatch } from "react-redux";
-import { Close, CarRental, Email, Phone, LocationOn } from "@mui/icons-material";
 import { requestQuote } from "../../redux/slices/quoteSlice";
 
 const countries = [
@@ -199,11 +199,11 @@ const QuoteRequestModal = ({
                 "&:hover": { bgcolor: "rgba(255,255,255,0.1)" }
               }}
             >
-              <Close />
+              <X className="w-5 h-5" />
             </IconButton>
             
             <Box sx={{ display: "flex", alignItems: "center", mb: 1 }}>
-              <CarRental sx={{ mr: 2, fontSize: 30 }} />
+              <Car className="mr-4 w-[30px] h-[30px] shrink-0" />
               <Typography variant="h5" component="h2" sx={{ fontWeight: "bold" }}>
                 Request Vehicle Quote
               </Typography>
@@ -252,7 +252,7 @@ const QuoteRequestModal = ({
                 disabled={loading}
                 required
                 InputProps={{
-                  startAdornment: <Email sx={{ mr: 1, color: "text.secondary" }} />
+                  startAdornment: <Mail className="mr-2 w-5 h-5 text-gray-500 shrink-0" />
                 }}
               />
 
@@ -265,7 +265,7 @@ const QuoteRequestModal = ({
                     label="Country *"
                     onChange={(e) => handleInputChange("country", e.target.value)}
                     disabled={loading}
-                    startAdornment={<LocationOn sx={{ mr: 1, color: "text.secondary" }} />}
+                    startAdornment={<MapPin className="mr-2 w-5 h-5 text-gray-500 shrink-0" />}
                   >
                     {countries.map((country) => (
                       <MenuItem key={country} value={country}>
@@ -304,7 +304,7 @@ const QuoteRequestModal = ({
                 disabled={loading}
                 required
                 InputProps={{
-                  startAdornment: <Phone sx={{ mr: 1, color: "text.secondary" }} />
+                  startAdornment: <Phone className="mr-2 w-5 h-5 text-gray-500 shrink-0" />
                 }}
               />
 

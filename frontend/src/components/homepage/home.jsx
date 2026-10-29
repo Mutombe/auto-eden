@@ -1,215 +1,277 @@
 import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  ArrowRight, ChevronLeft, ChevronRight,
-  Shield, Check, Zap, DollarSign, Users,
-  Car, BadgeCheck, Handshake, Eye
-} from "lucide-react";
-import { useSelector, useDispatch } from "react-redux";
+import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Shield, Check, Zap, DollarSign, Users, Car, BadgeCheck, Handshake, Eye, CarProfile, ShieldCheck, ArrowsOutCardinal, ListChecks, Gauge, Fuel, Settings2, MapPin } from "../ui/icons";
 import { Link } from "react-router-dom";
-import { fetchMarketplace } from "../../redux/slices/vehicleSlice";
-import { SiFsecure } from "react-icons/si";
-import { IoCarSportOutline } from "react-icons/io5";
-import { TbCarSuv } from "react-icons/tb";
-import { PiArrowsOutCardinalLight } from "react-icons/pi";
-import { PiHandshake } from "react-icons/pi";
-import { MdEmojiPeople } from "react-icons/md";
-import { TiThListOutline } from "react-icons/ti";
+import { useMarketplace, prefetchVehicle } from "../../lib/publicApi";
+import { useProgressiveReveal, formatPrice } from "../../lib/progressive";
+import Bone from "../ui/Bone";
+import SmartImage from "../../utils/smartImage";
 
 // Import the hero component
 import HeroCarousel from "./hero";
 
 /**
- * Vehicle Card Skeleton - Shows while loading
+ * Featured vehicles — shared pieces
+ */
+// Listing data is often ALL CAPS ("NISSAN X-TRAIL"); show it in title case, keeping short
+// acronyms (BMW, GTI, SUV) as they are.
+const titleCase = (s = "") =>
+  String(s)
+    .split(" ")
+    .map((w) =>
+      w.length > 3 && w === w.toUpperCase()
+        ? w.toLowerCase().replace(/(^|-)([a-z])/g, (_, p, c) => p + c.toUpperCase())
+        : w
+    )
+    .join(" ");
+
+// Mileage is free text in the DB ("85000", "85,000km").
+const formatKm = (m) => {
+  const n = Number(String(m ?? "").replace(/[^\d.]/g, ""));
+  return n ? `${n.toLocaleString()} km` : null;
+};
+
+const CARD_WIDTH =
+  "flex-none snap-start w-[84%] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-3rem)/3)] xl:w-[calc((100%-4.5rem)/4)]";
+
+/**
+ * Vehicle Card Skeleton — same frame, inset photo, rows and footer as the real card.
  */
 const VehicleCardSkeleton = () => (
-  <div className="flex-shrink-0 w-[320px] sm:w-[380px] lg:w-[420px] bg-white rounded-2xl overflow-hidden shadow-lg animate-pulse">
-    <div className="aspect-[16/10] bg-gray-200" />
-    <div className="p-6">
-      <div className="h-4 bg-gray-200 rounded w-1/3 mb-3" />
-      <div className="h-6 bg-gray-200 rounded w-2/3 mb-4" />
-      <div className="flex gap-3">
-        <div className="h-10 bg-gray-200 rounded-lg flex-1" />
-        <div className="h-10 bg-gray-200 rounded-lg flex-1" />
+  <div aria-hidden="true" className={CARD_WIDTH}>
+    <div className="h-full bg-white rounded-[22px] ring-1 ring-gray-200/70 p-2">
+      <Bone className="aspect-[4/3] w-full rounded-[16px]" />
+      <div className="px-2 pt-3 pb-2">
+        <Bone className="h-3 w-24" />
+        <Bone className="h-5 w-3/5 mt-2" />
+        <div className="flex gap-1.5 mt-3.5">
+          <Bone className="h-6 w-20 rounded-full" />
+          <Bone className="h-6 w-16 rounded-full" />
+          <Bone className="h-6 w-20 rounded-full" />
+        </div>
+        <div className="flex items-end justify-between mt-5 pt-4 border-t border-gray-100">
+          <div>
+            <Bone className="h-2.5 w-10" />
+            <Bone className="h-6 w-24 mt-1.5" />
+          </div>
+          <Bone className="h-10 w-10 rounded-full" />
+        </div>
       </div>
     </div>
   </div>
 );
 
 /**
- * Vehicle Card Component - Tesla-inspired design
+ * Vehicle Card — the whole card is one link; photo sits inset in the card like the hero
+ * sits in the page. Quiet scrims only where text overlays the photo.
  */
-const VehicleCard = ({ vehicle }) => {
-  // Use main_image like marketplace page does, fallback to images array
-  const mainImage = vehicle.main_image || vehicle.images?.[0]?.image || "/placeholder-car.jpg";
-  const price = vehicle.price || vehicle.proposed_price;
-  
+const VehicleCard = ({ vehicle, priority }) => {
+  const mainImage = vehicle.main_image || vehicle.images?.[0]?.image;
+  const instant = vehicle.listing_type === "instant_sale";
+  const price = instant ? vehicle.proposed_price || vehicle.price : vehicle.price || vehicle.proposed_price;
+  const verified = vehicle.verification_state === "physical";
+  const name = titleCase(`${vehicle.make} ${vehicle.model}`);
+  const specs = [
+    { icon: Gauge, label: formatKm(vehicle.mileage) },
+    { icon: Fuel, label: vehicle.fuel_type && titleCase(vehicle.fuel_type).replace(/^./, (c) => c.toUpperCase()) },
+    { icon: Settings2, label: vehicle.transmission && titleCase(vehicle.transmission).replace(/^./, (c) => c.toUpperCase()) },
+  ].filter((s) => s.label);
+
   return (
     <motion.div
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.5 }}
-      className="flex-shrink-0 w-[320px] sm:w-[380px] lg:w-[420px] group"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      transition={{ duration: 0.3 }}
+      className={CARD_WIDTH}
     >
-      <div className="pacaembu-font relative bg-gray-100 rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-500">
-        {/* Vehicle Category Tag */}
-        <div className="absolute top-4 left-4 z-10">
-          <span className="px-3 py-1.5 bg-white/90 backdrop-blur-sm text-gray-700 text-xs font-medium rounded-full">
-            {vehicle.body_type || "Vehicle"}
-          </span>
+      <Link
+        to={`/vehicles/${vehicle.id}`}
+        onMouseEnter={() => prefetchVehicle(vehicle.id)}
+        onTouchStart={() => prefetchVehicle(vehicle.id)}
+        onFocus={() => prefetchVehicle(vehicle.id)}
+        aria-label={`${vehicle.year} ${name}, ${formatPrice(price)}`}
+        className="group/card pacaembu-font flex flex-col h-full bg-white rounded-[22px] p-2 ring-1 ring-gray-200/70 shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-[0_22px_44px_-18px_rgba(16,24,40,0.28)] hover:-translate-y-1 transition-[box-shadow,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+      >
+        {/* Photo */}
+        <div className="relative aspect-[4/3] overflow-hidden rounded-[16px] bg-gray-100 isolate">
+          <SmartImage
+            src={mainImage}
+            alt={`${vehicle.year} ${name} for sale in Zimbabwe`}
+            className="w-full h-full object-cover !transition-[transform,opacity] !duration-700 ease-out group-hover/card:scale-[1.04]"
+            loading={priority ? "eager" : "lazy"}
+            fetchpriority={priority ? "high" : "auto"}
+          />
+          {/* Soft scrim at the top only, so the chips stay legible on bright photos */}
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent" />
+
+          <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
+            <div className="flex flex-wrap gap-1.5">
+              {verified && (
+                <span className="inline-flex items-center gap-1 h-7 pl-1.5 pr-2.5 rounded-full bg-white/95 backdrop-blur text-[12px] font-semibold text-gray-900 shadow-sm">
+                  <BadgeCheck weight="fill" className="w-4 h-4 text-emerald-500" />
+                  Verified
+                </span>
+              )}
+              {vehicle.body_type && (
+                <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-black/35 backdrop-blur-md text-[12px] font-medium text-white capitalize">
+                  {vehicle.body_type}
+                </span>
+              )}
+            </div>
+            <span className="grid place-items-center w-9 h-9 rounded-full bg-white/95 text-gray-900 shadow-sm translate-y-0 sm:opacity-0 sm:-translate-y-1 group-hover/card:opacity-100 group-hover/card:translate-y-0 transition-all duration-300">
+              <ArrowUpRight weight="bold" className="w-4 h-4" />
+            </span>
+          </div>
+
+          {instant && (
+            <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-red-600 text-white text-[12px] font-semibold shadow-sm">
+              <Zap weight="fill" className="w-3.5 h-3.5" />
+              Instant sale
+            </span>
+          )}
         </div>
 
-        {/* Verification Badge */}
-        {vehicle.is_physically_verified && (
-          <div className="absolute top-4 right-4 z-10">
-            <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-              <BadgeCheck className="w-5 h-5 text-white" />
+        {/* Details */}
+        <div className="flex flex-col flex-1 px-2 pt-3 pb-2">
+          <p className="text-[12.5px] text-gray-500 flex items-center gap-1.5 min-w-0">
+            <span className="tabular-nums font-medium text-gray-700">{vehicle.year}</span>
+            {vehicle.location && (
+              <>
+                <span className="text-gray-300">•</span>
+                <MapPin className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+                <span className="truncate">{titleCase(vehicle.location)}</span>
+              </>
+            )}
+          </p>
+          <h3 className="mt-0.5 text-[17px] sm:text-lg font-semibold text-gray-900 leading-snug truncate">{name}</h3>
+
+          {specs.length > 0 && (
+            <ul className="mt-3 flex flex-wrap gap-1 sm:gap-1.5">
+              {specs.map(({ icon: Icon, label }) => (
+                <li key={label} className="inline-flex items-center gap-1 sm:gap-1.5 h-6 sm:h-7 px-2 sm:px-2.5 rounded-full bg-gray-50 ring-1 ring-gray-100 text-[11.5px] sm:text-[12px] text-gray-600 whitespace-nowrap">
+                  <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400" />
+                  {label}
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <div className="mt-auto pt-4">
+            <div className="flex items-end justify-between gap-3 pt-4 border-t border-gray-100">
+              <div className="min-w-0">
+                <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{instant ? "Offer price" : "Price"}</p>
+                <p className="text-[22px] leading-7 font-semibold text-gray-900 tabular-nums truncate">{formatPrice(price)}</p>
+              </div>
+              <span className="shrink-0 inline-flex items-center gap-1.5 h-10 pl-4 pr-3 rounded-full bg-gray-900 text-white text-sm font-medium group-hover/card:bg-red-600 transition-colors duration-300">
+                View
+                <ArrowRight weight="bold" className="w-4 h-4 transition-transform duration-300 group-hover/card:translate-x-0.5" />
+              </span>
             </div>
           </div>
-        )}
-
-        {/* Vehicle Image */}
-        <div className="aspect-[16/10] overflow-hidden">
-          <img
-            src={mainImage}
-            alt={`${vehicle.make} ${vehicle.model} - Buy at Auto Eden Zimbabwe`}
-            className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-            loading="lazy"
-            onError={(e) => {
-              e.target.src = "/placeholder-car.jpg";
-            }}
-          />
         </div>
-
-        {/* Card Content - Bottom aligned like Tesla */}
-        <div className="absolute bottom-0 left-0 right-0 p-6 bg-gradient-to-t from-black/80 via-black/50 to-transparent">
-          {/* Vehicle Name */}
-          <h3 className="text-2xl font-medium text-white mb-1">
-            {vehicle.make} {vehicle.model}
-          </h3>
-          
-          {/* Year & Price */}
-          <p className="text-white/80 text-sm mb-4">
-            {vehicle.year} • From ${price?.toLocaleString() || "TBA"}
-          </p>
-
-          {/* CTA Buttons */}
-          <div className="flex gap-3">
-            <Link
-              to={`/vehicles/${vehicle.id}`}
-              className="flex-1 px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg text-center transition-colors"
-            >
-              View Details
-            </Link>
-            <Link
-              to={`/vehicles/${vehicle.id}`}
-              className="flex-1 px-4 py-2.5 bg-white hover:bg-gray-100 text-gray-900 text-sm font-medium rounded-lg text-center transition-colors"
-            >
-              Learn More
-            </Link>
-          </div>
-        </div>
-      </div>
+      </Link>
     </motion.div>
   );
 };
 
 /**
- * Featured Vehicles Section - Horizontal scroll like Tesla
+ * Featured Vehicles Section — snap-scrolling rail: one card + a peek on phones, 2/3/4 across
+ * on larger screens. Arrows step one card and disable at the ends; a slim track shows position.
  */
 const FeaturedVehicles = () => {
-  const dispatch = useDispatch();
-  const { marketplace, loading } = useSelector((state) => state.vehicles);
-  const [scrollPosition, setScrollPosition] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-  const scrollContainerRef = React.useRef(null);
+  const railRef = React.useRef(null);
+  const [rail, setRail] = useState({ start: true, end: false, thumb: 100, offset: 0 });
+  const { data: marketplace, isLoading } = useMarketplace({ page: 1 });
+
+  // Pick up to 8 vehicles with photos, once per data load (no reordering on re-render).
+  const featuredVehicles = React.useMemo(() => {
+    const vehicles = (marketplace?.results || []).filter((v) => v.main_image);
+    return [...vehicles].sort(() => 0.5 - Math.random()).slice(0, 8);
+  }, [marketplace]);
+  const revealed = useProgressiveReveal(featuredVehicles.length, !isLoading, { step: 60 });
+
+  const measure = React.useCallback(() => {
+    const el = railRef.current;
+    if (!el) return;
+    const max = el.scrollWidth - el.clientWidth;
+    setRail({
+      start: el.scrollLeft <= 4,
+      end: el.scrollLeft >= max - 4,
+      thumb: el.scrollWidth ? Math.min(100, (el.clientWidth / el.scrollWidth) * 100) : 100,
+      offset: el.scrollWidth ? (el.scrollLeft / el.scrollWidth) * 100 : 0,
+    });
+  }, []);
 
   useEffect(() => {
-    setIsLoading(true);
-    // Fetch with default filters to get marketplace vehicles
-    const defaultFilters = {
-      page: 1,
-      page_size: 12,
-    };
-    dispatch(fetchMarketplace(defaultFilters))
-      .then(() => setIsLoading(false))
-      .catch(() => setIsLoading(false));
-  }, [dispatch]);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, [measure, featuredVehicles.length, revealed]);
 
-  // Get 5 random vehicles from marketplace.results
-  const featuredVehicles = React.useMemo(() => {
-    const vehicles = marketplace?.results || [];
-    if (!vehicles.length) return [];
-    const shuffled = [...vehicles].sort(() => 0.5 - Math.random());
-    return shuffled.slice(0, 5);
-  }, [marketplace]);
-
-  const scroll = (direction) => {
-    const container = scrollContainerRef.current;
-    if (!container) return;
-    
-    const scrollAmount = 400;
-    const newPosition = direction === 'left' 
-      ? container.scrollLeft - scrollAmount 
-      : container.scrollLeft + scrollAmount;
-    
-    container.scrollTo({ left: newPosition, behavior: 'smooth' });
-    setScrollPosition(newPosition);
+  const step = (dir) => {
+    const el = railRef.current;
+    const card = el?.firstElementChild;
+    if (!el || !card) return;
+    const gap = parseFloat(getComputedStyle(el).columnGap) || 16;
+    el.scrollBy({ left: dir * (card.getBoundingClientRect().width + gap), behavior: "smooth" });
   };
 
+  const arrow = (dir, Icon, label, disabled) => (
+    <button
+      onClick={() => step(dir)}
+      disabled={disabled}
+      aria-label={label}
+      className="grid place-items-center w-11 h-11 rounded-full bg-white ring-1 ring-gray-200 text-gray-800 hover:bg-gray-900 hover:text-white hover:ring-gray-900 disabled:opacity-35 disabled:pointer-events-none transition-colors"
+    >
+      <Icon weight="bold" className="w-4 h-4" />
+    </button>
+  );
+
   return (
-    <section className="pacaembu-font py-12 lg:py-16 bg-white" aria-labelledby="featured-vehicles-heading">
+    <section className="pacaembu-font py-14 lg:py-20 bg-white" aria-labelledby="featured-vehicles-heading">
       <div className="max-w-[1600px] mx-auto">
         {/* Section Header */}
-        <div className="px-4 sm:px-6 lg:px-8 mb-8 flex items-center justify-between">
+        <div className="px-4 sm:px-6 lg:px-8 mb-6 sm:mb-8 flex items-end justify-between gap-4">
           <div>
-            <h2 id="featured-vehicles-heading" className="text-2xl lg:text-3xl font-medium text-gray-900">
+            <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-red-600">
+              <BadgeCheck className="w-4 h-4" />
+              Hand-picked
+            </span>
+            <h2 id="featured-vehicles-heading" className="mt-2 text-2xl lg:text-3xl font-medium text-gray-900">
               Featured Vehicles
             </h2>
             <p className="text-gray-500 mt-1">Verified and ready for you</p>
           </div>
-          
-          {/* Navigation Arrows */}
-          <div className="hidden sm:flex items-center gap-2">
-            <button
-              onClick={() => scroll('left')}
-              className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-              aria-label="Scroll left"
-            >
-              <ChevronLeft className="w-5 h-5 text-gray-700" />
-            </button>
-            <button
-              onClick={() => scroll('right')}
-              className="p-3 rounded-full bg-gray-100 hover:bg-gray-200 transition-colors"
-              aria-label="Scroll right"
-            >
-              <ChevronRight className="w-5 h-5 text-gray-700" />
-            </button>
+
+          <div className="flex items-center gap-2 shrink-0">
+            <Link to="/marketplace" className="sm:mr-3 inline-flex items-center gap-1 text-sm font-medium text-red-600 hover:text-red-700">
+              View all
+              <ArrowRight className="w-4 h-4" />
+            </Link>
+            <div className="hidden sm:flex items-center gap-2">
+              {arrow(-1, ChevronLeft, "Previous vehicles", rail.start)}
+              {arrow(1, ChevronRight, "Next vehicles", rail.end)}
+            </div>
           </div>
         </div>
 
-        {/* Scrollable Cards Container */}
+        {/* Rail */}
         <div
-          ref={scrollContainerRef}
-          className="flex gap-4 lg:gap-6 overflow-x-auto scrollbar-hide px-4 sm:px-6 lg:px-8 pb-4"
-          style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+          ref={railRef}
+          onScroll={measure}
+          className="flex gap-4 lg:gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-px-4 sm:scroll-px-6 lg:scroll-px-8 px-4 sm:px-6 lg:px-8 py-3 -my-3"
         >
           {isLoading ? (
-            // Show skeletons while loading
-            <>
-              <VehicleCardSkeleton />
-              <VehicleCardSkeleton />
-              <VehicleCardSkeleton />
-              <VehicleCardSkeleton />
-              <VehicleCardSkeleton />
-            </>
+            Array.from({ length: 4 }).map((_, i) => <VehicleCardSkeleton key={i} />)
           ) : featuredVehicles.length > 0 ? (
-            // Show actual vehicles
-            featuredVehicles.map((vehicle, index) => (
-              <VehicleCard key={vehicle.id} vehicle={vehicle} />
-            ))
+            featuredVehicles.map((vehicle, index) =>
+              index < revealed ? (
+                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} />
+              ) : (
+                <VehicleCardSkeleton key={`sk-${vehicle.id}`} />
+              )
+            )
           ) : (
-            // Fallback if no vehicles
             <div className="w-full text-center py-12 text-gray-500">
               <Car className="w-12 h-12 mx-auto mb-4 opacity-50" />
               <p>No vehicles available at the moment</p>
@@ -217,15 +279,14 @@ const FeaturedVehicles = () => {
           )}
         </div>
 
-        {/* View All Link */}
+        {/* Position track */}
         <div className="px-4 sm:px-6 lg:px-8 mt-6">
-          <Link
-            to="/marketplace"
-            className="inline-flex items-center text-blue-600 hover:text-blue-700 font-medium transition-colors"
-          >
-            View all vehicles
-            <ArrowRight className="w-4 h-4 ml-2" />
-          </Link>
+          <div className="relative h-1 rounded-full bg-gray-100 overflow-hidden" aria-hidden="true">
+            <div
+              className="absolute inset-y-0 rounded-full bg-gray-900 transition-[left,width] duration-150"
+              style={{ width: `${rail.thumb}%`, left: `${rail.offset}%` }}
+            />
+          </div>
         </div>
       </div>
     </section>
@@ -307,25 +368,25 @@ const BrandLogosMarquee = () => {
 const NarrativeSection = () => {
   const steps = [
     {
-      icon: <IoCarSportOutline className="w-8 h-8" />,
+      icon: <CarProfile className="w-8 h-8" />,
       title: "List for Free",
       description: "Sellers upload vehicles at zero cost. No listing fees, no hidden charges.",
       forWho: "For Sellers"
     },
     {
-      icon: <SiFsecure className="w-8 h-8" />,
+      icon: <ShieldCheck className="w-8 h-8" />,
       title: "Free Verification",
       description: "We verify every vehicle digitally and physically at no cost to you.",
       forWho: "Our Promise"
     },
     {
-      icon: <PiArrowsOutCardinalLight className="w-8 h-8" />,
+      icon: <ArrowsOutCardinal className="w-8 h-8" />,
       title: "Browse Freely",
       description: "Buyers explore our entire marketplace without any viewing fees.",
       forWho: "For Buyers"
     },
     {
-      icon: <PiHandshake className="w-8 h-8" />,
+      icon: <Handshake className="w-8 h-8" />,
       title: "Secure Transaction",
       description: "We handle the payment. Seller gets paid, buyer gets their car safely.",
       forWho: "The Deal"
@@ -368,7 +429,7 @@ const NarrativeSection = () => {
               className="relative p-6 rounded-2xl bg-gray-50 hover:bg-gray-100 transition-colors group"
             >
               {/* Step Number */}
-              <div className="absolute -top-3 -left-3 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
+              <div className="absolute top-5 right-5 w-8 h-8 bg-red-600 text-white rounded-full flex items-center justify-center text-sm font-bold">
                 {index + 1}
               </div>
               
@@ -422,7 +483,7 @@ const NarrativeSection = () => {
 const TopSellersSection = () => {
   const topSellers = [
     { make: "Toyota", model: "Hilux", image: "/top-sellers/autoeden-hilux.avif", count: 45 },
-    { make: "Honda", model: "Fit", image: "/top-sellers/autoeden-c-class.jpg", count: 38 },
+    { make: "Honda", model: "Fit", image: "/top-sellers/autoeden-honda-fit.avif", count: 38 },
     { make: "Nissan", model: "X-Trail", image: "/top-sellers/autoeden-xtrail.webp", count: 32 },
     { make: "Toyota", model: "Aqua", image: "/top-sellers/2023-toyota-aqua-gr-sport.jpg", count: 28 },
     { make: "Mercedes", model: "C-Class", image: "/top-sellers/autoeden-c-class.jpg", count: 24 },
@@ -529,15 +590,15 @@ const SimpleCTA = () => (
       {/* Trust Badges */}
       <div className="flex flex-wrap items-center justify-center gap-6 mt-10 text-sm text-gray-400">
         <div className="flex items-center">
-          <TiThListOutline className="w-5 h-5 mr-2 text-green-400" />
+          <ListChecks className="w-5 h-5 mr-2 text-green-400" />
           100% Free Listing
         </div>
         <div className="flex items-center">
-          <SiFsecure className="w-5 h-5 mr-2 text-blue-400" />
+          <ShieldCheck className="w-5 h-5 mr-2 text-blue-400" />
           Verified Vehicles
         </div>
         <div className="flex items-center">
-          <MdEmojiPeople className="w-5 h-5 mr-2 text-purple-400" />
+          <Users className="w-5 h-5 mr-2 text-purple-400" />
           1000+ Happy Customers
         </div>
       </div>

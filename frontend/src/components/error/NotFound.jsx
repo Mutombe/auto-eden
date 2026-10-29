@@ -1,5 +1,5 @@
 import React from "react";
-import { Car, Home, Search, ArrowLeft } from "lucide-react";
+import { Car, Home, Search, ArrowLeft } from "../ui/icons";
 import { useNavigate, Link } from "react-router-dom";
 
 const NotFound = () => {

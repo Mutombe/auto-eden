@@ -2,13 +2,7 @@
 import React from "react";
 import { useParams, Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { 
-  ArrowLeft, Clock, Calendar, User, Share2, 
-  Facebook, Twitter, Linkedin, Link as LinkIcon,
-  ArrowRight, BookOpen, CheckCircle, AlertCircle,
-  Car, Shield, DollarSign, Camera, Search, Key
-} from "lucide-react";
-import { FaXTwitter } from "react-icons/fa6";
+import { ArrowLeft, Clock, Calendar, User, Share2, Facebook, Twitter, Linkedin, Link as LinkIcon, ArrowRight, BookOpen, CheckCircle, AlertCircle, Car, Shield, DollarSign, Camera, Search, Key, XLogo } from "../components/ui/icons";
 /**
  * Article Content Database
  * Full SEO-optimized articles for the Learning Center
@@ -3778,7 +3772,7 @@ export default function ArticlePage() {
                 className="p-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
                 aria-label="Share on Twitter"
               >
-                <FaXTwitter className="w-5 h-5 text-gray-600" />
+                <XLogo className="w-5 h-5 text-gray-600" />
               </a>
               <a
                 href={`https://www.linkedin.com/shareArticle?mini=true&url=${encodeURIComponent(shareUrl)}&title=${encodeURIComponent(article.title)}`}

@@ -2,12 +2,14 @@
 from pathlib import Path
 from datetime import timedelta
 import os
+import dj_database_url
 from dotenv import load_dotenv
 
-# Load environment variables from .env file
-load_dotenv()
-
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Load environment variables: backend/.env.local (git-ignored, local secrets) wins over .env
+load_dotenv(BASE_DIR / '.env.local')
+load_dotenv()
 SECRET_KEY = "django-insecure-rg5$^x0nm)lmj0v6-2^x#nhk9uewd&k=lc@%jsu3^f^y3##34)"
 
 DEBUG = os.getenv('DJANGO_ENV', 'production') == 'development'
@@ -127,8 +129,7 @@ CORS_ALLOW_HEADERS = [
     'x-requested-with',
 ]
 
-CORS_EXPOSE_HEADERS = ['content-type', 'authorization']
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_EXPOSE_HEADERS = ['content-type', 'authorization', 'content-disposition']
 CORS_ALLOW_CREDENTIALS = True
 CSRF_COOKIE_SECURE = not DEBUG
 SESSION_COOKIE_SECURE = not DEBUG
@@ -178,10 +179,10 @@ EMAIL_HOST = 'smtp.gmail.com'
 EMAIL_PORT = 587
 EMAIL_HOST_USER = 'simbamtombe@gmail.com'  # Your Gmail address
 EMAIL_HOST_PASSWORD = 'itzh jjkc hdmv csih'
-DEFAULT_FROM_EMAIL = 'noreply@parameter.co.zw'
+DEFAULT_FROM_EMAIL = 'admin@bitstudio.co.zw'
 EMAIL_USE_TLS = True
 EMAIL_USE_SSL = False
-SITE_URL = os.environ.get('SITE_URL', 'https://parameter.co.zw')
+SITE_URL = os.environ.get('SITE_URL', 'https://bitstudio.co.zw')
 
 
 #EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
@@ -279,21 +280,21 @@ CHANNEL_LAYERS = {
     },
 }
 
+# Database comes from DATABASE_URL (Neon Postgres). Set it in Render's environment
+# for production, and in backend/.env.local (git-ignored) for local development.
+if not os.getenv('DATABASE_URL'):
+    from django.core.exceptions import ImproperlyConfigured
+    raise ImproperlyConfigured("DATABASE_URL is not set. Add it to backend/.env.local or the environment.")
+
 DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql',
-        'NAME': 'autoeden_dinnercoat',
-        'USER': 'autoeden_dinnercoat',
-        'PASSWORD': 'e28eab23b29b3f0de748c00e8bf58f0c57f33cd0',
-        'HOST': '9q7a1c.h.filess.io',
-        'PORT': '5434',
-        'CONN_MAX_AGE': 0,
-        'OPTIONS': {
-            'options': '-c search_path=django_schema,public',
-            'connect_timeout': 5,
-        }
-    }
+    'default': dj_database_url.parse(
+        os.environ['DATABASE_URL'],
+        conn_max_age=600,
+        conn_health_checks=True,
+    )
 }
+# Neon's pooler runs PgBouncer in transaction mode, which can't hold server-side cursors.
+DATABASES['default']['DISABLE_SERVER_SIDE_CURSORS'] = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': [

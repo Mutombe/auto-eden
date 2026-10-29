@@ -1,5 +1,5 @@
 import React from "react";
-import { Star, ShieldCheck, Award, Zap, BadgeCheck } from "lucide-react";
+import { Star, ShieldCheck, Award, Zap, BadgeCheck } from "../ui/icons";
 import { Tooltip } from "@mui/material";
 
 const BADGE_CONFIG = {
@@ -42,7 +42,7 @@ const SellerRating = ({
         {[...Array(fullStars)].map((_, i) => (
           <Star
             key={`full-${i}`}
-            className={`${config.star} text-yellow-400 fill-yellow-400`}
+            weight="fill" className={`${config.star} text-yellow-400`}
           />
         ))}
 
@@ -51,7 +51,7 @@ const SellerRating = ({
           <div className="relative">
             <Star className={`${config.star} text-gray-300`} />
             <div className="absolute inset-0 overflow-hidden w-1/2">
-              <Star className={`${config.star} text-yellow-400 fill-yellow-400`} />
+              <Star weight="fill" className={`${config.star} text-yellow-400`} />
             </div>
           </div>
         )}

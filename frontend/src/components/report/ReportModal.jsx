@@ -15,7 +15,7 @@ import {
   Box,
   Typography,
 } from "@mui/material";
-import { Flag, AlertTriangle, X } from "lucide-react";
+import { Flag, AlertTriangle, X } from "../ui/icons";
 import api from "../../utils/api";
 
 const REPORT_TYPES = [

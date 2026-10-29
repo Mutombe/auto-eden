@@ -1,6 +1,7 @@
 #serializers.py
 from rest_framework import serializers
 from .models import QuoteRequest, Vehicle, VehicleImage, Bid, Profile, User, VehicleSearch, NotificationPreference, VehicleDraft
+from django.db import transaction
 from django.db.models import Q
 from django.contrib.auth.models import User
 from django.conf import settings
@@ -8,18 +9,53 @@ import logging
 logger = logging.getLogger(__name__)
 
 class UserSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only=True)
+    password = serializers.CharField(write_only=True, required=False)
 
     class Meta:
         model = User
         fields = ("id", "username", "email", "password", "is_active", "is_staff", "is_superuser")
 
     def create(self, validated_data):
+        if not validated_data.get('password'):
+            raise serializers.ValidationError({"password": "Password is required"})
         user = User.objects.create_user(
             username=validated_data['username'],
             email=validated_data['email'],
             password=validated_data['password']
         )
+        return user
+
+    def update(self, instance, validated_data):
+        # Never store a raw password: hash it if one was supplied
+        password = validated_data.pop('password', None)
+        instance = super().update(instance, validated_data)
+        if password:
+            instance.set_password(password)
+            instance.save(update_fields=['password'])
+        return instance
+
+
+class AdminUserSerializer(UserSerializer):
+    """User row for the admin console: adds activity fields and listing counts."""
+    first_name = serializers.CharField(required=False, allow_blank=True)
+    last_name = serializers.CharField(required=False, allow_blank=True)
+    phone = serializers.CharField(source='profile.phone', read_only=True, default='')
+    vehicle_count = serializers.IntegerField(read_only=True, default=0)
+    bid_count = serializers.IntegerField(read_only=True, default=0)
+
+    class Meta(UserSerializer.Meta):
+        fields = UserSerializer.Meta.fields + (
+            "first_name", "last_name", "phone", "date_joined", "last_login", "vehicle_count", "bid_count",
+        )
+        read_only_fields = ("date_joined", "last_login", "is_superuser")
+
+    def create(self, validated_data):
+        extra = {k: validated_data.pop(k) for k in ("first_name", "last_name", "is_staff", "is_active") if k in validated_data}
+        user = super().create(validated_data)
+        for field, value in extra.items():
+            setattr(user, field, value)
+        if extra:
+            user.save(update_fields=list(extra))
         return user
     
 class ProfileSerializer(serializers.ModelSerializer):
@@ -93,12 +129,12 @@ class VehicleImageSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VehicleImage
-        fields = ['image']
-    
+        fields = ['id', 'image']
+
 class VehicleSerializer(serializers.ModelSerializer):
     images = VehicleImageSerializer(many=True, read_only=True)
     image_files = serializers.ListField(
-        child=serializers.FileField(max_length=100000, allow_empty_file=False),
+        child=serializers.ImageField(allow_empty_file=False),
         write_only=True,
         required=False
     )
@@ -107,7 +143,14 @@ class VehicleSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         fields = '__all__'
-        read_only_fields = ['verification_state', 'is_visible']
+        # Verification is only changed through the admin-only `verify` action,
+        # so owners can't approve their own listings.
+        read_only_fields = [
+            'verification_state', 'is_visible',
+            'is_digitally_verified', 'is_physically_verified', 'is_rejected', 'rejection_reason',
+            'digitally_verified_by', 'digitally_verified_at',
+            'physically_verified_by', 'physically_verified_at', 'rejected_at',
+        ]
         extra_kwargs = {
             'vin': {'required': True},
             'mileage': {'required': True},
@@ -129,29 +172,29 @@ class VehicleSerializer(serializers.ModelSerializer):
             )
         return data
 
-    def create(self, validated_data):
-        image_files = validated_data.pop('image_files', [])
-        vehicle = super().create(validated_data)
-
+    def _save_images(self, vehicle, image_files):
         for image_file in image_files:
             try:
                 VehicleImage.objects.create(vehicle=vehicle, image=image_file)
             except Exception as e:
-                logger.error(f"Error creating VehicleImage: {str(e)}")
+                logger.exception("Error uploading vehicle image")
+                raise serializers.ValidationError(
+                    {"image_files": f"Could not upload {getattr(image_file, 'name', 'image')}: {e}"}
+                )
 
+    def create(self, validated_data):
+        image_files = validated_data.pop('image_files', [])
+        # Atomic: a failed image upload rolls back the vehicle instead of leaving it imageless
+        with transaction.atomic():
+            vehicle = super().create(validated_data)
+            self._save_images(vehicle, image_files)
         return vehicle
 
     def update(self, instance, validated_data):
         image_files = validated_data.pop('image_files', [])
-        vehicle = super().update(instance, validated_data)
-
-        # Only create new images if files were provided
-        for image_file in image_files:
-            try:
-                VehicleImage.objects.create(vehicle=vehicle, image=image_file)
-            except Exception as e:
-                logger.error(f"Error creating VehicleImage: {str(e)}")
-
+        with transaction.atomic():
+            vehicle = super().update(instance, validated_data)
+            self._save_images(vehicle, image_files)
         return vehicle
     
 class VehicleListSerializer(serializers.ModelSerializer):
@@ -161,6 +204,7 @@ class VehicleListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Vehicle
         fields = ('id', 'make', 'model', 'year', 'price','body_type', 'mileage','fuel_type',
+                 'transmission', 'listing_type', 'verification_state',
                  'location', 'created_at', 'main_image', 'owner_username')
 
     def get_main_image(self, obj):
@@ -263,6 +307,46 @@ class QuoteRequestSerializer(serializers.ModelSerializer):
         model = QuoteRequest
         fields = '__all__'
         read_only_fields = ('vehicle', 'is_processed', 'created_at')
+
+
+class VehicleSummarySerializer(serializers.ModelSerializer):
+    """Compact vehicle reference for admin tables (bids, quotes)."""
+    thumbnail = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Vehicle
+        fields = ['id', 'make', 'model', 'year', 'price', 'proposed_price', 'listing_type',
+                  'verification_state', 'thumbnail']
+
+    def get_thumbnail(self, obj):
+        # Uses the prefetched images; avoids a query per row
+        images = list(obj.images.all())
+        if images and images[0].image:
+            return f"https://{settings.AWS_S3_CUSTOM_DOMAIN}/{images[0].image.name}"
+        return None
+
+
+class AdminBidSerializer(serializers.ModelSerializer):
+    vehicle = VehicleSummarySerializer(read_only=True)
+    bidder = UserSerializer(read_only=True)
+
+    class Meta:
+        model = Bid
+        fields = ['id', 'vehicle', 'bidder', 'amount', 'message', 'status', 'created_at']
+        read_only_fields = ['id', 'vehicle', 'bidder', 'amount', 'message', 'created_at']
+
+
+class AdminQuoteRequestSerializer(serializers.ModelSerializer):
+    vehicle = VehicleSummarySerializer(read_only=True)
+    processed_by = serializers.StringRelatedField(read_only=True)
+
+    class Meta:
+        model = QuoteRequest
+        fields = '__all__'
+        read_only_fields = [
+            'vehicle', 'full_name', 'email', 'country', 'city', 'address', 'telephone', 'note',
+            'created_at', 'updated_at', 'processed_by', 'processed_at', 'quote_email_sent', 'email_sent_at',
+        ]
 
 
 class VehicleDraftSerializer(serializers.ModelSerializer):

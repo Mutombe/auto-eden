@@ -14,6 +14,7 @@ from .views import (
     InstantSaleViewSet,
     ProfileView,
     UserViewSet,
+    AdminQuoteRequestViewSet,
     PublicVehicleViewSet,
     TrackVehicleView,
     MarketplaceStatsView,
@@ -73,6 +74,7 @@ router.register(r'admin/inquiries', InquiryViewSet, basename='admin-inquiries')
 router.register(r'admin/applications', AdminJobApplicationViewSet, basename='admin-applications')
 router.register(r'admin/articles', AdminArticleViewSet, basename='admin-articles')
 router.register(r'admin/reports', AdminReportViewSet, basename='admin-reports')
+router.register(r'admin/quotes', AdminQuoteRequestViewSet, basename='admin-quotes')
 
 
 urlpatterns = [

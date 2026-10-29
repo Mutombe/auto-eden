@@ -1,18 +1,7 @@
 // src/pages/ReviewsPage.jsx
 import React, { useState } from "react";
 import { motion } from "framer-motion";
-import { 
-  Star, Quote, User, CheckCircle, Calendar,
-  ThumbsUp, MessageSquare, Send, AlertCircle,
-  Car, Shield, DollarSign
-} from "lucide-react";
-import { GiTakeMyMoney } from "react-icons/gi";
-import { MdStarPurple500 } from "react-icons/md";
-import { IoCheckmarkDone } from "react-icons/io5";
-import { IoCheckmarkDoneCircleOutline } from "react-icons/io5";
-import { SlLike } from "react-icons/sl";
-import { SiFsecure } from "react-icons/si";
-import { BiUserCircle } from "react-icons/bi";
+import { Star, Quote, User, CheckCircle, Calendar, ThumbsUp, MessageSquare, Send, AlertCircle, Car, Shield, DollarSign, HandCoins, Checks, ShieldCheck, UserCircle } from "../components/ui/icons";
 
 
 /**
@@ -104,18 +93,18 @@ export default function ReviewsPage() {
 
   // Stats
   const stats = [
-    { label: "Average Rating", value: "4.9", icon: <MdStarPurple500 className="w-5 h-5" /> },
-    { label: "Happy Customers", value: "1000+", icon: <SlLike className="w-5 h-5" /> },
-    { label: "Verified Reviews", value: "500+", icon: <IoCheckmarkDoneCircleOutline className="w-5 h-5" /> }
+    { label: "Average Rating", value: "4.9", icon: <Star className="w-5 h-5" /> },
+    { label: "Happy Customers", value: "1000+", icon: <ThumbsUp className="w-5 h-5" /> },
+    { label: "Verified Reviews", value: "500+", icon: <CheckCircle className="w-5 h-5" /> }
   ];
 
   // Star rating component
   const StarRating = ({ rating, size = "w-4 h-4" }) => (
     <div className="flex gap-0.5">
       {[1, 2, 3, 4, 5].map((star) => (
-        <MdStarPurple500
+        <Star
           key={star}
-          className={`${size} ${star <= rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+          weight={star <= rating ? "fill" : "duotone"} className={`${size} ${star <= rating ? 'text-yellow-400' : 'text-gray-300'}`}
         />
       ))}
     </div>
@@ -157,7 +146,7 @@ export default function ReviewsPage() {
           >
             <div className="flex items-center justify-center gap-2 text-yellow-500 mb-4">
               {[1, 2, 3, 4, 5].map((star) => (
-                <MdStarPurple500 key={star} className="w-8 h-8 fill-yellow-400 drop-shadow-sm" />
+                <Star key={star} weight="fill" className="w-8 h-8 text-yellow-400 drop-shadow-sm" />
               ))}
             </div>
             <h2 className="text-3xl lg:text-5xl font-bold text-gray-900 mb-4">
@@ -218,13 +207,13 @@ export default function ReviewsPage() {
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 bg-gray-100 rounded-full flex items-center justify-center">
-                      <BiUserCircle className="w-5 h-5 text-gray-500" />
+                      <UserCircle className="w-5 h-5 text-gray-500" />
                     </div>
                     <div>
                       <div className="flex items-center gap-2">
                         <span className="font-semibold text-gray-900">{review.name}</span>
                         {review.verified && (
-                          <IoCheckmarkDone className="w-4 h-4 text-green-500" />
+                          <Checks className="w-4 h-4 text-green-500" />
                         )}
                       </div>
                       <span className="text-sm text-gray-500">{review.location}</span>
@@ -266,17 +255,17 @@ export default function ReviewsPage() {
           <h2 className="text-2xl font-bold text-gray-900 mb-8">Why Customers Trust Us</h2>
           <div className="grid sm:grid-cols-3 gap-6">
             <div className="p-6 rounded-xl bg-gray-50">
-              <GiTakeMyMoney className="w-10 h-10 text-green-600 mx-auto mb-3" />
+              <HandCoins className="w-10 h-10 text-green-600 mx-auto mb-3" />
               <h3 className="font-semibold text-gray-900 mb-2">Zero Listing Fees</h3>
               <p className="text-sm text-gray-600">Sellers list for free, buyers browse for free</p>
             </div>
             <div className="p-6 rounded-xl bg-gray-50">
-              <SiFsecure className="w-10 h-10 text-blue-600 mx-auto mb-3" />
+              <ShieldCheck className="w-10 h-10 text-blue-600 mx-auto mb-3" />
               <h3 className="font-semibold text-gray-900 mb-2">Verified Vehicles</h3>
               <p className="text-sm text-gray-600">Every car is thoroughly inspected</p>
             </div>
             <div className="p-6 rounded-xl bg-gray-50">
-              <IoCheckmarkDone className="w-10 h-10 text-purple-600 mx-auto mb-3" />
+              <Checks className="w-10 h-10 text-purple-600 mx-auto mb-3" />
               <h3 className="font-semibold text-gray-900 mb-2">Secure Transactions</h3>
               <p className="text-sm text-gray-600">We handle payments safely</p>
             </div>
@@ -305,7 +294,7 @@ export default function ReviewsPage() {
 
               {status === "success" && (
                 <div className="mb-6 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3">
-                  <IoCheckmarkDone className="w-5 h-5 text-green-600" />
+                  <Checks className="w-5 h-5 text-green-600" />
                   <p className="text-green-700">Thank you for your review!</p>
                 </div>
               )}
@@ -351,8 +340,8 @@ export default function ReviewsPage() {
                         onClick={() => setFormData({ ...formData, rating: star })}
                         className="p-1"
                       >
-                        <MdStarPurple500
-                          className={`w-8 h-8 ${star <= formData.rating ? 'text-yellow-400 fill-yellow-400' : 'text-gray-300'}`}
+                        <Star
+                          weight={star <= formData.rating ? "fill" : "duotone"} className={`w-8 h-8 ${star <= formData.rating ? 'text-yellow-400' : 'text-gray-300'}`}
                         />
                       </button>
                     ))}

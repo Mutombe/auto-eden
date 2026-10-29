@@ -17,6 +17,9 @@ from .serializers import (
     BidSerializer,
     ProfileSerializer,
     UserSerializer,
+    AdminUserSerializer,
+    AdminBidSerializer,
+    AdminQuoteRequestSerializer,
     NotificationPreferenceSerializer,
 )
 from django.utils import timezone
@@ -41,11 +44,13 @@ from django.core.mail import send_mail
 from django.utils.html import strip_tags
 from django.conf import settings
 from django.utils import timezone
-from .tasks import send_vehicle_approved_email, send_vehicle_rejected_email
+from .tasks import send_vehicle_approved_email, send_vehicle_rejected_email, run_in_background
+from django.db.models import Count
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
 from xhtml2pdf import pisa
 from io import BytesIO
 import logging
-from django.contrib.postgres.search import SearchVector
 # views.py
 import qrcode
 from io import BytesIO
@@ -184,14 +189,102 @@ class PublicVehicleViewSet(viewsets.ReadOnlyModelViewSet):
 
 class VehicleViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSerializer
-    permission_classes = [permissions.AllowAny]
+    # Logged-out users get a 401 instead of a crash; public browsing uses
+    # MarketplaceView / PublicVehicleViewSet.
+    permission_classes = [permissions.IsAuthenticated]
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     pagination_class = StandardPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['verification_state', 'listing_type', 'is_visible', 'fuel_type', 'transmission', 'body_type']
+    search_fields = ['make', 'model', 'vin', 'location', 'owner__username', 'owner__email']
+    ordering_fields = ['created_at', 'price', 'proposed_price', 'year', 'make', 'model', 'verification_state']
+    ordering = ['-created_at']
 
     def get_queryset(self):
+        qs = Vehicle.objects.select_related('owner').prefetch_related('images')
+        has_images = self.request.query_params.get('has_images')
+        if has_images == 'false':
+            qs = qs.filter(images__isnull=True)
+        elif has_images == 'true':
+            qs = qs.filter(images__isnull=False).distinct()
         if self.request.user.is_staff:
-            return Vehicle.objects.all().select_related('owner').prefetch_related('images')
-        return Vehicle.objects.filter(owner=self.request.user).select_related('owner').prefetch_related('images')
+            return qs
+        return qs.filter(owner=self.request.user)
+
+    @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
+    def summary(self, request):
+        """Counts for the admin status tabs, computed in one query."""
+        # distinct=True because the images join below fans out one row per image
+        counts = Vehicle.objects.aggregate(
+            total=Count('id', distinct=True),
+            pending=Count('id', distinct=True, filter=Q(verification_state='pending')),
+            digital=Count('id', distinct=True, filter=Q(verification_state='digital')),
+            physical=Count('id', distinct=True, filter=Q(verification_state='physical')),
+            rejected=Count('id', distinct=True, filter=Q(verification_state='rejected')),
+            hidden=Count('id', distinct=True, filter=Q(is_visible=False)),
+            marketplace=Count('id', distinct=True, filter=Q(listing_type='marketplace')),
+            instant_sale=Count('id', distinct=True, filter=Q(listing_type='instant_sale')),
+            no_images=Count('id', distinct=True, filter=Q(images__isnull=True)),
+        )
+        return Response(counts)
+
+    @action(detail=True, methods=["post"], url_path="images", parser_classes=[MultiPartParser, FormParser])
+    def upload_image(self, request, pk=None):
+        """Upload one image. The admin console sends photos one per request, in parallel,
+        so a large batch never runs into the server's request timeout."""
+        vehicle = self.get_object()
+        upload = request.FILES.get('image')
+        if not upload:
+            return Response({"image": "No image file provided"}, status=status.HTTP_400_BAD_REQUEST)
+        field = serializers.ImageField()
+        try:
+            field.run_validation(upload)
+        except serializers.ValidationError as e:
+            return Response({"image": e.detail}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            image = VehicleImage.objects.create(vehicle=vehicle, image=upload)
+        except Exception as e:
+            logger.exception("Image upload to storage failed")
+            return Response({"image": f"Storage upload failed: {e}"}, status=status.HTTP_502_BAD_GATEWAY)
+        return Response(VehicleImageSerializer(image).data, status=status.HTTP_201_CREATED)
+
+    @action(detail=True, methods=["delete"], url_path=r"images/(?P<image_id>\d+)")
+    def delete_image(self, request, pk=None, image_id=None):
+        vehicle = self.get_object()
+        image = get_object_or_404(VehicleImage, pk=image_id, vehicle=vehicle)
+        image.image.delete(save=False)
+        image.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
+
+    @action(detail=False, methods=["post"], permission_classes=[permissions.IsAdminUser])
+    def bulk(self, request):
+        """Bulk actions for the admin console: verify, reject, show, hide, delete."""
+        ids = request.data.get('ids') or []
+        op = request.data.get('action')
+        if not isinstance(ids, list) or not ids:
+            return Response({"detail": "No vehicles selected"}, status=status.HTTP_400_BAD_REQUEST)
+        qs = Vehicle.objects.filter(id__in=ids)
+        now = timezone.now()
+        if op == 'delete':
+            qs.delete()
+            return Response({"affected": len(ids)})
+        if op in ('show', 'hide'):
+            count = qs.update(is_visible=(op == 'show'))
+        elif op == 'digital':
+            count = qs.update(verification_state='digital', is_digitally_verified=True, is_rejected=False,
+                              rejection_reason='', digitally_verified_by=request.user, digitally_verified_at=now)
+        elif op == 'physical':
+            count = qs.update(verification_state='physical', is_physically_verified=True, is_rejected=False,
+                              rejection_reason='', physically_verified_by=request.user, physically_verified_at=now)
+        elif op == 'reject':
+            reason = request.data.get('reason') or 'Rejected by admin'
+            count = qs.update(verification_state='rejected', is_rejected=True, rejection_reason=reason, rejected_at=now)
+        else:
+            return Response({"detail": f"Unknown action '{op}'"}, status=status.HTTP_400_BAD_REQUEST)
+        if op in ('digital', 'physical', 'reject'):
+            for vehicle in qs:
+                self.handle_verification_notifications(vehicle)
+        return Response({"affected": count})
 
     def perform_create(self, serializer):
         # Allow admin users to set verification_state during creation
@@ -278,13 +371,11 @@ class VehicleViewSet(viewsets.ModelViewSet):
 
     def handle_verification_notifications(self, vehicle):
         if vehicle.verification_state == "physical":
-            send_vehicle_approved_email.delay(vehicle.id, verification_type="physical")
+            run_in_background(send_vehicle_approved_email, vehicle.id, verification_type="physical")
         elif vehicle.verification_state == "digital":
-            send_vehicle_approved_email.delay(vehicle.id, verification_type="digital")
+            run_in_background(send_vehicle_approved_email, vehicle.id, verification_type="digital")
         elif vehicle.verification_state == "rejected":
-            send_vehicle_rejected_email.delay(
-                vehicle.id, vehicle.rejection_reason or "No reason provided"
-            )
+            run_in_background(send_vehicle_rejected_email, vehicle.id, vehicle.rejection_reason or "No reason provided")
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def pending_verification(self, request):
@@ -347,19 +438,15 @@ class VehicleViewSet(viewsets.ModelViewSet):
         if serializer.is_valid():
             serializer.save()
 
-            if serializer.validated_data.get("verification_state") == "rejected":
-                # Send rejection notification
-                send_vehicle_rejected_email.delay(
-                    vehicle.owner.email,
+            new_state = serializer.validated_data.get("verification_state")
+            if new_state == "rejected":
+                run_in_background(
+                    send_vehicle_rejected_email,
                     vehicle.id,
                     serializer.validated_data.get("rejection_reason", ""),
                 )
-            elif (
-                serializer.validated_data.get("verification_state")
-                == "physically_verified"
-            ):
-                # Send approval notification
-                send_vehicle_approved_email.delay(vehicle.owner.email, vehicle.id)
+            elif new_state in ("digital", "physical"):
+                run_in_background(send_vehicle_approved_email, vehicle.id, verification_type=new_state)
 
             return Response(serializer.data)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
@@ -520,10 +607,24 @@ class BidViewSet(viewsets.ModelViewSet):
     pagination_class = StandardPagination
 
     def get_queryset(self):
-        return Bid.objects.filter(bidder=self.request.user).select_related('vehicle', 'bidder').order_by('-created_at')
+        qs = Bid.objects.select_related('vehicle', 'bidder').order_by('-created_at')
+        # Admins can manage (e.g. delete) any bid; users only their own
+        if self.request.user.is_staff and self.action in ('destroy', 'set_status', 'retrieve'):
+            return qs
+        return qs.filter(bidder=self.request.user)
 
     def perform_create(self, serializer):
         serializer.save(bidder=self.request.user)
+
+    @action(detail=True, methods=["patch"], permission_classes=[permissions.IsAdminUser])
+    def set_status(self, request, pk=None):
+        bid = self.get_object()
+        new_status = request.data.get('status')
+        if new_status not in dict(Bid.BID_STATUS):
+            return Response({"status": "Invalid status"}, status=status.HTTP_400_BAD_REQUEST)
+        bid.status = new_status
+        bid.save(update_fields=['status'])
+        return Response(AdminBidSerializer(bid).data)
 
     @action(
         detail=False, methods=["get"], url_path="vehicle-bids/(?P<vehicle_pk>[^/.]+)"
@@ -541,14 +642,25 @@ class BidViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def all_bids(self, request):
-        """Get all bids with pagination (admin only)."""
-        queryset = Bid.objects.all().select_related('vehicle', 'bidder').order_by('-created_at')
+        """All bids for the admin console: paginated, searchable, filterable, sortable."""
+        queryset = Bid.objects.select_related('vehicle', 'bidder').prefetch_related('vehicle__images')
+        if request.query_params.get('status'):
+            queryset = queryset.filter(status=request.query_params['status'])
+        search = request.query_params.get('search', '').strip()
+        if search:
+            queryset = queryset.filter(
+                Q(vehicle__make__icontains=search) | Q(vehicle__model__icontains=search)
+                | Q(bidder__username__icontains=search) | Q(bidder__email__icontains=search)
+                | Q(message__icontains=search)
+            )
+        ordering = request.query_params.get('ordering', '-created_at')
+        if ordering.lstrip('-') not in ('created_at', 'amount', 'status'):
+            ordering = '-created_at'
+        queryset = queryset.order_by(ordering)
         page = self.paginate_queryset(queryset)
         if page is not None:
-            serializer = self.get_serializer(page, many=True)
-            return self.get_paginated_response(serializer.data)
-        serializer = self.get_serializer(queryset, many=True)
-        return Response(serializer.data)
+            return self.get_paginated_response(AdminBidSerializer(page, many=True).data)
+        return Response(AdminBidSerializer(queryset, many=True).data)
 
     @action(detail=False, methods=["get"])
     def my_bids(self, request):
@@ -600,15 +712,24 @@ class MarketplaceView(APIView):
             listing_type="marketplace"
         ).select_related('owner').prefetch_related('images').only(
             'id', 'make', 'model', 'year', 'price', 'body_type', 'mileage', 'fuel_type',
+            'transmission', 'listing_type', 'verification_state',
             'location', 'created_at', 'owner__username'
         )
 
+        # The frontend sends snake_case; older clients sent camelCase. Accept both.
+        def param(*names):
+            for name in names:
+                value = request.query_params.get(name)
+                if value:
+                    return value
+            return None
+
         # Apply filters
-        min_price = request.query_params.get("minPrice")
+        min_price = param("min_price", "minPrice")
         if min_price:
             vehicles = vehicles.filter(price__gte=min_price)
 
-        max_price = request.query_params.get("maxPrice")
+        max_price = param("max_price", "maxPrice")
         if max_price:
             vehicles = vehicles.filter(price__lte=max_price)
         make = request.query_params.get("make")
@@ -621,18 +742,25 @@ class MarketplaceView(APIView):
         if year:
             vehicles = vehicles.filter(year=year)
         
-        body_type = request.query_params.get("body_type")
+        body_type = param("body_type", "bodyType")
         if body_type:
             vehicles = vehicles.filter(body_type__iexact=body_type)
-        search_term = request.query_params.get("search_term")
+        fuel_type = param("fuel_type", "fuelType")
+        if fuel_type:
+            vehicles = vehicles.filter(fuel_type__iexact=fuel_type)
+        transmission = param("transmission")
+        if transmission:
+            vehicles = vehicles.filter(transmission__iexact=transmission)
+        search_term = param("search_term", "searchTerm")
         if search_term:
-            # Use PostgreSQL full-text search if available
-            vehicles = vehicles.annotate(
-                search=SearchVector('make', 'model', 'description')
-            ).filter(search=search_term)
+            # Substring match so partial words ("toyo", "hilu") find vehicles as the user types.
+            for word in search_term.split():
+                vehicles = vehicles.filter(
+                    Q(make__icontains=word) | Q(model__icontains=word) | Q(description__icontains=word)
+                )
 
         # Sorting
-        sort_by = request.query_params.get("sortBy")
+        sort_by = param("sort_by", "sortBy")
         if sort_by == "priceLowHigh":
             vehicles = vehicles.order_by("price")
         elif sort_by == "priceHighLow":
@@ -896,18 +1024,63 @@ class DownloadQuoteView(APIView):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
+    serializer_class = AdminUserSerializer
     permission_classes = [permissions.IsAdminUser]
+    pagination_class = StandardPagination
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['is_active', 'is_staff']
+    search_fields = ['username', 'email', 'first_name', 'last_name', 'profile__phone']
+    ordering_fields = ['date_joined', 'last_login', 'username', 'email', 'vehicle_count', 'bid_count']
+    ordering = ['-date_joined']
 
     def get_queryset(self):
-        return User.objects.filter(is_active=True)
+        return User.objects.select_related('profile').annotate(
+            vehicle_count=Count('vehicle', distinct=True),
+            bid_count=Count('bid', distinct=True),
+        )
+
+    def perform_destroy(self, instance):
+        if instance == self.request.user:
+            raise serializers.ValidationError({"detail": "You can't delete your own account."})
+        if instance.is_superuser:
+            raise serializers.ValidationError({"detail": "Superusers can't be deleted from the console."})
+        instance.delete()
+
+    def perform_update(self, serializer):
+        # Don't let an admin lock themselves out
+        if serializer.instance == self.request.user and (
+            serializer.validated_data.get('is_active') is False or serializer.validated_data.get('is_staff') is False
+        ):
+            raise serializers.ValidationError({"detail": "You can't deactivate or demote your own account."})
+        serializer.save()
 
     @action(detail=False, methods=["get"])
     def inactive_users(self, request):
-        queryset = User.objects.filter(is_active=False)
+        queryset = self.get_queryset().filter(is_active=False)
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
+
+
+class AdminQuoteRequestViewSet(viewsets.ModelViewSet):
+    """Quote requests for the admin console: list, triage (status/priority/notes), delete."""
+    serializer_class = AdminQuoteRequestSerializer
+    permission_classes = [permissions.IsAdminUser]
+    pagination_class = StandardPagination
+    http_method_names = ['get', 'patch', 'delete', 'head', 'options']
+    filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
+    filterset_fields = ['status', 'priority', 'is_processed']
+    search_fields = ['full_name', 'email', 'telephone', 'city', 'country', 'vehicle__make', 'vehicle__model']
+    ordering_fields = ['created_at', 'status', 'priority', 'full_name']
+    ordering = ['-created_at']
+
+    def get_queryset(self):
+        return QuoteRequest.objects.select_related('vehicle', 'processed_by').prefetch_related('vehicle__images')
+
+    def perform_update(self, serializer):
+        extra = {}
+        if serializer.validated_data.get('status') and serializer.validated_data['status'] != 'pending':
+            extra = {'is_processed': True, 'processed_by': self.request.user, 'processed_at': timezone.now()}
+        serializer.save(**extra)
 
 
 class VehicleDetailView(APIView):

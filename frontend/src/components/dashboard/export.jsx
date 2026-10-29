@@ -2,7 +2,7 @@ import React, { useState, useCallback } from 'react';
 import * as XLSX from 'xlsx';
 import jsPDF from 'jspdf';
 import 'jspdf-autotable';
-import { Download, ChevronDown, Loader2, Check, AlertCircle } from 'lucide-react';
+import { Download, ChevronDown, Loader2, Check, AlertCircle } from "../ui/icons";
 import { toast } from 'react-toastify';
 
 // Create a new component for the export dropdown

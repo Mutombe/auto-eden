@@ -12,7 +12,7 @@ import {
   CircularProgress,
   InputAdornment,
 } from "@mui/material";
-import { X, Eye, EyeOff, Mail } from "lucide-react";
+import { X, Eye, EyeOff, Mail } from "../ui/icons";
 import { changeEmail, clearEmailChangeStatus } from "../../redux/slices/authSlice";
 
 const ChangeEmailModal = ({ open, onClose }) => {

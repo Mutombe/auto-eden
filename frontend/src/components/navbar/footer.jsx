@@ -2,16 +2,13 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
-import { 
-  Facebook, Twitter, Instagram, Linkedin, 
-  X, ExternalLink 
-} from "lucide-react";
-import { FaXTwitter } from "react-icons/fa6";
+import { Facebook, Twitter, Instagram, Linkedin, X, ExternalLink, XLogo } from "../ui/icons";
+import { openCookieSettings } from "../../lib/consent";
 
 
 // Privacy & Legal Modal Component
 export const PrivacyLegalModal = ({ isOpen, onClose }) => {
-  const [activeTab, setActiveTab] = useState("privacy");
+  const [activeTab, setActiveTab] = useState("terms");
 
   if (!isOpen) return null;
 
@@ -42,7 +39,7 @@ export const PrivacyLegalModal = ({ isOpen, onClose }) => {
                     : "text-gray-600 hover:bg-gray-100"
                 }`}
               >
-                Privacy Policy
+                Privacy & Cookies
               </button>
               <button
                 onClick={() => setActiveTab("terms")}
@@ -66,39 +63,22 @@ export const PrivacyLegalModal = ({ isOpen, onClose }) => {
           {/* Content */}
           <div className="p-6 overflow-y-auto max-h-[60vh]">
             {activeTab === "privacy" ? (
-              <div className="prose prose-sm max-w-none">
-                <h2 className="text-xl font-bold text-gray-900 mb-4">Privacy Policy</h2>
-                <p className="text-gray-600 mb-4">Last updated: January 2026</p>
-                
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">1. Information We Collect</h3>
-                <p className="text-gray-600 mb-4">
-                  Auto Eden collects information you provide directly, including your name, email address, 
-                  phone number, and vehicle information when you create listings or make inquiries.
-                </p>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">2. How We Use Your Information</h3>
-                <p className="text-gray-600 mb-4">
-                  We use your information to facilitate vehicle listings, connect buyers and sellers, 
-                  process transactions, and improve our services. We never sell your personal data.
-                </p>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">3. Data Security</h3>
-                <p className="text-gray-600 mb-4">
-                  We implement industry-standard security measures to protect your personal information. 
-                  All data is encrypted in transit and at rest.
-                </p>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">4. Your Rights</h3>
-                <p className="text-gray-600 mb-4">
-                  You have the right to access, correct, or delete your personal data at any time. 
-                  Contact us at privacy@autoeden.co.zw for any privacy-related requests.
-                </p>
-
-                <h3 className="text-lg font-semibold text-gray-900 mt-6 mb-2">5. Contact Us</h3>
+              <div className="space-y-4">
+                <h2 className="text-xl font-bold text-gray-900">Privacy & Cookies</h2>
                 <p className="text-gray-600">
-                  For questions about this Privacy Policy, please contact us at admin@autoeden.co.zw 
-                  or call +263 78 222 2032.
+                  We collect only what we need to run the marketplace, never sell your data, and use no advertising
+                  cookies. The full details are in our policies:
                 </p>
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <Link to="/privacy" onClick={onClose} className="rounded-xl border border-gray-200 p-4 hover:border-red-300 hover:bg-red-50/40 transition-colors">
+                    <div className="font-semibold text-gray-900">Privacy Policy</div>
+                    <div className="text-sm text-gray-500 mt-1">What we collect, why, and your rights.</div>
+                  </Link>
+                  <Link to="/cookies" onClick={onClose} className="rounded-xl border border-gray-200 p-4 hover:border-red-300 hover:bg-red-50/40 transition-colors">
+                    <div className="font-semibold text-gray-900">Cookie Policy</div>
+                    <div className="text-sm text-gray-500 mt-1">Every cookie we use and how to control it.</div>
+                  </Link>
+                </div>
               </div>
             ) : (
               <div className="prose prose-sm max-w-none">
@@ -154,7 +134,7 @@ export default function Footer() {
 
   const socialLinks = [
     { name: "Facebook", href: "https://facebook.com/autoedenzw", icon: Facebook },
-    { name: "Twitter", href: "https://twitter.com/autoedenzw", icon: FaXTwitter },
+    { name: "Twitter", href: "https://twitter.com/autoedenzw", icon: XLogo },
     { name: "Instagram", href: "https://instagram.com/autoedenzw", icon: Instagram },
     { name: "LinkedIn", href: "https://linkedin.com/company/autoeden", icon: Linkedin },
   ];
@@ -179,11 +159,20 @@ export default function Footer() {
               <Link to="/hiring" className="hover:text-white transition-colors">
                 Hiring
               </Link>
+              <Link to="/privacy" className="hover:text-white transition-colors">
+                Privacy
+              </Link>
+              <Link to="/cookies" className="hover:text-white transition-colors">
+                Cookies
+              </Link>
               <button 
                 onClick={() => setShowLegalModal(true)}
                 className="hover:text-white transition-colors"
               >
-                Privacy & Legal
+                Terms
+              </button>
+              <button onClick={openCookieSettings} className="hover:text-white transition-colors">
+                Cookie settings
               </button>
               <Link to="/news" className="hover:text-white transition-colors">
                 News

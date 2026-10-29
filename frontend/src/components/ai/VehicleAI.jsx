@@ -7,7 +7,7 @@ import {
   ChevronDown,
   ChevronUp,
   MessageSquare,
-} from "lucide-react";
+} from "../ui/icons";
 import { CircularProgress, Alert } from "@mui/material";
 import api from "../../utils/api";
 

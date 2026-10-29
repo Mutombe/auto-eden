@@ -6,7 +6,7 @@ import {
   CreditCard, Key, Camera, FileCheck, Users,
   ArrowRight, BadgeCheck, Handshake, Eye,
   Clock, Zap, DollarSign, Heart
-} from "lucide-react";
+} from "../ui/icons";
 import { Link } from "react-router-dom";
 
 /**

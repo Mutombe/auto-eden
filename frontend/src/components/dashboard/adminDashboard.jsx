@@ -52,7 +52,7 @@ import {
   Download,
   CheckSquare,
   Square,
-} from "lucide-react";
+} from "../ui/icons";
 
 // Sidebar Navigation Item
 const SidebarItem = ({ icon: Icon, label, active, onClick, badge, color, collapsed }) => (

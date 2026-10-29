@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { X, ZoomIn, ZoomOut, RotateCw, Download, Share2, ChevronLeft, ChevronRight, Camera } from 'lucide-react';
+import { X, ZoomIn, ZoomOut, RotateCw, Download, Share2, ChevronLeft, ChevronRight, Camera } from "./ui/icons";
 import { motion } from 'framer-motion';
 
 // Enhanced ImagePreview Component

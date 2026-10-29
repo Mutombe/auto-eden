@@ -15,7 +15,7 @@ import {
   Typography,
   Chip,
 } from "@mui/material";
-import { X, Settings, Save, Download } from "lucide-react";
+import { X, Settings, Save, Download } from "../ui/icons";
 import api from "../../utils/api";
 
 const AVAILABLE_COLUMNS = {

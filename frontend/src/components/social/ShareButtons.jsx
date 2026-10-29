@@ -10,7 +10,7 @@ import {
   Check,
   MessageCircle,
   X,
-} from "lucide-react";
+} from "../ui/icons";
 
 /**
  * Social Sharing Buttons Component
