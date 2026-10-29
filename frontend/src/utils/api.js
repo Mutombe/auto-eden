@@ -88,7 +88,9 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     const auth = JSON.parse(localStorage.getItem("auth"));
-    if (auth?.access) {
+    // Public reads (marketplace, vehicle pages) pass skipAuth: no token, no CORS preflight,
+    // and a stale session can never block them.
+    if (auth?.access && !config.skipAuth) {
       config.headers.Authorization = `Bearer ${auth.access}`;
     }
     return config;
@@ -112,7 +114,7 @@ api.interceptors.response.use(
       originalRequest.url?.includes("/auth/register") ||
       originalRequest.url?.includes("/auth/refresh");
 
-    if (isAuthError && !originalRequest._retry && !isAuthEndpoint) {
+    if (isAuthError && !originalRequest._retry && !isAuthEndpoint && !originalRequest.skipAuth) {
       // For 403 errors, check if it's specifically a token issue
       const errorDetail = error.response?.data?.detail?.toLowerCase() || "";
       const isTokenError =

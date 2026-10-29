@@ -43,8 +43,9 @@ function validate(f) {
 /**
  * Create (vehicle = null) or edit. onSubmit receives
  * { data, files, previews, removedImageIds } and the modal closes immediately (optimistic).
+ * owner: the seller dashboard's version — no status picker, listings go to review.
  */
-export default function VehicleForm({ open, onClose, vehicle, draft, onSubmit }) {
+export default function VehicleForm({ open, onClose, vehicle, draft, onSubmit, owner = false }) {
   const editing = !!vehicle;
   const [form, setForm] = useState(EMPTY);
   const [errors, setErrors] = useState({});
@@ -113,7 +114,7 @@ export default function VehicleForm({ open, onClose, vehicle, draft, onSubmit })
       price: form.listing_type === "marketplace" ? form.price : form.price || null,
       proposed_price: form.listing_type === "instant_sale" ? form.proposed_price : form.proposed_price || null,
     };
-    if (!editing) data.verification_state = form.verification_state;
+    if (!editing && !owner) data.verification_state = form.verification_state;
 
     // Fresh object URLs: the modal's own previews are revoked when it closes
     onSubmit({
@@ -134,14 +135,20 @@ export default function VehicleForm({ open, onClose, vehicle, draft, onSubmit })
       onClose={onClose}
       size="lg"
       icon={Car}
-      title={editing ? `Edit ${[vehicle.year, vehicle.make, vehicle.model].join(" ")}` : draft ? "New vehicle (restored draft)" : "New vehicle"}
-      subtitle={editing ? `ID #${vehicle.id} · VIN ${vehicle.vin}` : "Saved instantly — photos upload in the background"}
+      title={editing ? `Edit ${[vehicle.year, vehicle.make, vehicle.model].join(" ")}` : draft ? "New vehicle (restored draft)" : owner ? "Sell your car" : "New vehicle"}
+      subtitle={
+        editing
+          ? `ID #${vehicle.id} · VIN ${vehicle.vin}`
+          : owner
+          ? "Our team checks every listing before it goes live, usually within a day"
+          : "Saved instantly — photos upload in the background"
+      }
       footer={
         <>
           {hasErrors && <span className="mr-auto text-xs text-red-600">Fix the highlighted fields</span>}
           <Button onClick={onClose}>Cancel</Button>
           <Button variant="primary" onClick={submit}>
-            {editing ? "Save changes" : "Create vehicle"}
+            {editing ? "Save changes" : owner ? "Submit for review" : "Create vehicle"}
           </Button>
         </>
       }
@@ -169,11 +176,11 @@ export default function VehicleForm({ open, onClose, vehicle, draft, onSubmit })
                 <Input type="number" min="0" step="1" inputMode="decimal" value={form.price} onChange={set("price")} placeholder="e.g. 12500" invalid={err("price")} />
               </Field>
             ) : (
-              <Field label="Offer price (USD)" required error={err("proposed_price")} hint="What Auto Eden pays the seller">
+              <Field label="Offer price (USD)" required error={err("proposed_price")} hint={owner ? "What you'd like Auto Eden to pay you" : "What Auto Eden pays the seller"}>
                 <Input type="number" min="0" step="1" inputMode="decimal" value={form.proposed_price} onChange={set("proposed_price")} placeholder="e.g. 9000" invalid={err("proposed_price")} />
               </Field>
             )}
-            {!editing && (
+            {!editing && !owner && (
               <Field label="Initial status" hint="Physically verified listings go live immediately">
                 <Select value={form.verification_state} onChange={set("verification_state")}>
                   <option value="physical">Physically verified (live)</option>

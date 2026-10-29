@@ -13,6 +13,7 @@ import Footer from "./components/navbar/footer";
 import ErrorBoundary from "./components/error/ErrorBoundary";
 import ChatWidget from './components/ai/ChatWidget';
 import CookieConsent from './components/legal/CookieConsent';
+import AccountGate from "./components/account/AccountGate";
 import {
   AdminConsoleSkeleton,
   GenericPageSkeleton,
@@ -133,13 +134,13 @@ function App() {
           <Route path="/contact" element={<ContactPage />} />
           <Route path="/privacy" element={<PrivacyPolicyPage />} />
           <Route path="/cookies" element={<CookiePolicyPage />} />
-          <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/dashboard" element={<AccountGate><DashboardPage /></AccountGate>} />
           <Route path="/marketplace" element={<MarketplacePage />} />
           <Route path="/vehicles/:vehicleId" element={<CarDetailsPage />} />
           <Route path="/learn/:articleId" element={<ArticlePage />} />
           <Route path="/sell" element={<BuyMyCarPage />} />
           <Route path="/about" element={<AboutPage />} />
-          <Route path="/profile" element={<ProfilePage />} />
+          <Route path="/profile" element={<AccountGate><ProfilePage /></AccountGate>} />
           <Route path="/admin/*" element={<ErrorBoundary><AdminConsole /></ErrorBoundary>} />
           </Routes>
           </Suspense>

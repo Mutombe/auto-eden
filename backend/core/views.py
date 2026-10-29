@@ -19,6 +19,7 @@ from .serializers import (
     UserSerializer,
     AdminUserSerializer,
     AdminBidSerializer,
+    ReceivedBidSerializer,
     AdminQuoteRequestSerializer,
     NotificationPreferenceSerializer,
 )
@@ -125,7 +126,8 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 
 class ProfileView(APIView):
-    parser_classes = [MultiPartParser, FormParser]
+    permission_classes = [permissions.IsAuthenticated]
+    parser_classes = [MultiPartParser, FormParser, JSONParser]
 
     def get(self, request):
         """Get or create user profile."""
@@ -183,6 +185,8 @@ class NotificationPreferencesView(APIView):
 class PublicVehicleViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = VehicleSerializer
     permission_classes = [permissions.AllowAny]
+    # Public data: never authenticate, so a stale or expired token can't turn a read into a 401/403.
+    authentication_classes = []
 
     def get_queryset(self):
         return Vehicle.objects.select_related('owner').prefetch_related('images', 'bids__bidder')
@@ -567,6 +571,7 @@ class VehicleDraftViewSet(viewsets.ModelViewSet):
 class VehicleSearchViewSet(viewsets.ModelViewSet):
     serializer_class = VehicleSearchSerializer
     permission_classes = [permissions.IsAuthenticated]
+    pagination_class = StandardPagination
 
     def get_queryset(self):
         return VehicleSearch.objects.filter(user=self.request.user)
@@ -640,6 +645,19 @@ class BidViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(queryset, many=True)
         return Response(serializer.data)
 
+    @action(detail=False, methods=["get"])
+    def received(self, request):
+        """Offers other people have made on the current user's vehicles (seller dashboard)."""
+        queryset = (
+            Bid.objects.filter(vehicle__owner=request.user)
+            .select_related('vehicle', 'bidder')
+            .prefetch_related('vehicle__images')
+            .order_by('-created_at')
+        )
+        page = self.paginate_queryset(queryset)
+        serializer = ReceivedBidSerializer(page if page is not None else queryset, many=True)
+        return self.get_paginated_response(serializer.data) if page is not None else Response(serializer.data)
+
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def all_bids(self, request):
         """All bids for the admin console: paginated, searchable, filterable, sortable."""
@@ -691,6 +709,8 @@ class MarketplacePagination(PageNumberPagination):
 
 class MarketplaceView(APIView):
     permission_classes = [permissions.AllowAny]
+    # Public data: never authenticate, so a stale or expired token can't turn a read into a 401/403.
+    authentication_classes = []
     pagination_class = MarketplacePagination
 
     def get(self, request):

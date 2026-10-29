@@ -4,8 +4,10 @@
 import React from "react";
 import { IconContext } from "@phosphor-icons/react";
 
-export function IconProvider({ children }) {
-  return <IconContext.Provider value={ICON_DEFAULTS}>{children}</IconContext.Provider>;
+// The admin console nests <IconProvider weight="regular"> for crisp single-tone icons.
+export function IconProvider({ weight = "duotone", children }) {
+  const value = React.useMemo(() => ({ ...ICON_DEFAULTS, weight }), [weight]);
+  return <IconContext.Provider value={value}>{children}</IconContext.Provider>;
 }
 // 24px default matches what the markup was designed around; className sizes (w-4 h-4) override it.
 const ICON_DEFAULTS = { weight: "duotone", size: 24 };

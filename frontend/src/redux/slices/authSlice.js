@@ -185,6 +185,16 @@ const authSlice = createSlice({
         }
       }
     },
+    // Merge changed account fields (e.g. a new username from the profile page) into the session.
+    updateUser: (state, action) => {
+      if (!state.user) return;
+      Object.assign(state.user, action.payload);
+      const auth = JSON.parse(localStorage.getItem("auth"));
+      if (auth?.user) {
+        Object.assign(auth.user, action.payload);
+        localStorage.setItem("auth", JSON.stringify(auth));
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -322,6 +332,7 @@ const authSlice = createSlice({
 
 export const {
   logout,
+  updateUser,
   clearError,
   clearPasswordResetStatus,
   clearPasswordChangeStatus,

@@ -106,7 +106,7 @@ export default function HeroCarousel() {
     // and the hero itself ends exactly at the fold.
     <div className="bg-white px-2 pt-2 sm:px-3 sm:pt-3 lg:px-4 lg:pt-4">
     <section
-      className="pacaembu-font relative isolate h-[calc(100svh-0.5rem)] sm:h-[calc(100svh-0.75rem)] lg:h-[calc(100svh-1rem)] w-full overflow-hidden bg-gray-900 rounded-[18px] sm:rounded-[22px] lg:rounded-[28px]"
+      className="pacaembu-font relative isolate h-[calc(100svh-0.5rem)] sm:h-[calc(100svh-0.75rem)] lg:h-[calc(100svh-1rem)] w-full overflow-hidden bg-gray-900 rounded-lg lg:rounded-xl"
       aria-label="Featured vehicles carousel"
       role="region"
       onTouchStart={handleTouchStart}

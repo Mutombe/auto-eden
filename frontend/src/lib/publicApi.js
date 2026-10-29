@@ -24,6 +24,7 @@ export function marketplaceParams(f = {}) {
     year: f.year,
     body_type: f.bodyType ?? f.body_type,
     fuel_type: f.fuelType ?? f.fuel_type,
+    transmission: f.transmission,
     search_term: f.searchTerm ?? f.search_term,
     sort_by: (f.sortBy ?? f.sort_by) === "newest" ? undefined : f.sortBy ?? f.sort_by,
   };
@@ -33,8 +34,8 @@ export function marketplaceParams(f = {}) {
 const marketplaceKey = (params) => ["public", "marketplace", params];
 export const vehicleKey = (id) => ["public", "vehicle", String(id)];
 
-const fetchMarketplace = (params) => api.get("/core/marketplace/", { params }).then((r) => r.data);
-const fetchVehicle = (id) => api.get(`/core/all-vehicles/${id}/`).then((r) => r.data);
+const fetchMarketplace = (params) => api.get("/core/marketplace/", { params, skipAuth: true }).then((r) => r.data);
+const fetchVehicle = (id) => api.get(`/core/all-vehicles/${id}/`, { skipAuth: true }).then((r) => r.data);
 
 export function useMarketplace(filters) {
   const qc = useQueryClient();

@@ -1,1047 +1,510 @@
-import React, { useEffect, useState, useMemo } from "react";
-import { useSelector, useDispatch } from "react-redux";
-import { useMarketplace, prefetchVehicle, MARKETPLACE_PAGE_SIZE } from "../../lib/publicApi";
-import { useProgressiveReveal, formatNumber, formatPrice } from "../../lib/progressive";
+import React, { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
+import { useMarketplace, MARKETPLACE_PAGE_SIZE } from "../../lib/publicApi";
+import { useProgressiveReveal } from "../../lib/progressive";
 import Bone from "../ui/Bone";
-import { Link } from "react-router-dom";
-import { placeBid } from "../../redux/slices/bidSlice";
-import { AuthModals } from "../navbar/navbar";
-import QuoteRequestModal from "./quoteRequestModal";
-import ImagePreview, { useImagePreview } from "../imagePreviewing";
-import SmartImage from "../../utils/smartImage";
+import ListingCard, { ListingCardSkeleton } from "../vehicles/ListingCard";
 import {
-  Car,
-  Search,
-  Sliders,
-  DollarSign,
-  Calendar,
-  Gauge,
   ArrowUpDown,
-  Tag,
-  Map,
-  Shield,
-  Award,
-  TrendingUp,
-  CheckCircle,
-  Clock,
-  Filter,
-  Grid3X3,
-  List,
-  X,
+  BadgeCheck,
+  Car,
   ChevronDown,
-  ChevronUp,
   ChevronLeft,
   ChevronRight,
+  RefreshCw,
+  Search,
   SlidersHorizontal,
+  X,
 } from "../ui/icons";
-import {
-  Button,
-  TextField,
-  Select,
-  MenuItem,
-  Chip,
-  Dialog,
-  IconButton,
-  InputAdornment,
-  Slider,
-  FormControl,
-  InputLabel,
-  Snackbar,
-  Alert,
-  CircularProgress,
-  Tooltip,
-  Backdrop,
-  Divider,
-  Badge,
-} from "@mui/material";
-import { motion, AnimatePresence } from "framer-motion";
 import useTracking from "../../hooks/useTracking";
 
-// --- Vehicle Skeleton Component ---
-// Mirrors the card below block for block (image box, title/meta, 2x2 specs, price row,
-// posted line) so swapping in the real card moves nothing.
-const VehicleSkeleton = ({ viewMode }) => (
-  <div
-    aria-hidden="true"
-    className={`bg-white rounded-xl shadow-sm overflow-hidden ${
-      viewMode === "list" ? "flex flex-col md:flex-row" : ""
-    }`}
-  >
-    <div className={viewMode === "list" ? "md:w-1/3" : ""}>
-      <Bone className={`w-full rounded-none ${viewMode === "list" ? "h-56 md:h-full" : "h-52"}`} />
-    </div>
-    <div className={`p-4 flex flex-col ${viewMode === "list" ? "md:w-2/3" : ""}`}>
-      <div className="flex justify-between items-start">
-        <div className="flex-1">
-          <div className="h-7 flex items-center"><Bone className="h-5 w-3/5" /></div>
-          <div className="h-6 flex items-center"><Bone className="h-3.5 w-2/5" /></div>
-        </div>
-        <Bone className="h-5 w-5 rounded-full" />
-      </div>
-      <div className="grid grid-cols-2 gap-2 mt-3 mb-4">
-        {[0, 1, 2, 3].map((i) => (
-          <div key={i} className="h-5 flex items-center gap-1.5">
-            <Bone className="h-4 w-4 rounded-full" />
-            <Bone className="h-3.5 w-16" />
-          </div>
-        ))}
-      </div>
-      <div className="mt-auto pt-2 flex justify-between items-center">
-        <Bone className="h-7 w-24" />
-        <Bone className="h-9 w-28 rounded-lg" />
-      </div>
-      <div className="mt-2 h-4 flex items-center"><Bone className="h-3 w-28" /></div>
-    </div>
-  </div>
-);
+// Filters live in the URL (/marketplace?make=Toyota&page=2), so links are shareable and
+// coming back from a vehicle page restores the exact view.
+const FILTER_KEYS = ["search", "make", "year", "bodyType", "fuelType", "transmission", "minPrice", "maxPrice", "sort", "page"];
 
-const CustomSelect = ({ label, value, onChange, options, placeholder, icon: Icon }) => {
-  const [isOpen, setIsOpen] = useState(false);
+const POPULAR_MAKES = ["Toyota", "Honda", "Nissan", "Mazda", "Mercedes", "BMW", "Ford", "Volkswagen"];
+const BODY_TYPES = ["Sedan", "SUV", "Hatchback", "Pickup", "Coupe", "Van"];
+const FUEL_TYPES = ["Petrol", "Diesel", "Hybrid", "Electric"];
+const TRANSMISSIONS = ["Automatic", "Manual"];
+const SORTS = [
+  { value: "", label: "Newest first" },
+  { value: "priceLowHigh", label: "Price: low to high" },
+  { value: "priceHighLow", label: "Price: high to low" },
+];
+const PRICE_BANDS = [
+  { label: "Under $5k", min: "", max: "5000" },
+  { label: "$5k – $10k", min: "5000", max: "10000" },
+  { label: "$10k – $20k", min: "10000", max: "20000" },
+  { label: "$20k+", min: "20000", max: "" },
+];
+const THIS_YEAR = new Date().getFullYear();
+const YEARS = Array.from({ length: THIS_YEAR - 1994 }, (_, i) => String(THIS_YEAR - i));
 
-  return (
-    <div className="relative">
-      <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-      <button
-        type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full flex items-center justify-between px-3 py-2 bg-white border border-gray-300 rounded-lg shadow-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
-      >
-        <div className="flex items-center">
-          {Icon && <Icon className="w-4 h-4 mr-2 text-gray-500" />}
-          <span className={value ? "text-gray-900" : "text-gray-500"}>
-            {value || placeholder}
-          </span>
-        </div>
-        <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isOpen ? "rotate-180" : ""}`} />
-      </button>
-      
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-60 overflow-auto"
-          >
-            {options.map((option) => (
-              <button
-                key={option.value}
-                type="button"
-                onClick={() => {
-                  onChange(option.value);
-                  setIsOpen(false);
-                }}
-                className="w-full text-left px-3 py-2 hover:bg-gray-50 focus:bg-gray-50 transition-colors"
-              >
-                {option.label}
-              </button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-      
-      {/* Backdrop */}
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-    </div>
-  );
-};
+const FILTER_LABELS = { make: "Make", year: "Year", bodyType: "Body", fuelType: "Fuel", transmission: "Gearbox" };
 
-// Custom Input Component
-const CustomInput = ({ label, value, onChange, placeholder, type = "text", icon: Icon }) => (
-  <div>
-    <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
-    <div className="relative">
-      <input
-        type={type}
-        value={value}
-        onChange={onChange}
-        placeholder={placeholder}
-        className="w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-red-500 focus:border-red-500 transition-all duration-200"
-      />
-      {Icon && <Icon className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-500" />}
-    </div>
-  </div>
-);
+function useFilters() {
+  const [params, setParams] = useSearchParams();
+  const filters = useMemo(() => Object.fromEntries(FILTER_KEYS.map((k) => [k, params.get(k) || ""])), [params]);
+
+  // Any change other than paging goes back to page 1.
+  const update = (patch, { keepPage = false } = {}) => {
+    const next = { ...filters, ...patch };
+    if (!keepPage && !("page" in patch)) next.page = "";
+    if (next.page === "1") next.page = "";
+    setParams(Object.fromEntries(Object.entries(next).filter(([, v]) => v !== "" && v != null)), { replace: true });
+  };
+  const clear = () => setParams({}, { replace: true });
+  return { filters, update, clear };
+}
 
 export default function MarketplacePage() {
-  const dispatch = useDispatch();
   useTracking(window.location.pathname);
-  const { preview, openPreview, closePreview } = useImagePreview();
-  const { user, isAuthenticated } = useSelector((state) => state.auth);
-  const [filters, setFilters] = useState({
-    minPrice: "",
-    maxPrice: "",
-    // Brand links on the homepage arrive as /marketplace?make=Toyota
-    make: new URLSearchParams(window.location.search).get("make") || "",
-    year: "",
-    sortBy: "newest",
-    bodyType: "",
-    fuelType: "",
-    searchTerm: "",
-    page: 1,
-    page_size: MARKETPLACE_PAGE_SIZE,
-  });
+  const { filters, update, clear } = useFilters();
+  const [sheetOpen, setSheetOpen] = useState(false);
 
-  // Typing only queries the server once the user pauses.
-  const [debouncedSearch, setDebouncedSearch] = useState(filters.searchTerm);
+  // The search box is local so typing feels instant; the URL (and the query) follow after a pause.
+  const [searchText, setSearchText] = useState(filters.search);
+  useEffect(() => setSearchText(filters.search), [filters.search]);
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedSearch(filters.searchTerm), 300);
+    if (searchText === filters.search) return;
+    const t = setTimeout(() => update({ search: searchText.trim() }), 300);
     return () => clearTimeout(t);
-  }, [filters.searchTerm]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchText]);
 
-  const query = useMarketplace({ ...filters, searchTerm: debouncedSearch });
+  const page = Number(filters.page) || 1;
+  const query = useMarketplace({
+    page,
+    page_size: MARKETPLACE_PAGE_SIZE,
+    searchTerm: filters.search,
+    make: filters.make,
+    year: filters.year,
+    bodyType: filters.bodyType,
+    fuelType: filters.fuelType,
+    transmission: filters.transmission,
+    minPrice: filters.minPrice,
+    maxPrice: filters.maxPrice,
+    sortBy: filters.sort,
+  });
   const vehicles = query.data?.results || [];
-  const totalVehicles = query.data?.count || 0;
-  const currentPage = filters.page;
-  const pageSize = filters.page_size;
-  const totalPages = Math.max(1, Math.ceil(totalVehicles / pageSize));
+  const total = query.data?.count || 0;
+  const totalPages = Math.max(1, Math.ceil(total / MARKETPLACE_PAGE_SIZE));
   // Skeletons only on a genuine first paint; afterwards the previous results stay visible.
   const isLoading = query.isLoading;
   const isRefreshing = query.isFetching && query.isPlaceholderData;
   const revealed = useProgressiveReveal(vehicles.length, !isLoading);
 
-  const [authModal, setAuthModal] = useState(null);
-  const [selectedVehicle, setSelectedVehicle] = useState(null);
-  const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState("grid");
-  const [showQuoteModal, setShowQuoteModal] = useState(false);
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-
-  // Popular makes for quick filtering
-  const popularMakes = ["Toyota", "BMW", "Mercedes", "Honda", "Ford"];
-
-  // Popular body types
-  const bodyTypes = ["Sedan", "SUV", "Hatchback", "Coupe", "Truck", "Van"];
-  const fuelTypes = ["Petrol", "Diesel", "Electric", "Hybrid"];
-
-  const sortOptions = [
-    { value: "newest", label: "Newest First" },
-    { value: "priceLowHigh", label: "Price: Low to High" },
-    { value: "priceHighLow", label: "Price: High to Low" },
-  ];
-
-  const bodyTypeOptions = [
-    { value: "", label: "Any Body Type" },
-    ...bodyTypes.map((type) => ({ value: type, label: type })),
-  ];
-
-  const fuelTypeOptions = [
-    { value: "", label: "Any Fuel Type" },
-    ...fuelTypes.map((type) => ({ value: type, label: type })),
-  ];
-
-
-  const handlePageChange = (newPage) => {
-    setFilters((prev) => ({
-      ...prev,
-      page: newPage,
-    }));
-
-    // Scroll to top when changing pages
+  const goToPage = (p) => {
+    update({ page: String(p) }, { keepPage: true });
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
-  // Handle filter change - reset to page 1 when filters change
-  const handleFilterChange = (name, value) => {
-    setFilters({ ...filters, [name]: value, page: 1 });
+  const active = [
+    filters.search && { key: "search", label: `“${filters.search}”` },
+    ...Object.keys(FILTER_LABELS).filter((k) => filters[k]).map((k) => ({ key: k, label: filters[k] })),
+    (filters.minPrice || filters.maxPrice) && { key: "price", label: priceLabel(filters.minPrice, filters.maxPrice) },
+  ].filter(Boolean);
+  const removeFilter = (key) => {
+    if (key === "price") update({ minPrice: "", maxPrice: "" });
+    else if (key === "search") { setSearchText(""); update({ search: "" }); }
+    else update({ [key]: "" });
   };
 
-  // Similarly update other filter handlers to reset page to 1
-  const handleQuickFilterMake = (make) => {
-    setFilters({
-      ...filters,
-      make,
-      page: 1,
-    });
-  };
-
-  const handleQuickFilterBodyType = (bodyType) => {
-    setFilters({
-      ...filters,
-      bodyType,
-      page: 1,
-    });
-  };
-
-  const handleClearFilters = () => {
-    setFilters({
-      minPrice: "",
-      maxPrice: "",
-      make: "",
-      year: "",
-      sortBy: "newest",
-      bodyType: "",
-      fuelType: "",
-      searchTerm: "",
-      page: 1,
-      page_size: MARKETPLACE_PAGE_SIZE,
-    });
-  };
-
-  const handleMarketplaceImageClick = (vehicle, imageIndex = 0) => {
-    const imageUrls = vehicle.images?.map((img) => img.image) || [
-      vehicle.main_image,
-    ];
-    openPreview(
-      imageUrls,
-      imageIndex,
-      `${vehicle.make} ${vehicle.model}`,
-      `${vehicle.make} ${vehicle.model}`,
-      `${vehicle.year} ${vehicle.make} ${vehicle.model}`
-    );
-  };
-
-  const getPageRange = () => {
-    const range = [];
-    const start = Math.max(1, currentPage - 2);
-    const end = Math.min(totalPages, start + 4);
-
-    for (let i = start; i <= end; i++) {
-      range.push(i);
-    }
-    return range;
-  };
-
-  const activeFiltersCount = Object.values(filters).filter(
-    (value, index, array) => {
-      const keys = Object.keys(filters);
-      const key = keys[index];
-      return value && key !== "sortBy" && key !== "page" && key !== "page_size";
-    }
-  ).length;
+  const from = total === 0 ? 0 : (page - 1) * MARKETPLACE_PAGE_SIZE + 1;
+  const to = Math.min(page * MARKETPLACE_PAGE_SIZE, total);
 
   return (
-    <div className="pacaembu-font min-h-screen bg-gray-50">
-      {/* Hero Section with Parallax Effect */}
-      <motion.section
-        className="relative h-[60vh] sm:h-[50vh] md:h-[40vh] lg:h-96 bg-gradient-to-br from-red-600 via-red-700 to-red-800 overflow-hidden"
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ duration: 0.5 }}
-      >
-        {/* Animated Background Elements - simplified for mobile performance */}
-        <div className="absolute inset-0 opacity-10 overflow-hidden">
-          {[...Array(5)].map((_, i) => (
-            <motion.div
-              key={i}
-              className="absolute w-32 h-32 sm:w-64 sm:h-64 lg:w-96 lg:h-96 bg-white rounded-full"
-              style={{
-                left: `${10 + i * 20}%`,
-                top: `${10 + (i % 3) * 30}%`,
-              }}
-              animate={{
-                scale: [0.5, 0.8],
-                opacity: [0.1, 0.2],
-              }}
-              transition={{
-                duration: 8 + i * 2,
-                repeat: Infinity,
-                repeatType: "reverse",
-              }}
+    <div className="pacaembu-font min-h-screen bg-[#f6f7f9]">
+      {/* Header */}
+      <header className="relative bg-gray-950 text-white overflow-hidden isolate">
+        <div className="absolute inset-0 -z-10 bg-[radial-gradient(70%_120%_at_85%_0%,rgba(220,38,38,0.35),transparent_60%),radial-gradient(50%_80%_at_0%_100%,rgba(220,38,38,0.12),transparent_60%)]" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 sm:pt-28 pb-6 sm:pb-10">
+          <span className="inline-flex items-center gap-1.5 text-[12px] font-semibold uppercase tracking-[0.14em] text-red-400">
+            <BadgeCheck className="w-4 h-4" />
+            Verified marketplace
+          </span>
+          <h1 className="mt-2 text-[28px] leading-tight sm:text-4xl lg:text-5xl font-medium">Find your next car</h1>
+          <p className="mt-2 text-white/60 text-sm sm:text-base">
+            {isLoading ? "Loading vehicles…" : `${total.toLocaleString()} ${total === 1 ? "vehicle" : "vehicles"} inspected and ready to buy`}
+          </p>
+
+          {/* Search */}
+          <form
+            role="search"
+            onSubmit={(e) => {
+              e.preventDefault();
+              update({ search: searchText.trim() });
+            }}
+            className="mt-5 sm:mt-7 flex items-center gap-2 bg-white rounded-xl p-1.5 max-w-3xl shadow-[0_20px_40px_-20px_rgba(0,0,0,0.6)]"
+          >
+            <Search className="w-5 h-5 text-gray-400 ml-2.5 shrink-0" />
+            <input
+              type="search"
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              placeholder="Search make, model or keyword"
+              aria-label="Search vehicles"
+              className="flex-1 min-w-0 h-10 sm:h-11 bg-transparent text-gray-900 placeholder-gray-400 text-[15px] focus:outline-none [&::-webkit-search-cancel-button]:hidden"
             />
-          ))}
-        </div>
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-full flex flex-col justify-center">
-          <motion.h1
-            className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-extrabold text-white mb-3 sm:mb-4"
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-          >
-            Find Your Perfect Ride
-          </motion.h1>
-          <motion.p
-            className="text-base sm:text-lg md:text-xl text-white/90 max-w-2xl mb-6 sm:mb-8"
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.3 }}
-          >
-            Browse our extensive collection of premium vehicles from trusted
-            sellers
-          </motion.p>
-
-          {/* Search Bar */}
-          <motion.div
-            className="bg-white rounded-xl shadow-xl flex flex-col sm:flex-row overflow-hidden w-full max-w-4xl"
-            initial={{ y: 30, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.4 }}
-          >
-            <div className="flex-grow p-2">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={filters.searchTerm}
-
-                    onChange={(e) => handleFilterChange("searchTerm", e.target.value)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        // Search triggers automatically via useEffect
-                      }
-                    }}
-                  placeholder="Search by make, model, or keyword..."
-                  className="w-full pl-10 pr-4 py-3 sm:py-2 text-gray-900 placeholder-gray-500 border-0 focus:ring-0 focus:outline-none rounded-lg"
-                />
-              </div>
-            </div>
-            <button
-              onClick={() => {
-                /* Search functionality can be added here */
-              }}
-              className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 sm:py-2 font-medium transition-colors duration-200 sm:rounded-r-xl"
-            >
+            {searchText && (
+              <button type="button" onClick={() => removeFilter("search")} aria-label="Clear search" className="p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100">
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            <button type="submit" className="h-10 sm:h-11 px-4 sm:px-6 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium transition-colors">
               Search
             </button>
-          </motion.div>
-        </div>
-      </motion.section>
+          </form>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10 mb-20 relative z-10">
-        {/* Quick Filters - Makes */}
-        <motion.div
-          className="bg-white shadow-lg rounded-xl p-4 mb-6"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.5 }}
-        >
-          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-            <h3 className="text-gray-700 font-semibold text-sm sm:text-base whitespace-nowrap">
-              Popular Makes:
-            </h3>
-            <div className="flex flex-wrap gap-2">
-              {popularMakes.map((make) => (
+          {/* Popular makes: one scrollable row on phones */}
+          <div className="mt-4 -mx-4 px-4 sm:mx-0 sm:px-0 flex gap-2 overflow-x-auto scrollbar-hide">
+            {POPULAR_MAKES.map((m) => {
+              const on = filters.make.toLowerCase() === m.toLowerCase();
+              return (
                 <button
-                  key={make}
-                  onClick={() => handleQuickFilterMake(make)}
-                  className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                    filters.make === make
-                      ? "bg-red-600 text-white shadow-md"
-                      : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                  key={m}
+                  onClick={() => update({ make: on ? "" : m })}
+                  aria-pressed={on}
+                  className={`shrink-0 h-8 px-3.5 rounded-full text-[13px] font-medium transition-colors ${
+                    on ? "bg-white text-gray-900" : "bg-white/10 text-white/80 hover:bg-white/20"
                   }`}
                 >
-                  {make}
+                  {m}
                 </button>
-              ))}
-              {filters.make && (
-                <button
-                  onClick={() => handleFilterChange("make", "")}
-                  className="p-1.5 rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition-colors"
-                  title="Clear make filter"
-                >
-                  <X className="w-3 h-3" />
+              );
+            })}
+          </div>
+        </div>
+      </header>
+
+      <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-5 sm:py-8 lg:grid lg:grid-cols-[264px_minmax(0,1fr)] lg:gap-8">
+        {/* Desktop filters */}
+        <aside className="hidden lg:block">
+          <div className="sticky top-24 bg-white rounded-xl ring-1 ring-gray-200/70 p-5 max-h-[calc(100vh-7rem)] overflow-y-auto">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="font-semibold text-gray-900">Filters</h2>
+              {active.length > 0 && (
+                <button onClick={() => { setSearchText(""); clear(); }} className="text-sm text-red-600 hover:text-red-700 font-medium">
+                  Clear all
                 </button>
               )}
             </div>
+            <FilterPanel filters={filters} update={update} />
           </div>
-        </motion.div>
+        </aside>
 
-        {/* Filter Bar */}
-        {/* Filter Bar */}
-        <motion.div
-          className="bg-white shadow-lg rounded-xl mb-6 overflow-hidden"
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ delay: 0.6 }}
-        >
-          {/* Filter Header */}
-          <div className="p-4 flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-            <div className="flex items-center gap-3">
-              <SlidersHorizontal className="text-gray-600 w-5 h-5" />
-              <h2 className="text-lg font-semibold text-gray-900">
-                Filters & Sorting
-              </h2>
-              {activeFiltersCount > 0 && (
-                <span className="bg-red-600 text-white text-xs px-2 py-1 rounded-full font-medium">
-                  {activeFiltersCount}
+        <main className="min-w-0">
+          {/* Toolbar */}
+          <div className="flex items-center justify-between gap-2 mb-3 sm:mb-4">
+            <div className="text-sm text-gray-600 min-w-0">
+              {isLoading ? (
+                <Bone className="h-4 w-40" />
+              ) : (
+                <span className="truncate block">
+                  {total === 0 ? "No vehicles" : (
+                    <>
+                      <span className="hidden sm:inline">Showing </span>
+                      <span className="font-semibold text-gray-900 tabular-nums">{from}–{to}</span> of{" "}
+                      <span className="font-semibold text-gray-900 tabular-nums">{total.toLocaleString()}</span>
+                    </>
+                  )}
                 </span>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2 shrink-0">
               <button
-                onClick={handleClearFilters}
-                className="px-4 py-2 text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                onClick={() => setSheetOpen(true)}
+                className="lg:hidden inline-flex items-center gap-1.5 h-9 px-3 rounded-lg bg-white ring-1 ring-gray-200 text-sm font-medium text-gray-800"
               >
-                Clear All
-              </button>
-              <button
-                onClick={() => setShowFilters(!showFilters)}
-                className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm font-medium flex items-center gap-2"
-              >
-                {showFilters ? "Hide" : "Show"} Filters
-                {showFilters ? (
-                  <ChevronUp className="w-4 h-4" />
-                ) : (
-                  <ChevronDown className="w-4 h-4" />
+                <SlidersHorizontal className="w-4 h-4" />
+                Filters
+                {active.length > 0 && (
+                  <span className="grid place-items-center min-w-5 h-5 px-1 rounded-full bg-red-600 text-white text-[11px] font-semibold">{active.length}</span>
                 )}
               </button>
+              <label className="relative inline-flex items-center">
+                <span className="sr-only">Sort by</span>
+                <ArrowUpDown className="absolute left-2.5 w-4 h-4 text-gray-500 pointer-events-none" />
+                <select
+                  value={filters.sort}
+                  onChange={(e) => update({ sort: e.target.value })}
+                  className="appearance-none h-9 pl-8 pr-8 rounded-lg bg-white ring-1 ring-gray-200 border-0 text-sm font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500 cursor-pointer"
+                >
+                  {SORTS.map((s) => (
+                    <option key={s.value} value={s.value}>{s.label}</option>
+                  ))}
+                </select>
+                <ChevronDown className="absolute right-2.5 w-4 h-4 text-gray-500 pointer-events-none" />
+              </label>
             </div>
           </div>
 
-          {/* Collapsible Filters */}
-          <AnimatePresence>
-            {showFilters && (
-              <motion.div
-                initial={{ height: 0, opacity: 0 }}
-                animate={{ height: "auto", opacity: 1 }}
-                exit={{ height: 0, opacity: 0 }}
-                transition={{ duration: 0.3 }}
-                className="border-t border-gray-100"
-              >
-                <div className="p-4 space-y-4">
-                  {/* Price Range */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <CustomInput
-                      label="Min Price"
-                      value={filters.minPrice}
-                      onChange={(e) =>
-                        handleFilterChange("minPrice", e.target.value)
-                      }
-                      placeholder="0"
-                      type="number"
-                      icon={DollarSign}
-                    />
-                    <CustomInput
-                      label="Max Price"
-                      value={filters.maxPrice}
-                      onChange={(e) =>
-                        handleFilterChange("maxPrice", e.target.value)
-                      }
-                      placeholder="No limit"
-                      type="number"
-                      icon={DollarSign}
-                    />
-                  </div>
-
-                  {/* Make and Year */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <CustomInput
-                      label="Make"
-                      value={filters.make}
-                      onChange={(e) =>
-                        handleFilterChange("make", e.target.value)
-                      }
-                      placeholder="Any make"
-                      icon={Car}
-                    />
-                    <CustomInput
-                      label="Year"
-                      value={filters.year}
-                      onChange={(e) =>
-                        handleFilterChange("year", e.target.value)
-                      }
-                      placeholder="Any year"
-                      type="number"
-                      icon={Calendar}
-                    />
-                  </div>
-
-                  {/* Dropdowns */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-                    <CustomSelect
-                      label="Body Type"
-                      value={filters.bodyType}
-                      onChange={(value) =>
-                        handleFilterChange("bodyType", value)
-                      }
-                      options={bodyTypeOptions}
-                      placeholder="Any body type"
-                      icon={Tag}
-                    />
-                    <CustomSelect
-                      label="Fuel Type"
-                      value={filters.fuelType}
-                      onChange={(value) =>
-                        handleFilterChange("fuelType", value)
-                      }
-                      options={fuelTypeOptions}
-                      placeholder="Any fuel type"
-                      icon={Gauge}
-                    />
-                    <CustomSelect
-                      label="Sort By"
-                      value={filters.sortBy}
-                      onChange={(value) => handleFilterChange("sortBy", value)}
-                      options={sortOptions}
-                      placeholder="Sort by"
-                      icon={ArrowUpDown}
-                    />
-                  </div>
-
-                  {/* Body Type Quick Filters */}
-                  <div className="pt-4 border-t border-gray-100">
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-3">
-                      <h3 className="text-gray-700 font-semibold text-sm whitespace-nowrap">
-                        Quick Filter:
-                      </h3>
-                      <div className="flex flex-wrap gap-2">
-                        {bodyTypes.map((type) => (
-                          <button
-                            key={type}
-                            onClick={() => handleQuickFilterBodyType(type)}
-                            className={`px-3 py-1.5 rounded-full text-sm font-medium transition-all duration-200 ${
-                              filters.bodyType === type
-                                ? "bg-red-600 text-white shadow-md"
-                                : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                            }`}
-                          >
-                            {type}
-                          </button>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </motion.div>
-
-        {/* Results Count & View Mode */}
-        <div className="flex justify-between items-center mb-4">
-          {isLoading ? (
-            <Bone className="h-4 w-56" />
-          ) : (
-          <div className="text-gray-600">
-            Showing{" "}
-            <span className="font-semibold">
-              {totalVehicles === 0 ? 0 : (currentPage - 1) * pageSize + 1}
-            </span>{" "}
-            to{" "}
-            <span className="font-semibold">
-              {Math.min(currentPage * pageSize, totalVehicles)}
-            </span>{" "}
-            of <span className="font-semibold">{totalVehicles}</span> vehicles
-            {filters.make && (
-              <span>
-                {" "}
-                in <span className="font-semibold">{filters.make}</span>
-              </span>
-            )}
-          </div>
-          )}
-          <div className="flex gap-2">
-            <Tooltip title="Grid View">
-              <IconButton
-                onClick={() => setViewMode("grid")}
-                className={viewMode === "grid" ? "!bg-red-50" : ""}
-                sx={{ color: viewMode === "grid" ? "#dc2626" : "#6b7280" }}
-              >
-                <div className="grid grid-cols-2 gap-0.5">
-                  <div className="w-1.5 h-1.5 bg-current rounded-sm"></div>
-                  <div className="w-1.5 h-1.5 bg-current rounded-sm"></div>
-                  <div className="w-1.5 h-1.5 bg-current rounded-sm"></div>
-                  <div className="w-1.5 h-1.5 bg-current rounded-sm"></div>
-                </div>
-              </IconButton>
-            </Tooltip>
-            <Tooltip title="List View">
-              <IconButton
-                onClick={() => setViewMode("list")}
-                className={viewMode === "list" ? "!bg-red-50" : ""}
-                sx={{ color: viewMode === "list" ? "#dc2626" : "#6b7280" }}
-              >
-                <div className="flex flex-col gap-0.5 items-center">
-                  <div className="w-3.5 h-1 bg-current rounded-sm"></div>
-                  <div className="w-3.5 h-1 bg-current rounded-sm"></div>
-                  <div className="w-3.5 h-1 bg-current rounded-sm"></div>
-                </div>
-              </IconButton>
-            </Tooltip>
-          </div>
-        </div>
-
-        {/* Loading State */}
-        {isLoading && (
-          <div
-            className={
-              viewMode === "grid"
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                : "flex flex-col gap-4"
-            }
-          >
-            {Array.from({ length: pageSize }).map((_, i) => (
-              <VehicleSkeleton key={i} viewMode={viewMode} />
-            ))}
-          </div>
-        )}
-
-        {/* Empty State */}
-        {!isLoading && vehicles.length === 0 && (
-          <div className="bg-white rounded-xl shadow-md p-10 text-center">
-            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-red-50 mb-4">
-              <Car className="w-8 h-8 text-red-600" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">
-              No vehicles found
-            </h3>
-            <p className="text-gray-600 mb-6">
-              We couldn't find any vehicles matching your criteria. Try
-              adjusting your filters or logging in again.
-            </p>
-            <Button
-              variant="outlined"
-              onClick={handleClearFilters}
-              sx={{
-                color: "#dc2626",
-                borderColor: "#dc2626",
-                "&:hover": {
-                  borderColor: "#b91c1c",
-                  backgroundColor: "rgba(220, 38, 38, 0.04)",
-                },
-              }}
-            >
-              Clear All Filters
-            </Button>
-          </div>
-        )}
-
-        {/* Vehicle Grid */}
-        {!isLoading && vehicles.length > 0 && (
-          <div className="relative">
-          <div className={`absolute -top-2 left-0 right-0 h-0.5 overflow-hidden rounded transition-opacity ${isRefreshing ? "opacity-100" : "opacity-0"}`}>
-            <div className="h-full w-1/3 bg-red-500 animate-[tableProgress_1s_ease-in-out_infinite]" />
-          </div>
-          <div
-            className={`${
-              viewMode === "grid"
-                ? "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                : "flex flex-col gap-4"
-            } transition-opacity duration-200 ${isRefreshing ? "opacity-70" : "opacity-100"}`}
-          >
-            {vehicles.map((vehicle, index) => index >= revealed ? (
-              <VehicleSkeleton key={`sk-${vehicle.id}`} viewMode={viewMode} />
-            ) : (
-              <Link
-                to={`/vehicles/${vehicle.id}`}
-                key={vehicle.id}
-                onMouseEnter={() => prefetchVehicle(vehicle.id)}
-                onTouchStart={() => prefetchVehicle(vehicle.id)}
-                onFocus={() => prefetchVehicle(vehicle.id)}
-              >
-                <motion.div
-                  key={vehicle.id}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25 }}
-                  className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 overflow-hidden ${
-                    viewMode === "list" ? "flex flex-col md:flex-row" : ""
-                  }`}
+          {/* Active filters */}
+          {active.length > 0 && (
+            <div className="flex flex-wrap items-center gap-1.5 mb-4">
+              {active.map((f) => (
+                <button
+                  key={f.key}
+                  onClick={() => removeFilter(f.key)}
+                  className="inline-flex items-center gap-1 h-7 pl-2.5 pr-1.5 rounded-full bg-gray-900 text-white text-[12.5px] font-medium hover:bg-gray-700 transition-colors"
                 >
-                  <div
-                    className={`relative ${
-                      viewMode === "list" ? "md:w-1/3" : ""
-                    }`}
-                  >
-                    <SmartImage
-                      src={vehicle.main_image}
-                      alt={`${vehicle.make} ${vehicle.model}`}
-                      loading={index < 3 ? "eager" : "lazy"}
-                      fetchpriority={index < 3 ? "high" : "auto"}
-                      className={`w-full object-cover ${
-                        viewMode === "list"
-                          ? "h-56 md:h-full md:rounded-l-xl"
-                          : "h-52 rounded-t-xl"
-                      }`}
-                    />
-                    {/* Featured Badge */}
-                    {vehicle.featured && (
-                      <div className="absolute top-4 left-0 bg-yellow-500 text-white px-3 py-1 rounded-r-full shadow-md flex items-center">
-                        <Award className="w-4 h-4 mr-1" />
-                        <span className="text-xs font-medium">Featured</span>
-                      </div>
-                    )}
-
-                    {/* Chips and badges */}
-                    <div className="absolute top-3 right-3 flex flex-col gap-2">
-                      <Chip
-                        label={
-                          vehicle.listing_type === "instant_sale"
-                            ? "Buy Now"
-                            : "Marketplace"
-                        }
-                        color={
-                          vehicle.listing_type === "instant_sale"
-                            ? "success"
-                            : "primary"
-                        }
-                        size="small"
-                        sx={{
-                          backgroundColor:
-                            vehicle.listing_type === "instant_sale"
-                              ? "#059669"
-                              : "#1d4ed8",
-                          color: "white",
-                          fontWeight: 600,
-                          fontSize: "0.7rem",
-                        }}
-                      />
-
-                      {vehicle.verification_state === "physical" && (
-                        <Chip
-                          icon={<Shield className="w-3 h-3 text-green-700" />}
-                          label="Verified"
-                          size="small"
-                          sx={{
-                            backgroundColor: "rgba(240, 253, 244, 0.9)",
-                            color: "#15803d",
-                            fontWeight: 600,
-                            fontSize: "0.7rem",
-                            "& .MuiChip-icon": {
-                              color: "#15803d",
-                            },
-                          }}
-                        />
-                      )}
-                    </div>
-                  </div>
-
-                  <div
-                    className={`p-4 flex flex-col ${
-                      viewMode === "list" ? "md:w-2/3" : ""
-                    }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div>
-                        <h3 className="text-xl font-bold text-gray-900">
-                          {vehicle.make} {vehicle.model}
-                        </h3>
-                        <p className="text-gray-600">
-                          {vehicle.year} •{" "}
-                          {formatNumber(vehicle.mileage)} km
-                        </p>
-                      </div>
-                      <Badge
-                        badgeContent={vehicle.bid_count || 0}
-                        color="error"
-                        sx={{
-                          "& .MuiBadge-badge": {
-                            backgroundColor: "#dc2626",
-                            color: "white",
-                          },
-                        }}
-                      >
-                        <TrendingUp className="text-gray-400 w-5 h-5" />
-                      </Badge>
-                    </div>
-
-                    {/* Features */}
-                    <div className="grid grid-cols-2 gap-2 mt-3 mb-4">
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Tag className="w-4 h-4 mr-1.5 text-gray-500" />
-                        <span>{vehicle.body_type || "Sedan"}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Map className="w-4 h-4 mr-1.5 text-gray-500" />
-                        <span>{vehicle.location || "Auto Eden HQ"}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <Gauge className="w-4 h-4 mr-1.5 text-gray-500" />
-                        <span>{vehicle.transmission || "Automatic"}</span>
-                      </div>
-                      <div className="flex items-center text-sm text-gray-600">
-                        <DollarSign className="w-4 h-4 mr-1.5 text-gray-500" />
-                        <span>{vehicle.fuel_type || "Petrol"}</span>
-                      </div>
-                    </div>
-
-                    <div className="mt-auto pt-2 flex justify-between items-center">
-                      <div>
-                        <span className="text-2xl font-bold text-red-600">
-                          {formatPrice(vehicle.price)}
-                        </span>
-                        {vehicle.discount_price && (
-                          <span className="text-sm text-gray-500 line-through ml-2">
-                            {formatPrice(vehicle.discount_price)}
-                          </span>
-                        )}
-                      </div>
-
-                      {/* In the vehicle card buttons section (modify the existing code) */}
-                      {vehicle.listing_type === "marketplace" &&
-                      isAuthenticated &&
-                      user?.id !== vehicle.owner?.id ? (
-                        <Button
-                          variant="contained"
-                          size={viewMode === "grid" ? "medium" : "large"}
-                          onClick={() => setSelectedVehicle(vehicle)}
-                          sx={{
-                            backgroundColor: "#dc2626",
-                            "&:hover": {
-                              backgroundColor: "#b91c1c",
-                            },
-                          }}
-                          className="!rounded-lg !font-medium"
-                        >
-                          Make an offer
-                        </Button>
-                      ) : (
-                        <Button
-                          variant="outlined"
-                          size={viewMode === "grid" ? "medium" : "large"}
-                          onClick={() => setSelectedVehicle(vehicle)}
-                          sx={{
-                            color: "#dc2626",
-                            borderColor: "#dc2626",
-                            "&:hover": {
-                              borderColor: "#b91c1c",
-                              backgroundColor: "rgba(220, 38, 38, 0.04)",
-                            },
-                          }}
-                          className="!rounded-lg !font-medium"
-                        >
-                          View Details
-                        </Button>
-                      )}
-                    </div>
-
-                    <div className="mt-2 flex justify-between items-center text-xs text-gray-500">
-                      <div className="flex items-center">
-                        <Clock className="w-3 h-3 mr-1" />
-                        <span>
-                          Posted{" "}
-                          {new Date(vehicle.created_at).toLocaleDateString()}
-                        </span>
-                      </div>
-                      {vehicle.ending_soon && (
-                        <div className="flex items-center text-red-500">
-                          <span className="animate-pulse mr-1">●</span>
-                          <span>Ending soon</span>
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                </motion.div>
-              </Link>
-            ))}
-          </div>
-          </div>
-        )}
-
-        {/* Pagination */}
-        {!isLoading && totalPages > 1 && (
-          <div className="mt-10 flex justify-center">
-            <div className="flex items-center space-x-2">
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={currentPage === 1}
-                onClick={() => handlePageChange(currentPage - 1)}
-                sx={{
-                  color: "#6b7280",
-                  borderColor: "#d1d5db",
-                  "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "rgba(156, 163, 175, 0.04)",
-                  },
-                  "&.Mui-disabled": {
-                    borderColor: "#e5e7eb",
-                    color: "#9ca3af",
-                  },
-                }}
-              >
-                Previous
-              </Button>
-
-              {getPageRange().map((page) => (
-                <Button
-                  key={page}
-                  variant={page === currentPage ? "contained" : "outlined"}
-                  size="small"
-                  onClick={() => handlePageChange(page)}
-                  sx={
-                    page === currentPage
-                      ? {
-                          backgroundColor: "#dc2626",
-                          "&:hover": {
-                            backgroundColor: "#b91c1c",
-                          },
-                        }
-                      : {
-                          color: "#6b7280",
-                          borderColor: "#d1d5db",
-                          "&:hover": {
-                            borderColor: "#9ca3af",
-                            backgroundColor: "rgba(156, 163, 175, 0.04)",
-                          },
-                        }
-                  }
-                >
-                  {page}
-                </Button>
+                  {f.label}
+                  <X className="w-3.5 h-3.5 opacity-70" />
+                </button>
               ))}
-
-              <Button
-                variant="outlined"
-                size="small"
-                disabled={currentPage === totalPages}
-                onClick={() => handlePageChange(currentPage + 1)}
-                sx={{
-                  color: "#6b7280",
-                  borderColor: "#d1d5db",
-                  "&:hover": {
-                    borderColor: "#9ca3af",
-                    backgroundColor: "rgba(156, 163, 175, 0.04)",
-                  },
-                  "&.Mui-disabled": {
-                    borderColor: "#e5e7eb",
-                    color: "#9ca3af",
-                  },
-                }}
-              >
-                Next
-              </Button>
+              <button onClick={() => { setSearchText(""); clear(); }} className="h-7 px-2 text-[12.5px] font-medium text-gray-500 hover:text-gray-900">
+                Clear all
+              </button>
             </div>
+          )}
+
+          {/* Results */}
+          <div className="relative">
+            <div className={`absolute -top-2 left-0 right-0 h-0.5 overflow-hidden rounded transition-opacity ${isRefreshing ? "opacity-100" : "opacity-0"}`}>
+              <div className="h-full w-1/3 bg-red-500 animate-[tableProgress_1s_ease-in-out_infinite]" />
+            </div>
+
+            {query.isError && !query.data ? (
+              <EmptyState
+                title="Couldn't load vehicles"
+                body="Check your connection and try again."
+                action={
+                  <button onClick={() => query.refetch()} className="inline-flex items-center gap-2 h-10 px-5 rounded-lg bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium">
+                    <RefreshCw className="w-4 h-4" />
+                    Try again
+                  </button>
+                }
+              />
+            ) : !isLoading && vehicles.length === 0 ? (
+              <EmptyState
+                title="No vehicles match"
+                body="Try removing a filter or searching for something broader."
+                action={
+                  active.length > 0 && (
+                    <button onClick={() => { setSearchText(""); clear(); }} className="h-10 px-5 rounded-lg bg-gray-900 hover:bg-gray-800 text-white text-sm font-medium">
+                      Clear all filters
+                    </button>
+                  )
+                }
+              />
+            ) : (
+              <div className={`grid grid-cols-2 md:grid-cols-3 lg:grid-cols-2 xl:grid-cols-3 gap-2.5 sm:gap-4 lg:gap-5 transition-opacity duration-200 ${isRefreshing ? "opacity-60" : ""}`}>
+                {isLoading
+                  ? Array.from({ length: MARKETPLACE_PAGE_SIZE }).map((_, i) => <ListingCardSkeleton key={i} />)
+                  : vehicles.map((v, i) =>
+                      i < revealed ? <ListingCard key={v.id} vehicle={v} priority={i < 4} /> : <ListingCardSkeleton key={`sk-${v.id}`} />
+                    )}
+              </div>
+            )}
+          </div>
+
+          {!isLoading && totalPages > 1 && <Pagination page={page} totalPages={totalPages} onChange={goToPage} />}
+        </main>
+      </div>
+
+      {/* Mobile filter sheet */}
+      <AnimatePresence>
+        {sheetOpen && (
+          <div className="lg:hidden fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label="Filters">
+            <motion.div className="absolute inset-0 bg-black/50" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setSheetOpen(false)} />
+            <motion.div
+              className="absolute inset-x-0 bottom-0 max-h-[88svh] flex flex-col bg-white rounded-t-2xl"
+              initial={{ y: "100%" }}
+              animate={{ y: 0 }}
+              exit={{ y: "100%" }}
+              transition={{ type: "spring", stiffness: 380, damping: 38 }}
+            >
+              <div className="flex items-center justify-between px-5 pt-4 pb-3 border-b border-gray-100">
+                <h2 className="font-semibold text-gray-900">Filters</h2>
+                <button onClick={() => setSheetOpen(false)} aria-label="Close filters" className="p-1.5 -mr-1.5 rounded-md text-gray-500 hover:bg-gray-100">
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto px-5 py-4">
+                <FilterPanel filters={filters} update={update} />
+              </div>
+              <div className="flex gap-2 px-5 py-3 border-t border-gray-100 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+                <button onClick={() => { setSearchText(""); clear(); }} className="h-11 px-4 rounded-lg ring-1 ring-gray-200 text-sm font-medium text-gray-700">
+                  Clear
+                </button>
+                <button onClick={() => setSheetOpen(false)} className="flex-1 h-11 rounded-lg bg-red-600 hover:bg-red-700 text-white text-sm font-medium">
+                  {query.isFetching ? "Updating…" : `Show ${total.toLocaleString()} ${total === 1 ? "vehicle" : "vehicles"}`}
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
-
-        {/* Quote Request Modal */}
-        <QuoteRequestModal
-          open={showQuoteModal}
-          onClose={() => setShowQuoteModal(false)}
-          vehicle={selectedVehicle}
-          vehicleId={selectedVehicle?.id}
-        />
-        <AuthModals openType={authModal} onClose={() => setAuthModal(null)} />
-
-        <ImagePreview
-          isOpen={preview.isOpen}
-          onClose={closePreview}
-          images={preview.images}
-          currentIndex={preview.currentIndex}
-          alt={preview.alt}
-          title={preview.title}
-          description={preview.description}
-        />
-
-        {/* Snackbar for notifications */}
-        <Snackbar
-          open={snackbar.open}
-          autoHideDuration={6000}
-          onClose={() => setSnackbar({ ...snackbar, open: false })}
-          anchorOrigin={{ vertical: "bottom", horizontal: "center" }}
-        >
-          <Alert
-            onClose={() => setSnackbar({ ...snackbar, open: false })}
-            severity={snackbar.severity}
-            sx={{ width: "100%" }}
-          >
-            {snackbar.message}
-          </Alert>
-        </Snackbar>
-      </div>
+      </AnimatePresence>
     </div>
+  );
+}
+
+function priceLabel(min, max) {
+  const k = (v) => `$${Number(v) >= 1000 ? `${Number(v) / 1000}k` : v}`;
+  if (min && max) return `${k(min)} – ${k(max)}`;
+  return min ? `${k(min)}+` : `Under ${k(max)}`;
+}
+
+function FilterPanel({ filters, update }) {
+  // Price inputs are local and commit on blur/Enter, so the grid doesn't refetch per keystroke.
+  const [price, setPrice] = useState({ min: filters.minPrice, max: filters.maxPrice });
+  useEffect(() => setPrice({ min: filters.minPrice, max: filters.maxPrice }), [filters.minPrice, filters.maxPrice]);
+  const commitPrice = () => {
+    if (price.min !== filters.minPrice || price.max !== filters.maxPrice) update({ minPrice: price.min, maxPrice: price.max });
+  };
+
+  return (
+    <div className="space-y-6">
+      <Group title="Price (USD)">
+        <div className="grid grid-cols-2 gap-2">
+          {[["min", "Min"], ["max", "Max"]].map(([k, label]) => (
+            <label key={k} className="relative">
+              <span className="sr-only">{label} price</span>
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm text-gray-400">$</span>
+              <input
+                type="number"
+                inputMode="numeric"
+                min="0"
+                placeholder={label}
+                value={price[k]}
+                onChange={(e) => setPrice((p) => ({ ...p, [k]: e.target.value }))}
+                onBlur={commitPrice}
+                onKeyDown={(e) => e.key === "Enter" && commitPrice()}
+                className="w-full h-10 pl-6 pr-2 rounded-lg ring-1 ring-gray-200 border-0 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
+              />
+            </label>
+          ))}
+        </div>
+        <Chips
+          options={PRICE_BANDS.map((b) => b.label)}
+          value={PRICE_BANDS.find((b) => b.min === filters.minPrice && b.max === filters.maxPrice)?.label || ""}
+          onChange={(label) => {
+            const b = PRICE_BANDS.find((x) => x.label === label);
+            update(b ? { minPrice: b.min, maxPrice: b.max } : { minPrice: "", maxPrice: "" });
+          }}
+        />
+      </Group>
+
+      <Group title="Make">
+        <input
+          list="marketplace-makes"
+          placeholder="Any make"
+          defaultValue={filters.make}
+          key={filters.make}
+          onBlur={(e) => e.target.value.trim() !== filters.make && update({ make: e.target.value.trim() })}
+          onKeyDown={(e) => e.key === "Enter" && e.currentTarget.blur()}
+          className="w-full h-10 px-3 rounded-lg ring-1 ring-gray-200 border-0 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-red-500"
+        />
+        <datalist id="marketplace-makes">
+          {POPULAR_MAKES.map((m) => <option key={m} value={m} />)}
+        </datalist>
+      </Group>
+
+      <Group title="Year">
+        <div className="relative">
+          <select
+            value={filters.year}
+            onChange={(e) => update({ year: e.target.value })}
+            className="appearance-none w-full h-10 pl-3 pr-8 rounded-lg ring-1 ring-gray-200 border-0 text-sm text-gray-900 bg-white focus:outline-none focus:ring-2 focus:ring-red-500"
+          >
+            <option value="">Any year</option>
+            {YEARS.map((y) => <option key={y} value={y}>{y}</option>)}
+          </select>
+          <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-500 pointer-events-none" />
+        </div>
+      </Group>
+
+      <Group title="Body type">
+        <Chips options={BODY_TYPES} value={filters.bodyType} onChange={(v) => update({ bodyType: v })} />
+      </Group>
+      <Group title="Fuel">
+        <Chips options={FUEL_TYPES} value={filters.fuelType} onChange={(v) => update({ fuelType: v })} />
+      </Group>
+      <Group title="Gearbox">
+        <Chips options={TRANSMISSIONS} value={filters.transmission} onChange={(v) => update({ transmission: v })} />
+      </Group>
+    </div>
+  );
+}
+
+const Group = ({ title, children }) => (
+  <fieldset className="space-y-2.5">
+    <legend className="text-[12px] font-semibold uppercase tracking-wider text-gray-500 mb-2.5">{title}</legend>
+    {children}
+  </fieldset>
+);
+
+// Single-choice chips; tapping the selected one clears it.
+const Chips = ({ options, value, onChange }) => (
+  <div className="flex flex-wrap gap-1.5">
+    {options.map((o) => {
+      const on = value.toLowerCase() === o.toLowerCase();
+      return (
+        <button
+          key={o}
+          type="button"
+          aria-pressed={on}
+          onClick={() => onChange(on ? "" : o)}
+          className={`h-8 px-3 rounded-full text-[13px] font-medium transition-colors ${
+            on ? "bg-gray-900 text-white" : "bg-gray-50 ring-1 ring-gray-200 text-gray-700 hover:bg-gray-100"
+          }`}
+        >
+          {o}
+        </button>
+      );
+    })}
+  </div>
+);
+
+const EmptyState = ({ title, body, action }) => (
+  <div className="bg-white rounded-xl ring-1 ring-gray-200/70 px-6 py-14 text-center">
+    <div className="inline-grid place-items-center w-14 h-14 rounded-full bg-red-50 text-red-600 mb-4">
+      <Car className="w-7 h-7" />
+    </div>
+    <h3 className="text-lg font-semibold text-gray-900">{title}</h3>
+    <p className="text-gray-500 mt-1 mb-6 text-sm">{body}</p>
+    {action}
+  </div>
+);
+
+function Pagination({ page, totalPages, onChange }) {
+  // 1 … 4 5 6 … 12
+  const pages = [];
+  for (let p = 1; p <= totalPages; p++) {
+    if (p === 1 || p === totalPages || Math.abs(p - page) <= 1) pages.push(p);
+    else if (pages[pages.length - 1] !== "…") pages.push("…");
+  }
+  const btn = "grid place-items-center h-10 min-w-10 px-3 rounded-lg text-sm font-medium transition-colors";
+  return (
+    <nav className="mt-8 sm:mt-10 flex items-center justify-between sm:justify-center gap-2" aria-label="Pagination">
+      <button onClick={() => onChange(page - 1)} disabled={page === 1} className={`${btn} gap-1 bg-white ring-1 ring-gray-200 text-gray-800 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none flex`}>
+        <ChevronLeft className="w-4 h-4" />
+        <span className="hidden sm:inline">Previous</span>
+      </button>
+      <span className="sm:hidden text-sm text-gray-600 tabular-nums">
+        Page <span className="font-semibold text-gray-900">{page}</span> of {totalPages}
+      </span>
+      <div className="hidden sm:flex items-center gap-1.5">
+        {pages.map((p, i) =>
+          p === "…" ? (
+            <span key={`gap-${i}`} className="px-1 text-gray-400">…</span>
+          ) : (
+            <button
+              key={p}
+              onClick={() => onChange(p)}
+              aria-current={p === page ? "page" : undefined}
+              className={`${btn} tabular-nums ${p === page ? "bg-gray-900 text-white" : "bg-white ring-1 ring-gray-200 text-gray-700 hover:bg-gray-50"}`}
+            >
+              {p}
+            </button>
+          )
+        )}
+      </div>
+      <button onClick={() => onChange(page + 1)} disabled={page === totalPages} className={`${btn} gap-1 bg-white ring-1 ring-gray-200 text-gray-800 hover:bg-gray-50 disabled:opacity-40 disabled:pointer-events-none flex`}>
+        <span className="hidden sm:inline">Next</span>
+        <ChevronRight className="w-4 h-4" />
+      </button>
+    </nav>
   );
 }

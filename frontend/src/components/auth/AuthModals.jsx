@@ -12,10 +12,6 @@ import {
   AlertCircle,
   CheckCircle,
   ArrowLeft,
-  Sparkles,
-  Shield,
-  Zap,
-  Car,
 } from "../ui/icons";
 import { GoogleOAuthProvider, GoogleLogin } from "@react-oauth/google";
 import { login, register, googleLogin, requestPasswordReset } from "../../redux/slices/authSlice";
@@ -43,95 +39,69 @@ const getPasswordStrength = (password) => {
   return levels[Math.min(score, 5)];
 };
 
-// Input component with floating label
-const FloatingInput = ({
-  label,
-  type = "text",
-  value,
-  onChange,
-  icon: Icon,
-  error,
-  showPasswordToggle,
-  autoComplete,
-}) => {
-  const [focused, setFocused] = useState(false);
+// Labelled input in the same style as the admin sign-in: label above, quiet ring, red focus.
+const FieldInput = ({ label, type = "text", value, onChange, icon: Icon, error, showPasswordToggle, autoComplete, autoFocus, trailing }) => {
   const [showPassword, setShowPassword] = useState(false);
-  const isActive = focused || value;
-
+  const id = `auth-${label.toLowerCase().replace(/\W+/g, "-")}`;
   return (
-    <div className="relative">
-      <div
-        className={`relative border-2 rounded-xl transition-all duration-200 ${
-          error
-            ? "border-red-400 bg-red-50/50"
-            : focused
-            ? "border-red-500 bg-white shadow-sm shadow-red-100"
-            : "border-gray-200 bg-gray-50 hover:border-gray-300"
-        }`}
-      >
-        {Icon && (
-          <Icon
-            className={`absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 transition-colors ${
-              error ? "text-red-400" : focused ? "text-red-500" : "text-gray-400"
-            }`}
-          />
-        )}
+    <div>
+      <div className="flex items-center justify-between mb-1.5">
+        <label htmlFor={id} className="text-sm font-medium text-gray-700">{label}</label>
+        {trailing}
+      </div>
+      <div className="relative">
+        {Icon && <Icon className={`absolute left-3 top-1/2 -translate-y-1/2 w-[18px] h-[18px] pointer-events-none ${error ? "text-red-400" : "text-gray-400"}`} />}
         <input
+          id={id}
           type={showPasswordToggle ? (showPassword ? "text" : "password") : type}
           value={value}
           onChange={onChange}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
           autoComplete={autoComplete}
-          className={`w-full bg-transparent px-4 py-4 text-gray-900 placeholder-transparent focus:outline-none ${
-            Icon ? "pl-12" : ""
-          } ${showPasswordToggle ? "pr-12" : ""}`}
-          placeholder={label}
+          autoFocus={autoFocus}
+          aria-invalid={!!error}
+          className={`w-full h-11 rounded-lg bg-white text-[15px] text-gray-900 placeholder-gray-400 border-0 ring-1 transition-shadow focus:outline-none focus:ring-2 ${
+            Icon ? "pl-10" : "pl-3"
+          } ${showPasswordToggle ? "pr-11" : "pr-3"} ${error ? "ring-red-300 focus:ring-red-500" : "ring-gray-200 hover:ring-gray-300 focus:ring-red-500"}`}
         />
-        <label
-          className={`absolute transition-all duration-200 pointer-events-none ${
-            Icon ? "left-12" : "left-4"
-          } ${
-            isActive
-              ? "-top-2.5 text-xs bg-white px-2 rounded"
-              : "top-1/2 -translate-y-1/2 text-base"
-          } ${error ? "text-red-500" : focused ? "text-red-500" : "text-gray-500"}`}
-        >
-          {label}
-        </label>
         {showPasswordToggle && (
           <button
             type="button"
             onClick={() => setShowPassword(!showPassword)}
-            className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+            aria-label={showPassword ? "Hide password" : "Show password"}
+            className="absolute right-1.5 top-1/2 -translate-y-1/2 p-2 rounded-md text-gray-400 hover:text-gray-700"
           >
-            {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
+            {showPassword ? <EyeOff className="w-[18px] h-[18px]" /> : <Eye className="w-[18px] h-[18px]" />}
           </button>
         )}
       </div>
       {error && (
-        <motion.p
-          initial={{ opacity: 0, y: -5 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-red-500 text-xs mt-1.5 ml-1 flex items-center gap-1"
-        >
-          <AlertCircle className="w-3 h-3" />
+        <p className="text-red-600 text-xs mt-1.5 flex items-center gap-1">
+          <AlertCircle className="w-3.5 h-3.5" />
           {error}
-        </motion.p>
+        </p>
       )}
     </div>
   );
 };
 
-// Feature badge component
-const FeatureBadge = ({ icon: Icon, text }) => (
-  <div className="flex items-center gap-2 text-gray-600 text-sm">
-    <div className="w-8 h-8 bg-red-50 rounded-lg flex items-center justify-center">
-      <Icon className="w-4 h-4 text-red-600" />
-    </div>
-    <span>{text}</span>
+// The Auto Eden mark heads every auth card.
+const BrandMark = () => (
+  <div className="w-12 h-12 rounded-lg bg-white ring-1 ring-gray-200 shadow-sm grid place-items-center mb-4 overflow-hidden">
+    <img src="/Auto-eden-favicon.png" alt="Auto Eden" className="w-9 h-9 object-contain" />
   </div>
 );
+
+const ErrorBanner = ({ children }) => (
+  <div role="alert" className="bg-red-50 ring-1 ring-red-100 text-red-700 px-3 py-2.5 rounded-lg mb-4 flex items-start gap-2 text-sm">
+    <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+    <span>{children}</span>
+  </div>
+);
+
+const Spinner = () => <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />;
+
+const PRIMARY_BTN =
+  "w-full h-11 rounded-lg bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white text-[15px] font-medium transition-colors flex items-center justify-center gap-2";
 
 // Main AuthModals Component
 export const AuthModals = ({ openType, onClose }) => {
@@ -141,8 +111,6 @@ export const AuthModals = ({ openType, onClose }) => {
   );
 
   const [view, setView] = useState(openType);
-  const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [formData, setFormData] = useState({
     email: "",
     password: "",
@@ -234,375 +202,206 @@ export const AuthModals = ({ openType, onClose }) => {
   const isLoading = status === "loading" || passwordResetStatus === "loading";
   const passwordStrength = getPasswordStrength(formData.password);
 
-  if (!openType) return null;
+  // view catches up with openType in an effect, one render after the modal opens.
+  if (!openType || !view) return null;
+
+  const heading = {
+    login: ["Sign in", "Welcome back to Auto Eden"],
+    register: ["Create your account", "Buy and sell verified cars in Zimbabwe"],
+    forgotPassword: ["Reset your password", "We'll email you a link to choose a new one"],
+  }[view];
 
   return (
     <AnimatePresence>
       {openType && (
         <>
-          {/* Backdrop */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-gray-950/50 backdrop-blur-[2px] z-50"
           />
 
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            transition={{ type: "spring", duration: 0.5 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4"
-          >
-            <div className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl overflow-hidden">
-              {/* Close button */}
-              <button
-                onClick={onClose}
-                className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-gray-100 hover:bg-gray-200 flex items-center justify-center transition-colors"
+          <div className="fixed inset-0 z-50 overflow-y-auto pointer-events-none">
+            <div className="min-h-full flex items-center justify-center p-4">
+              <motion.div
+                role="dialog"
+                aria-modal="true"
+                aria-label={heading?.[0] || "Check your email"}
+                initial={{ opacity: 0, scale: 0.97, y: 8 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.97, y: 8 }}
+                transition={{ duration: 0.18, ease: "easeOut" }}
+                className="pointer-events-auto relative w-full max-w-[400px] bg-white rounded-xl shadow-[0_24px_60px_-20px_rgba(16,24,40,0.45)] ring-1 ring-black/5 overflow-hidden pacaembu-font"
               >
-                <X className="w-5 h-5 text-gray-600" />
-              </button>
+                <button
+                  onClick={onClose}
+                  aria-label="Close"
+                  className="absolute top-3 right-3 z-30 p-1.5 rounded-md text-gray-400 hover:text-gray-700 hover:bg-gray-100 transition-colors"
+                >
+                  <X className="w-5 h-5" />
+                </button>
 
-              {/* Success overlay */}
-              <AnimatePresence>
-                {successMessage && (
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    className="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center"
-                  >
+                {/* Success state */}
+                <AnimatePresence>
+                  {successMessage && (
                     <motion.div
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      transition={{ type: "spring", delay: 0.1 }}
-                      className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mb-4"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      className="absolute inset-0 bg-white z-20 flex flex-col items-center justify-center gap-3"
                     >
-                      <CheckCircle className="w-10 h-10 text-green-600" />
+                      <motion.div initial={{ scale: 0.6 }} animate={{ scale: 1 }} className="w-14 h-14 rounded-full bg-emerald-50 grid place-items-center">
+                        <CheckCircle weight="fill" className="w-8 h-8 text-emerald-500" />
+                      </motion.div>
+                      <p className="text-lg font-semibold text-gray-900">{successMessage}</p>
                     </motion.div>
-                    <motion.p
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ delay: 0.2 }}
-                      className="text-xl font-semibold text-gray-900"
-                    >
-                      {successMessage}
-                    </motion.p>
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                  )}
+                </AnimatePresence>
 
-              {/* Content */}
-              <div className="p-8">
-                {/* Reset Sent View */}
-                {view === "resetSent" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    className="text-center py-6"
-                  >
-                    <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      <Mail className="w-10 h-10 text-green-600" />
-                    </div>
-                    <h2 className="text-2xl font-bold text-gray-900 mb-3">Check Your Email</h2>
-                    <p className="text-gray-600 mb-2">We've sent password reset instructions to:</p>
-                    <p className="font-semibold text-gray-900 mb-6">{formData.email}</p>
-                    <p className="text-sm text-gray-500 mb-8">
-                      Didn't receive the email? Check your spam folder or try again.
-                    </p>
-                    <button
-                      onClick={() => setView("login")}
-                      className="flex items-center justify-center gap-2 text-red-600 hover:text-red-700 font-medium mx-auto"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Back to Sign In
-                    </button>
-                  </motion.div>
-                )}
-
-                {/* Forgot Password View */}
-                {view === "forgotPassword" && (
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <button
-                      onClick={() => setView("login")}
-                      className="flex items-center gap-1 text-gray-600 hover:text-gray-900 mb-6 transition-colors"
-                    >
-                      <ArrowLeft className="w-4 h-4" />
-                      Back to Sign In
-                    </button>
-
-                    <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                        <Lock className="w-8 h-8 text-red-600" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-2">Forgot Password?</h2>
-                      <p className="text-gray-600">No worries, we'll send you reset instructions.</p>
-                    </div>
-
-                    {getErrorMessage() && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-start gap-3"
-                      >
-                        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{getErrorMessage()}</span>
-                      </motion.div>
-                    )}
-
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      <FloatingInput
-                        label="Email Address"
-                        type="email"
-                        value={formData.email}
-                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                        icon={Mail}
-                        error={fieldErrors.email}
-                        autoComplete="email"
-                      />
-
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-4 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-red-200"
-                      >
-                        {isLoading ? (
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : (
-                          "Send Reset Link"
-                        )}
-                      </button>
-                    </form>
-                  </motion.div>
-                )}
-
-                {/* Login / Register View */}
-                {(view === "login" || view === "register") && (
-                  <motion.div
-                    key={view}
-                    initial={{ opacity: 0, x: view === "login" ? -20 : 20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.3 }}
-                  >
-                    {/* Header */}
-                    <div className="text-center mb-8">
-                      <div className="w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg shadow-red-200">
-                        <Car className="w-8 h-8 text-white" />
-                      </div>
-                      <h2 className="text-2xl font-bold text-gray-900 mb-1">
-                        {view === "login" ? "Welcome Back!" : "Create Account"}
-                      </h2>
-                      <p className="text-gray-600">
-                        {view === "login"
-                          ? "Sign in to access your dashboard"
-                          : "Join Zimbabwe's trusted car marketplace"}
+                <div className="p-6 sm:p-7">
+                  {view === "resetSent" ? (
+                    <div>
+                      <BrandMark />
+                      <h2 className="text-lg font-semibold text-gray-900">Check your email</h2>
+                      <p className="text-sm text-gray-500 mt-1">
+                        We sent reset instructions to <span className="font-medium text-gray-900">{formData.email}</span>. If it doesn't arrive in a few minutes, check your spam folder.
                       </p>
+                      <button onClick={() => setView("login")} className={`${PRIMARY_BTN} mt-6`}>
+                        Back to sign in
+                      </button>
                     </div>
+                  ) : (
+                    <motion.div key={view} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.15 }}>
+                      {view === "forgotPassword" && (
+                        <button onClick={() => setView("login")} className="flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-4 -mt-1 transition-colors">
+                          <ArrowLeft className="w-4 h-4" />
+                          Back to sign in
+                        </button>
+                      )}
+                      <BrandMark />
+                      <h2 className="text-lg font-semibold text-gray-900">{heading[0]}</h2>
+                      <p className="text-sm text-gray-500 mt-0.5 mb-5">{heading[1]}</p>
 
-                    {/* Error message */}
-                    {getErrorMessage() && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl mb-6 flex items-start gap-3"
-                      >
-                        <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5" />
-                        <span className="text-sm">{getErrorMessage()}</span>
-                      </motion.div>
-                    )}
+                      {getErrorMessage() && <ErrorBanner>{getErrorMessage()}</ErrorBanner>}
 
-                    {/* Google Sign In */}
-                    {GOOGLE_CLIENT_ID && (
-                      <>
-                        <div className="flex justify-center mb-4">
-                          <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
-                            <GoogleLogin
-                              onSuccess={handleGoogleSuccess}
-                              onError={() => console.log("Google login failed")}
-                              useOneTap={false}
-                              theme="outline"
-                              size="large"
-                              text={view === "login" ? "signin_with" : "signup_with"}
-                              shape="pill"
-                              width="100%"
-                            />
-                          </GoogleOAuthProvider>
-                        </div>
-
-                        <div className="relative my-6">
-                          <div className="absolute inset-0 flex items-center">
-                            <div className="w-full border-t border-gray-200" />
+                      {view !== "forgotPassword" && GOOGLE_CLIENT_ID && (
+                        <>
+                          <div className="flex justify-center">
+                            <GoogleOAuthProvider clientId={GOOGLE_CLIENT_ID}>
+                              <GoogleLogin
+                                onSuccess={handleGoogleSuccess}
+                                onError={() => console.log("Google login failed")}
+                                useOneTap={false}
+                                theme="outline"
+                                size="large"
+                                text={view === "login" ? "signin_with" : "signup_with"}
+                                shape="rectangular"
+                                width="300"
+                              />
+                            </GoogleOAuthProvider>
                           </div>
-                          <div className="relative flex justify-center">
-                            <span className="bg-white px-4 text-sm text-gray-500">
-                              or continue with email
-                            </span>
+                          <div className="flex items-center gap-3 my-5 text-xs text-gray-400">
+                            <div className="h-px flex-1 bg-gray-200" />
+                            or with email
+                            <div className="h-px flex-1 bg-gray-200" />
                           </div>
-                        </div>
-                      </>
-                    )}
-
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} className="space-y-4">
-                      {view === "register" && (
-                        <FloatingInput
-                          label="Email Address"
-                          type="email"
-                          value={formData.email}
-                          onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                          icon={Mail}
-                          error={fieldErrors.email}
-                          autoComplete="email"
-                        />
+                        </>
                       )}
 
-                      <FloatingInput
-                        label="Username"
-                        type="text"
-                        value={formData.username}
-                        onChange={(e) => setFormData({ ...formData, username: e.target.value })}
-                        icon={User}
-                        error={fieldErrors.username}
-                        autoComplete="username"
-                      />
-
-                      <div>
-                        <FloatingInput
-                          label="Password"
-                          type="password"
-                          value={formData.password}
-                          onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                          icon={Lock}
-                          error={fieldErrors.password}
-                          showPasswordToggle
-                          autoComplete={view === "login" ? "current-password" : "new-password"}
-                        />
-
-                        {/* Password strength indicator for register */}
-                        {view === "register" && formData.password && (
-                          <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: "auto" }}
-                            className="mt-2"
-                          >
-                            <div className="flex gap-1 mb-1">
-                              {[1, 2, 3, 4, 5].map((level) => (
-                                <div
-                                  key={level}
-                                  className={`h-1 flex-1 rounded-full transition-colors ${
-                                    level <= passwordStrength.score
-                                      ? passwordStrength.color
-                                      : "bg-gray-200"
-                                  }`}
-                                />
-                              ))}
-                            </div>
-                            <p className="text-xs text-gray-500">
-                              Password strength:{" "}
-                              <span
-                                className={
-                                  passwordStrength.score >= 4
-                                    ? "text-green-600"
-                                    : passwordStrength.score >= 3
-                                    ? "text-yellow-600"
-                                    : "text-red-600"
-                                }
-                              >
-                                {passwordStrength.label}
-                              </span>
-                            </p>
-                          </motion.div>
+                      <form onSubmit={handleSubmit} className="space-y-3.5" noValidate>
+                        {view !== "login" && (
+                          <FieldInput
+                            label="Email"
+                            type="email"
+                            value={formData.email}
+                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                            icon={Mail}
+                            error={fieldErrors.email}
+                            autoComplete="email"
+                            autoFocus={view === "forgotPassword"}
+                          />
                         )}
-                      </div>
 
-                      {/* Remember me & Forgot password for login */}
-                      {view === "login" && (
-                        <div className="flex items-center justify-between">
-                          <label className="flex items-center gap-2 cursor-pointer">
-                            <input
-                              type="checkbox"
-                              checked={rememberMe}
-                              onChange={(e) => setRememberMe(e.target.checked)}
-                              className="w-4 h-4 rounded border-gray-300 text-red-600 focus:ring-red-500"
+                        {view !== "forgotPassword" && (
+                          <>
+                            <FieldInput
+                              label="Username"
+                              value={formData.username}
+                              onChange={(e) => setFormData({ ...formData, username: e.target.value })}
+                              icon={User}
+                              error={fieldErrors.username}
+                              autoComplete="username"
+                              autoFocus={view === "login"}
                             />
-                            <span className="text-sm text-gray-600">Remember me</span>
-                          </label>
+                            <div>
+                              <FieldInput
+                                label="Password"
+                                value={formData.password}
+                                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                                icon={Lock}
+                                error={fieldErrors.password}
+                                showPasswordToggle
+                                autoComplete={view === "login" ? "current-password" : "new-password"}
+                                trailing={
+                                  view === "login" && (
+                                    <button type="button" onClick={() => setView("forgotPassword")} className="text-sm text-red-600 hover:text-red-700 font-medium">
+                                      Forgot password?
+                                    </button>
+                                  )
+                                }
+                              />
+                              {view === "register" && formData.password && (
+                                <div className="mt-2">
+                                  <div className="flex gap-1">
+                                    {[1, 2, 3, 4, 5].map((level) => (
+                                      <div
+                                        key={level}
+                                        className={`h-1 flex-1 rounded-full transition-colors ${level <= passwordStrength.score ? passwordStrength.color : "bg-gray-200"}`}
+                                      />
+                                    ))}
+                                  </div>
+                                  <p className="text-xs text-gray-500 mt-1">
+                                    Strength: <span className="font-medium text-gray-700">{passwordStrength.label}</span>
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          </>
+                        )}
+
+                        <button type="submit" disabled={isLoading} className={`${PRIMARY_BTN} !mt-5`}>
+                          {isLoading ? <Spinner /> : { login: "Sign in", register: "Create account", forgotPassword: "Send reset link" }[view]}
+                        </button>
+                      </form>
+
+                      {view !== "forgotPassword" && (
+                        <p className="mt-5 text-sm text-center text-gray-500">
+                          {view === "login" ? "New to Auto Eden?" : "Already have an account?"}{" "}
                           <button
                             type="button"
-                            onClick={() => setView("forgotPassword")}
-                            className="text-sm text-red-600 hover:text-red-700 font-medium"
+                            onClick={() => setView(view === "login" ? "register" : "login")}
+                            className="text-red-600 hover:text-red-700 font-medium"
                           >
-                            Forgot password?
+                            {view === "login" ? "Create an account" : "Sign in"}
                           </button>
-                        </div>
+                        </p>
                       )}
 
-                      {/* Submit button */}
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="w-full py-4 bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white font-semibold rounded-xl transition-all duration-200 flex items-center justify-center gap-2 shadow-lg shadow-red-200 hover:shadow-xl hover:shadow-red-200 hover:-translate-y-0.5"
-                      >
-                        {isLoading ? (
-                          <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                        ) : view === "login" ? (
-                          "Sign In"
-                        ) : (
-                          "Create Account"
-                        )}
-                      </button>
-                    </form>
-
-                    {/* Features for register */}
-                    {view === "register" && (
-                      <div className="mt-6 pt-6 border-t border-gray-100">
-                        <div className="grid grid-cols-2 gap-3">
-                          <FeatureBadge icon={Shield} text="Verified Sellers" />
-                          <FeatureBadge icon={Zap} text="Instant Listings" />
-                          <FeatureBadge icon={Sparkles} text="AI Assistant" />
-                          <FeatureBadge icon={Car} text="80+ Vehicles" />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Switch view */}
-                    <div className="mt-6 text-center">
-                      <p className="text-gray-600">
-                        {view === "login" ? "Don't have an account?" : "Already have an account?"}{" "}
-                        <button
-                          type="button"
-                          onClick={() => setView(view === "login" ? "register" : "login")}
-                          className="text-red-600 hover:text-red-700 font-semibold"
-                        >
-                          {view === "login" ? "Sign up" : "Sign in"}
-                        </button>
-                      </p>
-                    </div>
-
-                    {/* Terms for register */}
-                    {view === "register" && (
-                      <p className="mt-4 text-xs text-center text-gray-500">
-                        By creating an account, you agree to our{" "}
-                        <a href="/terms" className="text-red-600 hover:underline">
-                          Terms of Service
-                        </a>{" "}
-                        and{" "}
-                        <a href="/privacy" className="text-red-600 hover:underline">
-                          Privacy Policy
-                        </a>
-                      </p>
-                    )}
-                  </motion.div>
-                )}
-              </div>
+                      {view === "register" && (
+                        <p className="mt-3 text-xs text-center text-gray-400">
+                          By creating an account you agree to our{" "}
+                          <a href="/privacy" className="text-gray-600 underline underline-offset-2 hover:text-gray-900">Privacy Policy</a> and{" "}
+                          <a href="/cookies" className="text-gray-600 underline underline-offset-2 hover:text-gray-900">Cookie Policy</a>.
+                        </p>
+                      )}
+                    </motion.div>
+                  )}
+                </div>
+              </motion.div>
             </div>
-          </motion.div>
+          </div>
         </>
       )}
     </AnimatePresence>

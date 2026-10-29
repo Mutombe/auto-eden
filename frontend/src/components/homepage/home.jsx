@@ -2,177 +2,15 @@ import React, { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Shield, Check, Zap, DollarSign, Users, Car, BadgeCheck, Handshake, Eye, CarProfile, ShieldCheck, ArrowsOutCardinal, ListChecks, Gauge, Fuel, Settings2, MapPin } from "../ui/icons";
 import { Link } from "react-router-dom";
-import { useMarketplace, prefetchVehicle } from "../../lib/publicApi";
-import { useProgressiveReveal, formatPrice } from "../../lib/progressive";
-import Bone from "../ui/Bone";
-import SmartImage from "../../utils/smartImage";
+import { useMarketplace } from "../../lib/publicApi";
+import ListingCard, { ListingCardSkeleton } from "../vehicles/ListingCard";
+import { useProgressiveReveal } from "../../lib/progressive";
 
 // Import the hero component
 import HeroCarousel from "./hero";
 
-/**
- * Featured vehicles — shared pieces
- */
-// Listing data is often ALL CAPS ("NISSAN X-TRAIL"); show it in title case, keeping short
-// acronyms (BMW, GTI, SUV) as they are.
-const titleCase = (s = "") =>
-  String(s)
-    .split(" ")
-    .map((w) =>
-      w.length > 3 && w === w.toUpperCase()
-        ? w.toLowerCase().replace(/(^|-)([a-z])/g, (_, p, c) => p + c.toUpperCase())
-        : w
-    )
-    .join(" ");
-
-// Mileage is free text in the DB ("85000", "85,000km").
-const formatKm = (m) => {
-  const n = Number(String(m ?? "").replace(/[^\d.]/g, ""));
-  return n ? `${n.toLocaleString()} km` : null;
-};
-
 const CARD_WIDTH =
   "flex-none snap-start w-[84%] sm:w-[calc((100%-1rem)/2)] lg:w-[calc((100%-3rem)/3)] xl:w-[calc((100%-4.5rem)/4)]";
-
-/**
- * Vehicle Card Skeleton — same frame, inset photo, rows and footer as the real card.
- */
-const VehicleCardSkeleton = () => (
-  <div aria-hidden="true" className={CARD_WIDTH}>
-    <div className="h-full bg-white rounded-[22px] ring-1 ring-gray-200/70 p-2">
-      <Bone className="aspect-[4/3] w-full rounded-[16px]" />
-      <div className="px-2 pt-3 pb-2">
-        <Bone className="h-3 w-24" />
-        <Bone className="h-5 w-3/5 mt-2" />
-        <div className="flex gap-1.5 mt-3.5">
-          <Bone className="h-6 w-20 rounded-full" />
-          <Bone className="h-6 w-16 rounded-full" />
-          <Bone className="h-6 w-20 rounded-full" />
-        </div>
-        <div className="flex items-end justify-between mt-5 pt-4 border-t border-gray-100">
-          <div>
-            <Bone className="h-2.5 w-10" />
-            <Bone className="h-6 w-24 mt-1.5" />
-          </div>
-          <Bone className="h-10 w-10 rounded-full" />
-        </div>
-      </div>
-    </div>
-  </div>
-);
-
-/**
- * Vehicle Card — the whole card is one link; photo sits inset in the card like the hero
- * sits in the page. Quiet scrims only where text overlays the photo.
- */
-const VehicleCard = ({ vehicle, priority }) => {
-  const mainImage = vehicle.main_image || vehicle.images?.[0]?.image;
-  const instant = vehicle.listing_type === "instant_sale";
-  const price = instant ? vehicle.proposed_price || vehicle.price : vehicle.price || vehicle.proposed_price;
-  const verified = vehicle.verification_state === "physical";
-  const name = titleCase(`${vehicle.make} ${vehicle.model}`);
-  const specs = [
-    { icon: Gauge, label: formatKm(vehicle.mileage) },
-    { icon: Fuel, label: vehicle.fuel_type && titleCase(vehicle.fuel_type).replace(/^./, (c) => c.toUpperCase()) },
-    { icon: Settings2, label: vehicle.transmission && titleCase(vehicle.transmission).replace(/^./, (c) => c.toUpperCase()) },
-  ].filter((s) => s.label);
-
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className={CARD_WIDTH}
-    >
-      <Link
-        to={`/vehicles/${vehicle.id}`}
-        onMouseEnter={() => prefetchVehicle(vehicle.id)}
-        onTouchStart={() => prefetchVehicle(vehicle.id)}
-        onFocus={() => prefetchVehicle(vehicle.id)}
-        aria-label={`${vehicle.year} ${name}, ${formatPrice(price)}`}
-        className="group/card pacaembu-font flex flex-col h-full bg-white rounded-[22px] p-2 ring-1 ring-gray-200/70 shadow-[0_1px_2px_rgba(16,24,40,0.04)] hover:shadow-[0_22px_44px_-18px_rgba(16,24,40,0.28)] hover:-translate-y-1 transition-[box-shadow,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-      >
-        {/* Photo */}
-        <div className="relative aspect-[4/3] overflow-hidden rounded-[16px] bg-gray-100 isolate">
-          <SmartImage
-            src={mainImage}
-            alt={`${vehicle.year} ${name} for sale in Zimbabwe`}
-            className="w-full h-full object-cover !transition-[transform,opacity] !duration-700 ease-out group-hover/card:scale-[1.04]"
-            loading={priority ? "eager" : "lazy"}
-            fetchpriority={priority ? "high" : "auto"}
-          />
-          {/* Soft scrim at the top only, so the chips stay legible on bright photos */}
-          <div className="pointer-events-none absolute inset-x-0 top-0 h-20 bg-gradient-to-b from-black/30 to-transparent" />
-
-          <div className="absolute top-2.5 left-2.5 right-2.5 flex items-start justify-between gap-2">
-            <div className="flex flex-wrap gap-1.5">
-              {verified && (
-                <span className="inline-flex items-center gap-1 h-7 pl-1.5 pr-2.5 rounded-full bg-white/95 backdrop-blur text-[12px] font-semibold text-gray-900 shadow-sm">
-                  <BadgeCheck weight="fill" className="w-4 h-4 text-emerald-500" />
-                  Verified
-                </span>
-              )}
-              {vehicle.body_type && (
-                <span className="inline-flex items-center h-7 px-2.5 rounded-full bg-black/35 backdrop-blur-md text-[12px] font-medium text-white capitalize">
-                  {vehicle.body_type}
-                </span>
-              )}
-            </div>
-            <span className="grid place-items-center w-9 h-9 rounded-full bg-white/95 text-gray-900 shadow-sm translate-y-0 sm:opacity-0 sm:-translate-y-1 group-hover/card:opacity-100 group-hover/card:translate-y-0 transition-all duration-300">
-              <ArrowUpRight weight="bold" className="w-4 h-4" />
-            </span>
-          </div>
-
-          {instant && (
-            <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 h-7 px-2.5 rounded-full bg-red-600 text-white text-[12px] font-semibold shadow-sm">
-              <Zap weight="fill" className="w-3.5 h-3.5" />
-              Instant sale
-            </span>
-          )}
-        </div>
-
-        {/* Details */}
-        <div className="flex flex-col flex-1 px-2 pt-3 pb-2">
-          <p className="text-[12.5px] text-gray-500 flex items-center gap-1.5 min-w-0">
-            <span className="tabular-nums font-medium text-gray-700">{vehicle.year}</span>
-            {vehicle.location && (
-              <>
-                <span className="text-gray-300">•</span>
-                <MapPin className="w-3.5 h-3.5 shrink-0 text-gray-400" />
-                <span className="truncate">{titleCase(vehicle.location)}</span>
-              </>
-            )}
-          </p>
-          <h3 className="mt-0.5 text-[17px] sm:text-lg font-semibold text-gray-900 leading-snug truncate">{name}</h3>
-
-          {specs.length > 0 && (
-            <ul className="mt-3 flex flex-wrap gap-1 sm:gap-1.5">
-              {specs.map(({ icon: Icon, label }) => (
-                <li key={label} className="inline-flex items-center gap-1 sm:gap-1.5 h-6 sm:h-7 px-2 sm:px-2.5 rounded-full bg-gray-50 ring-1 ring-gray-100 text-[11.5px] sm:text-[12px] text-gray-600 whitespace-nowrap">
-                  <Icon className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-gray-400" />
-                  {label}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className="mt-auto pt-4">
-            <div className="flex items-end justify-between gap-3 pt-4 border-t border-gray-100">
-              <div className="min-w-0">
-                <p className="text-[11px] font-medium uppercase tracking-wider text-gray-400">{instant ? "Offer price" : "Price"}</p>
-                <p className="text-[22px] leading-7 font-semibold text-gray-900 tabular-nums truncate">{formatPrice(price)}</p>
-              </div>
-              <span className="shrink-0 inline-flex items-center gap-1.5 h-10 pl-4 pr-3 rounded-full bg-gray-900 text-white text-sm font-medium group-hover/card:bg-red-600 transition-colors duration-300">
-                View
-                <ArrowRight weight="bold" className="w-4 h-4 transition-transform duration-300 group-hover/card:translate-x-0.5" />
-              </span>
-            </div>
-          </div>
-        </div>
-      </Link>
-    </motion.div>
-  );
-};
 
 /**
  * Featured Vehicles Section — snap-scrolling rail: one card + a peek on phones, 2/3/4 across
@@ -262,13 +100,13 @@ const FeaturedVehicles = () => {
           className="flex gap-4 lg:gap-6 overflow-x-auto scrollbar-hide snap-x snap-mandatory scroll-px-4 sm:scroll-px-6 lg:scroll-px-8 px-4 sm:px-6 lg:px-8 py-3 -my-3"
         >
           {isLoading ? (
-            Array.from({ length: 4 }).map((_, i) => <VehicleCardSkeleton key={i} />)
+            Array.from({ length: 4 }).map((_, i) => <ListingCardSkeleton key={i} className={CARD_WIDTH} />)
           ) : featuredVehicles.length > 0 ? (
             featuredVehicles.map((vehicle, index) =>
               index < revealed ? (
-                <VehicleCard key={vehicle.id} vehicle={vehicle} priority={index < 2} />
+                <ListingCard key={vehicle.id} vehicle={vehicle} priority={index < 2} className={CARD_WIDTH} />
               ) : (
-                <VehicleCardSkeleton key={`sk-${vehicle.id}`} />
+                <ListingCardSkeleton key={`sk-${vehicle.id}`} className={CARD_WIDTH} />
               )
             )
           ) : (

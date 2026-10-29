@@ -44,7 +44,7 @@ export const fetchVehicleDetails = createAsyncThunk(
   "vehicles/fetchDetails",
   async (vehicleId, { rejectWithValue }) => {
     try {
-      const response = await api.get(`/core/all-vehicles/${vehicleId}/`);
+      const response = await api.get(`/core/all-vehicles/${vehicleId}/`, { skipAuth: true });
       return response.data;
     } catch (err) {
       // Handle 500 errors specifically
@@ -83,7 +83,7 @@ export const fetchMarketplace = createAsyncThunk(
       if (!params.has('page')) params.append('page', '1');
       if (!params.has('page_size')) params.append('page_size', '12');
       
-      const { data } = await api.get(`/core/marketplace/?${params}`);
+      const { data } = await api.get(`/core/marketplace/?${params}`, { skipAuth: true });
       return data;
     } catch (err) {
       return rejectWithValue(err.response?.data || 'Unknown error');

@@ -326,6 +326,16 @@ class VehicleSummarySerializer(serializers.ModelSerializer):
         return None
 
 
+class ReceivedBidSerializer(serializers.ModelSerializer):
+    """An offer on one of the seller's own vehicles. Shows the bidder's username only, never their email."""
+    vehicle = VehicleSummarySerializer(read_only=True)
+    bidder = serializers.CharField(source="bidder.username", read_only=True)
+
+    class Meta:
+        model = Bid
+        fields = ['id', 'vehicle', 'bidder', 'amount', 'message', 'status', 'created_at']
+
+
 class AdminBidSerializer(serializers.ModelSerializer):
     vehicle = VehicleSummarySerializer(read_only=True)
     bidder = UserSerializer(read_only=True)

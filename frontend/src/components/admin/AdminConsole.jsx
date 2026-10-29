@@ -5,13 +5,14 @@ import { useDispatch, useSelector } from "react-redux";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { AnimatePresence, motion } from "framer-motion";
 import {
-  Car, FileText, Gavel, LayoutDashboard, LogOut, Menu as MenuIcon, ExternalLink, ShieldAlert, Users, X, Lock,
+  Car, FileText, Gavel, LayoutDashboard, LogOut, Menu as MenuIcon, ExternalLink, ShieldAlert, Users, X,
 } from "../ui/icons";
 import { login, logout } from "../../redux/slices/authSlice";
 import { resources } from "./lib/adminApi";
 import { keys } from "./lib/optimistic";
 import { Avatar, Button, Card, cx, Field, Input } from "./ui/primitives";
 import { whenIdle } from "../../lib/progressive";
+import { IconProvider } from "../ui/icons";
 import { AdminPageSkeleton } from "../skeletons/PageSkeletons";
 
 // Each page is its own chunk; hovering its nav item (or idle time) loads it ahead of the click.
@@ -183,8 +184,8 @@ function AdminSignIn() {
   return (
     <div className="min-h-screen bg-[#f6f7f9] flex items-center justify-center p-4">
       <Card className="w-full max-w-sm p-6">
-        <div className="w-10 h-10 rounded-xl bg-red-50 text-red-600 flex items-center justify-center mb-4">
-          <Lock className="w-5 h-5" />
+        <div className="w-12 h-12 rounded-lg bg-white ring-1 ring-gray-200 shadow-sm grid place-items-center mb-4 overflow-hidden">
+          <img src="/Auto-eden-favicon.png" alt="Auto Eden" className="w-9 h-9 object-contain" />
         </div>
         <h1 className="text-lg font-semibold">Admin sign in</h1>
         <p className="text-sm text-gray-500 mb-5">Auto Eden back office</p>
@@ -221,7 +222,16 @@ function NoAccess() {
   );
 }
 
+// The back office uses single-tone icons; the public site keeps duotone.
 export default function AdminConsole() {
+  return (
+    <IconProvider weight="regular">
+      <AdminGate />
+    </IconProvider>
+  );
+}
+
+function AdminGate() {
   const user = useSelector((s) => s.auth.user);
   if (!user) return <AdminSignIn />;
   if (!user.is_staff && !user.is_superuser) return <NoAccess />;

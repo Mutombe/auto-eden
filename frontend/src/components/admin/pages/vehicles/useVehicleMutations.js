@@ -19,7 +19,8 @@ const STATE_FLAGS = {
 
 export const vehicleLabel = (v) => [v?.year, v?.make, v?.model].filter(Boolean).join(" ") || "Vehicle";
 
-function usePhotoUploader() {
+// Shared with the seller dashboard, which caches its own vehicles under another resource name.
+export function usePhotoUploader(resource = R) {
   const qc = useQueryClient();
   return async function uploadPhotos(vehicle, files) {
     if (!files?.length) return;
@@ -30,7 +31,7 @@ function usePhotoUploader() {
       const image = await api.uploadImage(id, compressed);
       uploadStore.tick(id, true);
       // Each landed photo replaces one local preview, so thumbnails never blank out
-      patchRows(qc, R, [id], (row) => {
+      patchRows(qc, resource, [id], (row) => {
         const imgs = row.images || [];
         const locals = imgs.filter((i) => i.__local);
         return { images: [...imgs.filter((i) => !i.__local), image, ...locals.slice(1)] };
@@ -50,7 +51,7 @@ function usePhotoUploader() {
     } else {
       toast.success(`${files.length} photo${files.length > 1 ? "s" : ""} uploaded for ${vehicleLabel(vehicle)}`);
     }
-    qc.invalidateQueries({ queryKey: keys.all(R) });
+    qc.invalidateQueries({ queryKey: keys.all(resource) });
   };
 }
 
