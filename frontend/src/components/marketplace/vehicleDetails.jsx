@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from "react";
-import { useParams, useNavigate, Link } from "react-router-dom";
+import { useParams, useNavigate, useLocation, Link } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'react-toastify';
@@ -154,7 +154,16 @@ export default function CarDetailsPage() {
 
   // First paint comes from the marketplace card already in cache (title, price, photo);
   // the full record (all photos, description, bids) fills in behind it.
-  const { data: vehicle, isError } = useVehicle(vehicleId);
+  const { data: vehicle, isError, error, refetch, isFetching } = useVehicle(vehicleId);
+
+  // Show /vehicles/<id>/ in the address bar, so a link copied from it gets the car's preview
+  // (the static host only serves the prerendered page for the trailing-slash form).
+  const location = useLocation();
+  useEffect(() => {
+    if (!location.pathname.endsWith("/")) {
+      navigate(`${location.pathname}/${location.search}${location.hash}`, { replace: true, state: location.state });
+    }
+  }, [location.pathname, location.search, location.hash, location.state, navigate]);
   const isPartial = !!vehicle?.__partial;
   // Shares the marketplace's cached page 1, so "Similar vehicles" costs no extra request.
   const { data: market } = useMarketplace({ page: 1 });
@@ -280,6 +289,21 @@ export default function CarDetailsPage() {
       setShowShareModal(true);
     }
   };
+
+  if (!vehicle && isError && error?.response?.status !== 404) {
+    return (
+      <div className="min-h-screen bg-[#f6f7f9] flex items-center justify-center px-4">
+        <div className={`${card} p-8 text-center max-w-sm w-full`}>
+          <AlertCircle className="w-10 h-10 text-red-500 mx-auto mb-3" />
+          <h1 className="text-lg font-semibold text-gray-900 mb-1">Couldn't load this car</h1>
+          <p className="text-sm text-gray-500 mb-5">Check your connection and try again.</p>
+          <button onClick={() => refetch()} disabled={isFetching} className="px-5 py-2.5 bg-red-600 text-white rounded-lg font-medium disabled:opacity-60">
+            {isFetching ? "Trying again…" : "Try again"}
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   if (!vehicle && isError) {
     return (

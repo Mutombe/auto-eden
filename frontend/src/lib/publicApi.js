@@ -77,6 +77,10 @@ export function useVehicle(id) {
     placeholderData: () => cardFromCache(id),
     staleTime: 60_000,
     enabled: !!id,
+    // A 404 means the car is gone. Anything else (the free-tier backend waking up, a dropped
+    // connection) is worth a few more tries before we give up.
+    retry: (count, err) => err?.response?.status !== 404 && count < 4,
+    retryDelay: (attempt) => Math.min(1500 * 2 ** attempt, 10_000),
   });
 }
 

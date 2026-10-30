@@ -149,7 +149,8 @@ async function main() {
     const facts = [km(v.mileage), titleCase(v.fuel_type), titleCase(v.transmission), titleCase(v.location)].filter(Boolean);
     let description = facts.join(" · ") || "Verified car on Auto Eden, Zimbabwe's free car marketplace.";
     if (v.verification_state === "physical") description += ". Inspected by Auto Eden.";
-    const url = `${SITE}/vehicles/${v.id}`;
+    // Trailing slash: the static host serves dist/vehicles/<id>/index.html for that form only.
+    const url = `${SITE}/vehicles/${v.id}/`;
     const image = crawlerSafeImage(v.main_image);
 
     const jsonLd = {

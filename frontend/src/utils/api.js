@@ -6,8 +6,9 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || "http://127.0.0.1:8000";
 
 // Links people share for a car: the normal page URL. The build writes a copy of index.html per
 // car with its photo and price in the Open Graph tags (scripts/prerender-og.mjs), so the link
-// previews in WhatsApp, Facebook, etc.
-export const vehicleShareUrl = (id) => `${window.location.origin}/vehicles/${id}`;
+// previews in WhatsApp, Facebook, etc. Keep the trailing slash: the static host only serves that
+// copy for /vehicles/<id>/; without it every path falls back to the generic index.html.
+export const vehicleShareUrl = (id) => `${window.location.origin}/vehicles/${id}/`;
 
 // Flag to prevent multiple refresh attempts
 let isRefreshing = false;
