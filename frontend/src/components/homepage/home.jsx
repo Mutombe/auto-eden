@@ -3,7 +3,7 @@ import { motion } from "framer-motion";
 import { ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Shield, Check, Zap, DollarSign, Users, Car, BadgeCheck, Handshake, Eye, CarProfile, ShieldCheck, ArrowsOutCardinal, ListChecks, Gauge, Fuel, Settings2, MapPin } from "../ui/icons";
 import { Link } from "react-router-dom";
 import { useMarketplace } from "../../lib/publicApi";
-import ListingCard, { ListingCardSkeleton } from "../vehicles/ListingCard";
+import ListingCard, { ListingCardSkeleton, AMBIENT_MASK } from "../vehicles/ListingCard";
 import { useProgressiveReveal } from "../../lib/progressive";
 
 // Import the hero component
@@ -320,7 +320,6 @@ const NarrativeSection = () => {
  * Top Sellers Section - Shows popular makes/models in Zimbabwe
  */
 // Ambient card effect: the blurred copy shows only in the body, the photo fades out into it.
-const AMBIENT_MASK = "linear-gradient(to bottom, transparent 34%, #000 70%)";
 const COVER_FADE = "linear-gradient(to bottom, #000 76%, transparent 100%)";
 
 const TopSellersSection = () => {

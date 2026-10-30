@@ -20,6 +20,10 @@ export const titleCase = (s = "") =>
     )
     .join(" ");
 
+// Ambient bleed: a blurred, saturated copy of the photo tints the card in the car's own colours.
+// This mask keeps it out of the photo area and lets it rise through the details.
+export const AMBIENT_MASK = "linear-gradient(to bottom, transparent 34%, #000 70%)";
+
 const capitalise = (s) => s && titleCase(s).replace(/^./, (c) => c.toUpperCase());
 
 // Mileage is free text in the DB ("85000", "85,000km").
@@ -80,8 +84,20 @@ export default function ListingCard({ vehicle, priority = false, className = "" 
         onTouchStart={prefetch}
         onFocus={prefetch}
         aria-label={`${vehicle.year} ${name}, ${formatPrice(price)}`}
-        className="group/card pacaembu-font flex flex-col h-full bg-white rounded-[14px] @3xs:rounded-[18px] p-1.5 @3xs:p-2 ring-1 ring-gray-200/70 shadow-[0_1px_2px_rgba(16,24,40,0.04)] group-hover/save:shadow-[0_22px_44px_-18px_rgba(16,24,40,0.28)] group-hover/save:-translate-y-1 transition-[box-shadow,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+        className="group/card pacaembu-font relative isolate overflow-hidden flex flex-col h-full bg-white rounded-[14px] @3xs:rounded-[18px] p-1.5 @3xs:p-2 ring-1 ring-gray-200/70 shadow-[0_1px_2px_rgba(16,24,40,0.04)] group-hover/save:shadow-[0_22px_44px_-18px_rgba(16,24,40,0.28)] group-hover/save:-translate-y-1 transition-[box-shadow,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
       >
+        {mainImage && (
+          <img
+            src={mainImage}
+            alt=""
+            aria-hidden="true"
+            loading={priority ? "eager" : "lazy"}
+            decoding="async"
+            className="pointer-events-none absolute inset-0 -z-10 w-full h-full object-cover scale-125 blur-2xl saturate-[1.8] opacity-40 group-hover/card:opacity-60 transition-opacity duration-500"
+            style={{ maskImage: AMBIENT_MASK, WebkitMaskImage: AMBIENT_MASK }}
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+        )}
         {/* Photo, inset in the card like the hero sits in the page */}
         <div className="relative aspect-[4/3] overflow-hidden rounded-[10px] @3xs:rounded-[12px] bg-gray-100 isolate">
           <SmartImage
@@ -149,7 +165,7 @@ export default function ListingCard({ vehicle, priority = false, className = "" 
           {specs.length > 0 && (
             <ul className="hidden @3xs:flex mt-3 flex-wrap gap-1.5">
               {specs.map(({ icon: Icon, label }) => (
-                <li key={label} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-gray-50 ring-1 ring-gray-100 text-[12px] text-gray-600 whitespace-nowrap">
+                <li key={label} className="inline-flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-white/70 backdrop-blur ring-1 ring-black/5 text-[12px] text-gray-700 whitespace-nowrap">
                   <Icon className="w-3.5 h-3.5 text-gray-400" />
                   {label}
                 </li>
@@ -158,7 +174,7 @@ export default function ListingCard({ vehicle, priority = false, className = "" 
           )}
 
           <div className="mt-auto pt-2.5 @3xs:pt-4">
-            <div className="flex items-end justify-between gap-2 @3xs:gap-3 pt-2.5 @3xs:pt-4 border-t border-gray-100">
+            <div className="flex items-end justify-between gap-2 @3xs:gap-3 pt-2.5 @3xs:pt-4 border-t border-black/[0.06]">
               <div className="min-w-0">
                 <p className="hidden @3xs:block text-[11px] font-medium uppercase tracking-wider text-gray-400">{instant ? "Offer price" : "Price"}</p>
                 <p className="text-[16px] @3xs:text-[22px] leading-6 @3xs:leading-7 font-semibold text-gray-900 tabular-nums truncate">{formatPrice(price)}</p>
