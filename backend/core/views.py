@@ -49,20 +49,17 @@ from .tasks import send_vehicle_approved_email, send_vehicle_rejected_email, run
 from django.db.models import Count
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters
-from xhtml2pdf import pisa
 from io import BytesIO
 import logging
 import threading
 
 from django.db import connection
 # views.py
-import qrcode
 from io import BytesIO
 import base64
 from django.template.loader import render_to_string
 from django.http import HttpResponse
 from django.core.mail import EmailMessage
-from xhtml2pdf import pisa
 from PIL import Image, ImageDraw
 import uuid
 from datetime import datetime, timedelta
@@ -853,6 +850,8 @@ class QuoteRequestView(APIView):
 
     def generate_qr_code(self, url):
         """Generate QR code and return as base64 string"""
+        import qrcode  # loaded on demand: only quote PDFs need it
+
         qr = qrcode.QRCode(
             version=1,
             error_correction=qrcode.constants.ERROR_CORRECT_L,
@@ -920,6 +919,10 @@ class QuoteRequestView(APIView):
         
         # Generate PDF
         buffer = BytesIO()
+        # xhtml2pdf pulls in reportlab (tens of MB); import it only when a PDF is made, not in
+        # every server process at startup.
+        from xhtml2pdf import pisa
+
         pisa_status = pisa.CreatePDF(
             html.encode('utf-8'), 
             dest=buffer,
