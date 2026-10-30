@@ -139,6 +139,11 @@ export default function OverviewPage() {
         <Panel title="Inventory breakdown">
           {summary.isLoading ? (
             <BreakdownSkeleton />
+          ) : !sum ? (
+            <div className="p-6 text-[13px] text-gray-500">
+              Couldn't load the inventory right now.{" "}
+              <button onClick={() => summary.refetch()} className="font-medium text-gray-900 underline">Try again</button>
+            </div>
           ) : (
             <div className="p-4 space-y-3.5">
               {[
