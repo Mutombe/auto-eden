@@ -294,10 +294,8 @@ if not os.getenv('DATABASE_URL'):
 DATABASES = {
     'default': dj_database_url.parse(
         os.environ['DATABASE_URL'],
-        # 0 = close after each request. The app runs under ASGI (uvicorn), where Django can't
-        # reuse persistent connections safely: kept-alive ones leak from its worker threads
-        # until Neon runs out and every request hangs. Neon's pooler makes reconnecting cheap.
-        conn_max_age=0,
+        conn_max_age=600,
+        conn_health_checks=True,
     )
 }
 # Neon's pooler runs PgBouncer in transaction mode, which can't hold server-side cursors.
