@@ -105,7 +105,7 @@ const FeaturedVehicles = () => {
           ) : featuredVehicles.length > 0 ? (
             featuredVehicles.map((vehicle, index) =>
               index < revealed ? (
-                <ListingCard key={vehicle.id} vehicle={vehicle} priority={index < 2} className={CARD_WIDTH} />
+                <ListingCard key={vehicle.id} vehicle={vehicle} priority={index < 2} ambient={false} className={CARD_WIDTH} />
               ) : (
                 <ListingCardSkeleton key={`sk-${vehicle.id}`} className={CARD_WIDTH} />
               )

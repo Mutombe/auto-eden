@@ -62,7 +62,7 @@ export const ListingCardSkeleton = ({ className = "" }) => (
   </div>
 );
 
-export default function ListingCard({ vehicle, priority = false, className = "" }) {
+export default function ListingCard({ vehicle, priority = false, ambient = true, className = "" }) {
   const mainImage = vehicle.main_image || vehicle.images?.[0]?.image;
   const instant = vehicle.listing_type === "instant_sale";
   const price = instant ? vehicle.proposed_price || vehicle.price : vehicle.price || vehicle.proposed_price;
@@ -86,7 +86,7 @@ export default function ListingCard({ vehicle, priority = false, className = "" 
         aria-label={`${vehicle.year} ${name}, ${formatPrice(price)}`}
         className="group/card pacaembu-font relative isolate overflow-hidden flex flex-col h-full bg-white rounded-[14px] @3xs:rounded-[18px] p-1.5 @3xs:p-2 ring-1 ring-gray-200/70 shadow-[0_1px_2px_rgba(16,24,40,0.04)] group-hover/save:shadow-[0_22px_44px_-18px_rgba(16,24,40,0.28)] group-hover/save:-translate-y-1 transition-[box-shadow,transform] duration-300 ease-out focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
       >
-        {mainImage && (
+        {ambient && mainImage && (
           <img
             src={mainImage}
             alt=""
