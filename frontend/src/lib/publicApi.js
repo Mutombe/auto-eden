@@ -45,6 +45,10 @@ export function useMarketplace(filters) {
     queryFn: () => fetchMarketplace(params),
     placeholderData: keepPreviousData,
     staleTime: 60_000,
+    // Ride out a backend restart (a deploy takes the API down for a minute or two) instead of
+    // showing an error; the previous results stay on screen meanwhile.
+    retry: (count, err) => !(err?.response?.status >= 400 && err.response.status < 500) && count < 5,
+    retryDelay: (attempt) => Math.min(2000 * 2 ** attempt, 15_000),
   });
 
   // While the user reads this page, quietly fetch the next one so "Next" is instant.
