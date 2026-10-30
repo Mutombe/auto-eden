@@ -275,13 +275,14 @@ WSGI_APPLICATION = "backend.wsgi.application"
 ASGI_APPLICATION = "backend.asgi.application"
 
 # Channels Configuration
+# Redis only when one is configured. Production has none, and pointing at 127.0.0.1:6379 made
+# every notification and WebSocket connection attempt a connection that could only fail.
 CHANNEL_LAYERS = {
-    'default': {
-        'BACKEND': 'channels_redis.core.RedisChannelLayer',
-        'CONFIG': {
-            'hosts': [('127.0.0.1', 6379)],
-        },
-    },
+    'default': (
+        {'BACKEND': 'channels_redis.core.RedisChannelLayer', 'CONFIG': {'hosts': [os.environ['REDIS_URL']]}}
+        if os.environ.get('REDIS_URL')
+        else {'BACKEND': 'channels.layers.InMemoryChannelLayer'}
+    ),
 }
 
 # Database comes from DATABASE_URL (Neon Postgres). Set it in Render's environment
@@ -293,8 +294,10 @@ if not os.getenv('DATABASE_URL'):
 DATABASES = {
     'default': dj_database_url.parse(
         os.environ['DATABASE_URL'],
-        conn_max_age=600,
-        conn_health_checks=True,
+        # 0 = close after each request. The app runs under ASGI (uvicorn), where Django can't
+        # reuse persistent connections safely: kept-alive ones leak from its worker threads
+        # until Neon runs out and every request hangs. Neon's pooler makes reconnecting cheap.
+        conn_max_age=0,
     )
 }
 # Neon's pooler runs PgBouncer in transaction mode, which can't hold server-side cursors.

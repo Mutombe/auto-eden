@@ -717,16 +717,9 @@ class MarketplaceView(APIView):
     pagination_class = MarketplacePagination
 
     def get(self, request):
-        # Create consistent cache key with sorted query parameters
-        query_params = request.query_params.dict()
-        sorted_params = sorted(query_params.items())
-        canonical_query = urlencode(sorted_params)
-        cache_key = f"marketplace_{canonical_query}"
-        
-        # Try to get cached response
-        cached_data = cache.get(cache_key)
-        if cached_data is not None:
-            return Response(cached_data)
+        # No response cache: it lived in each server process's memory, so after a car was
+        # hidden, shown or edited, different processes kept serving different stale pages for
+        # up to 5 minutes. The query is small (one page plus prefetched images).
 
         # Build and filter queryset
         vehicles = Vehicle.objects.filter(
@@ -802,8 +795,6 @@ class MarketplaceView(APIView):
         response_data['current_page'] = request.query_params.get('page', 1)
         response_data['page_size'] = paginator.get_page_size(request)
         
-        # Cache and return
-        cache.set(cache_key, response_data, timeout=300)
         return Response(response_data)
 
 class InstantSaleViewSet(viewsets.ModelViewSet):

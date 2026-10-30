@@ -64,7 +64,7 @@ export function errorMessage(err, fallback = "Something went wrong") {
   const data = err.response?.data;
   if (!data) {
     if (err.code === "ECONNABORTED") return "The server took too long to respond. Please try again.";
-    if (err.message === "Network Error") return "Can't reach the server. Check your connection.";
+    return "Can't reach the server right now. It may be restarting; wait a few seconds and try again.";
     return err.message || fallback;
   }
   if (typeof data === "string") return data.length > 200 ? fallback : data;

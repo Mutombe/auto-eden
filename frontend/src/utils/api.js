@@ -109,8 +109,12 @@ api.interceptors.request.use(
 // does, Render's proxy answers without CORS headers, so the browser only sees "Network Error".
 // Those requests never reached the app, so retry them a few times while it wakes up.
 const WAKE_RETRIES = 3;
+// File uploads aren't retried: they're big, and a half-received upload could be saved twice.
 const isWakingUp = (error) =>
-  !axios.isCancel(error) && error.config && (!error.response || [502, 503, 504].includes(error.response.status));
+  !axios.isCancel(error) &&
+  error.config &&
+  !(error.config.data instanceof FormData) &&
+  (!error.response || [502, 503, 504].includes(error.response.status));
 
 api.interceptors.response.use(
   (response) => response,

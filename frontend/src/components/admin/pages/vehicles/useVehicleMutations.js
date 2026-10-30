@@ -52,6 +52,7 @@ export function usePhotoUploader(resource = R) {
       toast.success(`${files.length} photo${files.length > 1 ? "s" : ""} uploaded for ${vehicleLabel(vehicle)}`);
     }
     qc.invalidateQueries({ queryKey: keys.all(resource) });
+    qc.invalidateQueries({ queryKey: ["public"] });
   };
 }
 

@@ -2,6 +2,8 @@
 import logging
 import threading
 
+from django.db import connection
+
 from celery import shared_task
 from django.core.mail import send_mail
 from django.template.loader import render_to_string
@@ -24,6 +26,9 @@ def run_in_background(task, *args, **kwargs):
             task.apply(args=args, kwargs=kwargs)
         except Exception:
             logger.exception("Background task %s failed", task.name)
+        finally:
+            # Threads outside the request cycle must release their DB connection themselves.
+            connection.close()
 
     threading.Thread(target=_run, daemon=True).start()
 

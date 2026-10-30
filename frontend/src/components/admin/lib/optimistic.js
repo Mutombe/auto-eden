@@ -133,6 +133,9 @@ export function useOptimisticMutation({ resource, mutationFn, apply, settle, suc
       qc.invalidateQueries({ queryKey: keys.all(resource) });
       also.forEach((r) => qc.invalidateQueries({ queryKey: keys.all(r) }));
       qc.invalidateQueries({ queryKey: keys.all("stats") });
+      // The public pages (marketplace, car pages) share this cache; don't let them show
+      // what the admin just changed for another minute.
+      qc.invalidateQueries({ queryKey: ["public"] });
     },
   });
 }

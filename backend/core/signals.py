@@ -24,18 +24,6 @@ def send_mail_async(*args, **kwargs):
             logger.exception("Signal email failed")
     threading.Thread(target=_send, daemon=True).start()
 
-@receiver([post_save, post_delete], sender=Vehicle)
-def increment_marketplace_cache_version(sender, instance, **kwargs):
-    if kwargs.get('raw'):
-        return
-    try:
-        # Increment cache version to bust all marketplace caches
-        version = cache.get('marketplace_cache_version', 1)
-        cache.set('marketplace_cache_version', version + 1)
-    except:
-        # Fallback in case cache is unavailable
-        pass
-
 @receiver(post_save, sender=Vehicle)
 def handle_new_vehicle(sender, instance, created, **kwargs):
     if kwargs.get('raw'):
