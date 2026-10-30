@@ -13,7 +13,7 @@ import { placeBid } from "../../redux/slices/bidSlice";
 import { AuthModals } from "../navbar/navbar";
 import {
   AlertCircle, ArrowLeft, ArrowRight, BadgeCheck, Calendar, Camera, Car, Check, ChevronLeft, ChevronRight, Copy,
-  DollarSign, Facebook, Fuel, Gauge, Loader2, Mail, MapPin, Phone, Settings2, Share2, ShieldCheck,
+  DollarSign, Facebook, FileText, Fuel, Gauge, Loader2, Mail, MapPin, Phone, Settings2, Share2, ShieldCheck,
   WhatsappLogo, X, XLogo,
 } from "../ui/icons";
 import { motion, AnimatePresence } from "framer-motion";
@@ -601,20 +601,23 @@ export default function CarDetailsPage() {
                         message={bidMessage} setMessage={setBidMessage}
                         placing={placing} onSubmit={handlePlaceBid} price={price}
                       />
+                      <button onClick={() => setShowQuoteModal(true)} className="mt-2.5 w-full h-12 rounded-lg ring-1 ring-gray-200 hover:bg-gray-50 text-gray-900 font-medium transition-colors inline-flex items-center justify-center gap-2">
+                        <FileText size={18} /> Get a quote
+                      </button>
                     </>
                   ) : (
                     <div className="space-y-2.5">
                       <button onClick={() => setAuthModal("login")} className="w-full h-12 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors">
                         Sign in to make an offer
                       </button>
-                      <button onClick={() => setShowQuoteModal(true)} className="w-full h-12 rounded-lg ring-1 ring-gray-200 hover:bg-gray-50 text-gray-900 font-medium transition-colors">
-                        Ask for a quote
+                      <button onClick={() => setShowQuoteModal(true)} className="w-full h-12 rounded-lg ring-1 ring-gray-200 hover:bg-gray-50 text-gray-900 font-medium transition-colors inline-flex items-center justify-center gap-2">
+                        <FileText size={18} /> Get a quote
                       </button>
                     </div>
                   )
                 ) : (
-                  <button onClick={() => setShowQuoteModal(true)} className="w-full h-12 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors">
-                    I'm interested
+                  <button onClick={() => setShowQuoteModal(true)} className="w-full h-12 rounded-lg bg-red-600 hover:bg-red-700 text-white font-semibold transition-colors inline-flex items-center justify-center gap-2">
+                    <FileText size={18} /> Get a quote
                   </button>
                 )}
               </div>
@@ -663,7 +666,7 @@ export default function CarDetailsPage() {
 
       {/* Mobile bottom bar */}
       <div className="fixed bottom-0 inset-x-0 z-40 lg:hidden bg-white/95 backdrop-blur border-t border-gray-200 px-4 pt-3 pb-[max(0.75rem,env(safe-area-inset-bottom))]">
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
           <div className="flex-1 min-w-0">
             <p className="text-[12px] text-gray-500 truncate">{vehicle.year} {name}</p>
             <p className="text-xl font-semibold text-gray-900 tabular-nums">{price ? formatPrice(price) : "On request"}</p>
@@ -671,15 +674,24 @@ export default function CarDetailsPage() {
           {isOwner ? (
             <Link to="/dashboard?tab=listings" className="h-12 px-5 rounded-lg bg-gray-900 text-white font-semibold inline-flex items-center">Manage</Link>
           ) : canOffer ? (
-            <button
-              onClick={() => (isAuthenticated ? setShowMobileBidSection(true) : setAuthModal("login"))}
-              className="h-12 px-6 rounded-lg bg-red-600 active:bg-red-700 text-white font-semibold"
-            >
-              Make an offer
-            </button>
+            <>
+              <button
+                onClick={() => setShowQuoteModal(true)}
+                aria-label="Get a quote"
+                className="h-12 px-3.5 rounded-lg ring-1 ring-gray-200 active:bg-gray-50 text-gray-900 font-medium inline-flex items-center gap-1.5"
+              >
+                <FileText size={18} /> Quote
+              </button>
+              <button
+                onClick={() => (isAuthenticated ? setShowMobileBidSection(true) : setAuthModal("login"))}
+                className="h-12 px-4 rounded-lg bg-red-600 active:bg-red-700 text-white font-semibold whitespace-nowrap"
+              >
+                Make an offer
+              </button>
+            </>
           ) : (
-            <button onClick={() => setShowQuoteModal(true)} className="h-12 px-6 rounded-lg bg-red-600 active:bg-red-700 text-white font-semibold">
-              I'm interested
+            <button onClick={() => setShowQuoteModal(true)} className="h-12 px-5 rounded-lg bg-red-600 active:bg-red-700 text-white font-semibold inline-flex items-center gap-2 whitespace-nowrap">
+              <FileText size={18} /> Get a quote
             </button>
           )}
         </div>

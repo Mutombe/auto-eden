@@ -105,11 +105,28 @@ api.interceptors.request.use(
 );
 
 // Add response interceptor for token refresh and error handling
+// The backend is on Render's free tier: it sleeps when idle and restarts on deploys, and while it
+// does, Render's proxy answers without CORS headers, so the browser only sees "Network Error".
+// Those requests never reached the app, so retry them a few times while it wakes up.
+const WAKE_RETRIES = 3;
+const isWakingUp = (error) =>
+  !axios.isCancel(error) && error.config && (!error.response || [502, 503, 504].includes(error.response.status));
+
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
     const originalRequest = error.config;
     const status = error.response?.status;
+
+    if (isWakingUp(error)) {
+      originalRequest._wakeRetries = (originalRequest._wakeRetries || 0) + 1;
+      if (originalRequest._wakeRetries <= WAKE_RETRIES) {
+        await new Promise((r) => setTimeout(r, 2000 * originalRequest._wakeRetries));
+        return api(originalRequest);
+      }
+      error.message = "We couldn't reach Auto Eden. Check your connection and try again.";
+      return Promise.reject(error);
+    }
 
     // Check if error is auth-related (401 or 403)
     const isAuthError = status === 401 || status === 403;

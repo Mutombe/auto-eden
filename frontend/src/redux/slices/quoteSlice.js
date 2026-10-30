@@ -8,43 +8,27 @@ export const requestQuote = createAsyncThunk(
   async (quoteData, { rejectWithValue }) => {
     try {
       const { vehicleId, ...formData } = quoteData;
-      
-      console.log('Submitting quote request:', { vehicleId, formData });
-      
-      const { data } = await api.post(
-        `core/vehicles/${vehicleId}/request-quote/`,
-        {
-          full_name: formData.fullName,
-          email: formData.email,
-          country: formData.country,
-          city: formData.city,
-          address: formData.address,
-          telephone: formData.telephone,
-          note: formData.note,
-          status: 'pending', 
-          priority: 'medium' 
-        }
-      );
-      
-      console.log('Quote request successful:', data);
+      const { data } = await api.post(`/core/vehicles/${vehicleId}/request-quote/`, {
+        full_name: formData.fullName,
+        email: formData.email,
+        country: formData.country,
+        city: formData.city,
+        address: formData.address,
+        telephone: formData.telephone,
+        note: formData.note,
+      });
       return data;
     } catch (err) {
-      console.error('Quote request failed:', err.response?.data || err.message);
-      
-      // Handle different error formats
-      if (err.response?.data) {
-        // If there are field-specific errors
-        if (typeof err.response.data === 'object' && !err.response.data.detail) {
-          const fieldErrors = Object.entries(err.response.data)
-            .map(([field, errors]) => `${field}: ${Array.isArray(errors) ? errors.join(', ') : errors}`)
-            .join('; ');
-          return rejectWithValue({ detail: `Validation errors: ${fieldErrors}` });
-        }
-        return rejectWithValue(err.response.data);
+      const body = err.response?.data;
+      // DRF field errors ({email: ["..."]}) go back per field so the form can show them inline.
+      if (body && typeof body === "object" && !body.detail) {
+        return rejectWithValue({ fields: body, detail: "Please check the highlighted fields." });
       }
-      
-      return rejectWithValue({ 
-        detail: err.message || "Network error occurred while submitting quote request" 
+      if (body?.detail) return rejectWithValue(body);
+      return rejectWithValue({
+        detail: err.response
+          ? "Something went wrong on our side. Please try again."
+          : "We couldn't reach Auto Eden. Check your connection and try again.",
       });
     }
   }

@@ -52,6 +52,9 @@ from rest_framework import filters
 from xhtml2pdf import pisa
 from io import BytesIO
 import logging
+import threading
+
+from django.db import connection
 # views.py
 import qrcode
 from io import BytesIO
@@ -823,9 +826,12 @@ class QuoteRequestView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, vehicle_id):
-        try:
-            vehicle = Vehicle.objects.get(id=vehicle_id)
-        except Vehicle.DoesNotExist:
+        vehicle = (
+            Vehicle.objects.filter(id=vehicle_id, is_visible=True)
+            .exclude(verification_state="rejected")
+            .first()
+        )
+        if not vehicle:
             return Response(
                 {"detail": "Vehicle not found"}, status=status.HTTP_404_NOT_FOUND
             )
@@ -834,23 +840,25 @@ class QuoteRequestView(APIView):
         if serializer.is_valid():
             quote = serializer.save(vehicle=vehicle)
 
-            # Generate and send PDF
-            try:
-                self.send_quote_email(quote, vehicle)
-                return Response({
-                    "message": "Quote request submitted successfully! You will receive an email with the quotation shortly.",
-                    "quote_id": quote.id
-                }, status=status.HTTP_201_CREATED)
-            except Exception as e:
-                # Log the error but don't fail the request
-                print(f"Email sending failed: {str(e)}")
-                return Response({
-                    "message": "Quote request submitted successfully!",
-                    "quote_id": quote.id,
-                    "note": "Email delivery may be delayed"
-                }, status=status.HTTP_201_CREATED)
-        
+            # The PDF and two emails take seconds (longer if SMTP is slow), so send them after
+            # responding; tying up a worker here also stalls everyone else's requests.
+            threading.Thread(target=self._send_quote_email_safely, args=(quote.id,), daemon=True).start()
+            return Response({
+                "message": "Quote request submitted. Your quotation is on its way to your email.",
+                "quote_id": quote.id,
+                "email": quote.email,
+            }, status=status.HTTP_201_CREATED)
+
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+    def _send_quote_email_safely(self, quote_id):
+        try:
+            quote = QuoteRequest.objects.select_related("vehicle").get(id=quote_id)
+            self.send_quote_email(quote, quote.vehicle)
+        except Exception:
+            logger.exception("Quote %s: sending the quotation email failed", quote_id)
+        finally:
+            connection.close()
 
     def generate_qr_code(self, url):
         """Generate QR code and return as base64 string"""
@@ -905,7 +913,9 @@ class QuoteRequestView(APIView):
                 }
             },
             # Pricing (you might want to make this dynamic)
-            "base_price": vehicle.price if hasattr(vehicle, 'price') else 15000,
+            # The price the buyer sees on the listing.
+            "base_price": (vehicle.proposed_price if vehicle.listing_type == "instant_sale" else vehicle.price)
+            or vehicle.price or vehicle.proposed_price or 0,
             "additional_fees": 500,  # Processing, documentation, etc.
         }
         
